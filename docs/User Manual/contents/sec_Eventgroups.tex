@@ -1,0 +1,63 @@
+\section{\textit{Eventgroup} API}
+
+\subsection{EventgroupCreate}
+\label{func:EventgroupCreate}
+\begin{pdfunction}
+{EventgroupCreate(void) }
+{ 
+Creates a new eventgroup. Each eventgroup register contains 
+flags that can individually set or cleared. }
+\pdfunctionreturn{(Id_t) }{Eventgroup ID }{INVALID_ID}{if an error occurred during creation. }
+\pdfunctionreturn{(Id_t) }{Eventgroup ID }{Other}{if the eventgroup was successfully created. }
+\end{pdfunction}
+
+\subsection{EventgroupDelete}
+\label{func:EventgroupDelete}
+\begin{pdfunction}
+{EventgroupDelete(Id\_t evengroup\_id) }
+{ 
+Deletes an existing eventgroup. The evengroup\_id will be set 
+INVALID\_ID if the operation is successful. }
+\pdfunctionargin{(Id_t *) eventgroup_id}{ Eventgroup ID. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the eventgroup was successfully deleted. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the eventgroup could not be found. }
+\end{pdfunction}
+
+\subsection{EventgroupFlagsSet}
+\label{func:EventgroupFlagsSet}
+\begin{pdfunction}
+{void EventgroupFlagsSet(Id\_t eventgroup\_id, U8\_t mask) }
+{ 
+Sets the masked flags in the eventgroup register. 
+if mask = (EVENTGROUP\_FLAG\_MASK\_3 |EVENTGROUP\_FLAG\_MASK\_7), 
+3 and 7 will be set. }
+\pdfunctionargin{(Id_t) eventgroup_id}{ Eventgroup ID. }
+\pdfunctionargin{(U8_t) mask}{ Event flag mask. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the eventgroup was successfully deleted. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the eventgroup could not be found. }
+\end{pdfunction}
+
+\subsection{EventgroupFlagsClear}
+\label{func:EventgroupFlagsClear}
+\begin{pdfunction}
+{EventgroupFlagsClear(Id\_t evengroup\_id, U8\_t mask) }
+{ 
+Clears the masked flags in the eventgroup register. 
+if mask = (EVENTGROUP\_FLAG\_MASK\_0 |EVENTGROUP\_FLAG\_MASK\_4), 
+0 and 4 will be cleared. }
+\pdfunctionargin{(Id_t) eventgroup_id}{ Eventgroup ID. }
+\pdfunctionargin{(U8_t) mask}{ Event flag mask. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the eventgroup was successfully deleted. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the eventgroup could not be found. }
+\end{pdfunction}
+
+\subsection{EventgroupFlagsGet}
+\label{func:EventgroupFlagsGet}
+\begin{pdfunction}
+{EventgroupFlagsGet(Id\_t evengroup\_id, U8\_t mask) }
+{ 
+Returns the eventgroup flags specified in the mask. }
+\pdfunctionargin{(Id_t) eventgroup_id}{ Eventgroup ID. }
+\pdfunctionargin{(U8_t) mask}{ Event flag mask. }
+\pdfunctionreturn{(U8_t) }{Eventgroup flags. }{}{}
+\end{pdfunction}

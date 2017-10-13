@@ -1,0 +1,49 @@
+\ProvidesPackage{prodrive/package/pdlist}
+\RequirePackage{enumitem}
+\RequirePackage{amssymb}
+\RequirePackage{MnSymbol}
+
+% define pditemze environment
+\ExplSyntaxOn
+\NewDocumentEnvironment{pditemize}{}
+{
+	\begin{itemize}[nosep]
+}
+{
+	\end{itemize}
+}
+\ExplSyntaxOff
+
+% explicitly set the label style for itemize.
+\renewcommand{\labelitemi}{$\bullet$}
+\renewcommand{\labelitemii}{$\circ$}
+\renewcommand{\labelitemiii}{$\filledsquare$}
+%\renewcommand{\labelitemiv}{$\bullet$}
+
+% define pdenumerate environment
+\ExplSyntaxOn
+\NewDocumentEnvironment{pdenumerate}{}
+{
+	\begin{enumerate}[nosep]
+}
+{
+	\end{enumerate}
+}
+\ExplSyntaxOff
+
+% explicitly set the label style for enumerate.
+\setenumerate[1]{label=\arabic*.}
+\setenumerate[2]{label=\alph*.}
+\setenumerate[3]{label=\roman*.}
+\setenumerate[4]{label=\arabic*.}
+
+% define pddescription environment
+\ExplSyntaxOn
+\NewDocumentEnvironment{pddescription}{}
+{
+	\begin{description}[nosep]
+}
+{
+	\end{description}
+}
+\ExplSyntaxOff

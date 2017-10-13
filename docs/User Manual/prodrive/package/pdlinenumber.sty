@@ -1,0 +1,27 @@
+\ProvidesPackage{prodrive/package/pdlinenumber}
+\RequirePackage[pagewise,modulo]{lineno}
+
+\def\linenumberfont{\normalfont\footnotesize\sffamily}
+\linenumbers
+
+% A fix for compatibility between lineno and amsmath.
+% http://simon.bonners.ca/blog///blog5.php/line-number-and-amsmath
+% http://phaseportrait.blogspot.nl/2007/08/lineno-and-amsmath-compatibility.html
+% https://groups.google.com/forum/#!msg/comp.text.tex/9Oti-kwXXgs/ts_VLUCaa2gJ
+\newcommand*\patchAmsMathEnvironmentForLineno[1]{%
+    \expandafter\let\csname old#1\expandafter\endcsname\csname #1\endcsname
+    \expandafter\let\csname oldend#1\expandafter\endcsname\csname end#1\endcsname
+    \renewenvironment{#1}%
+    {\linenomath\csname old#1\endcsname}%
+    {\csname oldend#1\endcsname\endlinenomath}}% 
+\newcommand*\patchBothAmsMathEnvironmentsForLineno[1]{%
+    \patchAmsMathEnvironmentForLineno{#1}%
+    \patchAmsMathEnvironmentForLineno{#1*}}%
+\AtBeginDocument{%
+    \patchBothAmsMathEnvironmentsForLineno{equation}%
+    \patchBothAmsMathEnvironmentsForLineno{align}%
+    \patchBothAmsMathEnvironmentsForLineno{flalign}%
+    \patchBothAmsMathEnvironmentsForLineno{alignat}%
+    \patchBothAmsMathEnvironmentsForLineno{gather}%
+    \patchBothAmsMathEnvironmentsForLineno{multline}%
+}

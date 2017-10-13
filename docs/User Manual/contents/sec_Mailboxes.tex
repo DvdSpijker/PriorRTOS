@@ -1,0 +1,82 @@
+\section{\textit{Mailbox} API}
+
+\subsection{MailboxCreate}
+\label{func:MailboxCreate}
+\begin{pdfunction}
+{MailboxCreate(U8\_t mailbox\_size, Task\_t owners[],  n\_owners) }
+{ 
+Creates a mailbox of the specified size with given 
+Only the owners are allowed pend from the created mailbox. 
+pend counter of each address is set to the number of owners upon 
+posting.
+the width of each mailbox address is defined by MailboxBase\_t (U8\_t 
+default). }
+\pdfunctionargin{(U8_t) mailbox_size}{ Number of addresses reserved for this mailbox. }
+\pdfunctionargin{(Id_t) owner_ids}{ Array of owner task IDs. }
+\pdfunctionargin{(U8_t) n_owners}{ Number of owners in the owners list. }
+\pdfunctionreturn{(Id_t) }{Mailbox ID }{INVALID_ID}{if the creation failed. }
+\pdfunctionreturn{(Id_t) }{Mailbox ID }{Other}{valid ID if the mailbox was created. }
+\end{pdfunction}
+
+\subsection{MailboxDelete}
+\label{func:MailboxDelete}
+\begin{pdfunction}
+{MailboxDelete(Id\_t mailbox\_id) }
+{ 
+Deletes the specified mailbox. mailbox\_id is set to INVALID\_ID. }
+\pdfunctionargout{(Id_t *) mailbox_id}{ ID of the mailbox to delete. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the mailbox was deleted. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the mailbox could not be found. }
+\end{pdfunction}
+
+\subsection{MailboxPost}
+\label{func:MailboxPost}
+\begin{pdfunction}
+{MailboxPost(Id\_t mailbox\_id, U8\_t base\_address,  data, U8\_t len) }
+{ 
+Post data with given length in the mailbox starting at the 
+Data cannot be overwritten when it has not been pended by its 
+i.e. the pend counter is not 0. 
+task can post in any mailbox. }
+\pdfunctionargin{(Id_t) mailbox_id}{ ID of the mailbox to post in. }
+\pdfunctionargin{(U8_t) base_address}{ Starting address where data will be posted. }
+\pdfunctionargin{(MailboxBase_t *) data}{ Pointer to the array of data to be posted. }
+\pdfunctionargin{(U8_t) len}{ Length of the data array. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the mailbox was deleted. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the mailbox could not be found. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_LOCKED}{if the pend counter of one of the addresses within the specified range is not 0. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OUT_OF_BOUNDS}{if the given data array is too large for the mailbox. }
+\end{pdfunction}
+
+\subsection{MailboxPend}
+\label{func:MailboxPend}
+\begin{pdfunction}
+{MailboxPend(Id\_t mailbox\_id, U8\_t base\_address,  data, U8\_t len) }
+{ 
+Pend data with given length from the mailbox starting at the 
+Pending data decrements the pend counter. Only owner 
+may pend from the mailbox. }
+\pdfunctionargin{(Id_t) mailbox_id}{ ID of the mailbox to pend from. }
+\pdfunctionargin{(U8_t) base_address}{ Starting address where data will be pended. }
+\pdfunctionargin{(MailboxBase_t *) data}{ Pointer to the array where the data will 
+            be copied to.}
+\pdfunctionargin{(U8_t) len}{ Amount of data to be pended. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the mailbox was deleted. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the mailbox could not be found. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_LOCKED}{if the pend counter is already 0. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_RESTRICTED}{if the pending task is not an owner. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OUT_OF_BOUNDS}{if the requested amount of data is larger than the mailbox storage. }
+\end{pdfunction}
+
+\subsection{MailboxPendCounterGet}
+\label{func:MailboxPendCounterGet}
+\begin{pdfunction}
+{MailboxPendCounterGet(Id\_t mailbox\_id, U8\_t address) }
+{ 
+Returns the pend counter of the given address. A mailbox- 
+can only be posted to if the pend counter is 0. A mailbox- 
+can only be pended from if the pend counter is >0. }
+\pdfunctionargin{(Id_t) mailbox_id}{ ID of the mailbox. }
+\pdfunctionargin{(U8_t) address}{ Mailbox address. }
+\pdfunctionreturn{(U8_t) }{pend counter. }{}{}
+\end{pdfunction}

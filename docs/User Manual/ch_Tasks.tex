@@ -1,0 +1,234 @@
+\chapter{Tasks}
+
+\section{TaskCreate}
+\label{func:TaskCreate}
+\begin{pdfunction}
+{TaskCreate(Task\_t handler, TaskCat\_t category,  Prio\_t priority, void args) }
+{ 
+Creates a Task Control Block for the given handler. The 
+is now able to be scheduled based on its category and priority. 
+arguments are passed to task upon execution. }
+\pdfunctionargin{(Task_t) handler}{ Task handler function. }
+\pdfunctionargin{(TaskCat_t) category}{ Task category: LOW, MEDIUM, HIGH, REALTIME. }
+\pdfunctionargin{(Prio_t) priority}{ Task priority: 1-5 (5 is highest). }
+\pdfunctionargin{(void*) args}{ Task arguments. Passed to the task when executing. }
+\pdfunctionreturn{(Id_t) }{Task ID }{INVALID_ID}{if an error occurred during task creation. }
+\pdfunctionreturn{(Id_t) }{Task ID }{Other}{if successful. }
+\end{pdfunction}
+
+\section{TaskDelete}
+\label{func:TaskDelete}
+\begin{pdfunction}
+{TaskDelete(Id\_t task\_id) }
+{ 
+Deletes an existing Task Control Block for the given handler. 
+task cannot be scheduled anymore. }
+\pdfunctionargin{(Id_t *) task_id}{ Task ID. INVALID\_ID = Running task ID. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if operation was successful. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the task handler was not found in any of the lists. }
+\end{pdfunction}
+
+\section{TaskDeadlineSet}
+\label{func:TaskDeadlineSet}
+\begin{pdfunction}
+{TaskDeadlineSet(Id\_t task\_id, U32\_t t\_ms) }
+{ 
+Sets the scheduling deadline of the given Real-Time task. 
+overrides the default deadline defined by 
+CONFIG\_REAL\_TIME\_TASK\_DEADLINE\_MS\_DEFAULT}
+\pdfunctionargin{(Id_t) task_id}{ Real-Time Task ID. }
+\pdfunctionargin{(U32_t) t_ms}{ Deadline in ms. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if operation was successful. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_INVALID_ID}{if the given task was not a Real-Time task or if the task ID was an invalid ID (INVALID\_ID). }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the task handler was not found in any of the lists. }
+\end{pdfunction}
+
+\section{TaskPrioritySet}
+\label{func:TaskPrioritySet}
+\begin{pdfunction}
+{TaskPrioritySet(Id\_t task\_id, Prio\_t new\_priority) }
+{ 
+Assigns a new priority level to the given task. }
+\pdfunctionargin{(Id_t) task_id}{ Task ID. INVALID\_ID = Running task ID. }
+\pdfunctionargin{(Prio_t) priority}{ New task priority: 1-5 (5 is highest). }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if operation was successful. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OUT_OF_BOUNDS}{if the new priority was not within bounds (1-5). }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the task handler was not found in any of the lists. }
+\end{pdfunction}
+
+\section{TaskPriorityGet}
+\label{func:TaskPriorityGet}
+\begin{pdfunction}
+{TaskPriorityGet(Id\_t task\_id) }
+{ 
+Returns the priority level of the given task. }
+\pdfunctionargin{(Id_t) task_id}{ Task ID. INVALID\_ID = Running task ID. }
+\pdfunctionreturn{(Prio_t) }{task priority }{0}{task could not be found. }
+\pdfunctionreturn{(Prio_t) }{task priority }{15}{valid task priority. }
+\end{pdfunction}
+
+\section{TaskCategorySet}
+\label{func:TaskCategorySet}
+\begin{pdfunction}
+{TaskCategorySet(Id\_t task\_id, TaskCat\_t new\_cat) }
+{ 
+Assigns a new category to the given task. }
+\pdfunctionargin{(Id_t) task_id}{ Task ID. INVALID\_ID = Running task ID. }
+\pdfunctionargin{(TaskCat_t) new_cat}{ New task category: LOW, MEDIUM, HIGH, REALTIME. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if operation was successful. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OUT_OF_BOUNDS}{if new\_cat is not a member of TaskCat\_t. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the task was not found in any of the lists. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_RESTRICTED}{if the OS category was assigned in user-mode. }
+\end{pdfunction}
+
+\section{TaskCategoryGet}
+\label{func:TaskCategoryGet}
+\begin{pdfunction}
+{TaskCategoryGet(Id\_t task\_id) }
+{ 
+Returns the given task's category. }
+\pdfunctionargin{(Id_t) task_id}{ Task ID. INVALID\_ID = Running task ID. }
+\pdfunctionreturn{(TskCat_t) }{task category }{TASK_CAT_OS}{(reserved by OS) }
+\pdfunctionreturn{(TskCat_t) }{task category }{TASK_CAT_REALTIME}{}
+\pdfunctionreturn{(TskCat_t) }{task category }{TASK_CAT_HIGH}{}
+\pdfunctionreturn{(TskCat_t) }{task category }{TASK_CAT_MEDIUM}{}
+\pdfunctionreturn{(TskCat_t) }{task category }{TASK_CAT_LOW}{}
+\end{pdfunction}
+
+\section{TaskStateGet}
+\label{func:TaskStateGet}
+\begin{pdfunction}
+{TaskStateGet(Id\_t task\_id) }
+{ 
+Returns the given task's current state. }
+\pdfunctionargin{(Id_t) task_id}{ Task ID. INVALID\_ID = Running task ID. }
+\pdfunctionreturn{(TaskState_t) }{task state }{}{}
+\end{pdfunction}
+
+\section{TaskRuntimeGet}
+\label{func:TaskRuntimeGet}
+\begin{pdfunction}
+{TaskRuntimeGet(Id\_t task\_id) }
+{ 
+Returns the given task's average runtime in microseconds. }
+\pdfunctionargin{(Id_t) task_id}{ Task ID. INVALID\_ID = Running task ID. }
+\pdfunctionreturn{(U32_t) }{task runtime in us. }{0}{if the task could not be found. }
+\pdfunctionreturn{(U32_t) }{task runtime in us. }{Other}{if valid. }
+\end{pdfunction}
+
+\section{TaskIdGet}
+\label{func:TaskIdGet}
+\begin{pdfunction}
+{TaskIdGet(void) }
+{ 
+Returns the ID of the current task. }
+\pdfunctionreturn{(Id_t) }{Task ID }{INVALID_ID}{error occurred. }
+\pdfunctionreturn{(Id_t) }{Task ID }{Other}{valid Task ID. }
+\end{pdfunction}
+
+\section{TaskNotify}
+\label{func:TaskNotify}
+\begin{pdfunction}
+{TaskNotify(Id\_t task\_id, void args) }
+{ 
+Notifies the task to be come active, 
+it available for scheduling. 
+specified arguments will be passed to the task upon execution. }
+\pdfunctionargin{(Id_t) task_id}{ Task ID. }
+\pdfunctionargin{(void *) args}{ Task arguments. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the task was activated. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the task could not be found. }
+\end{pdfunction}
+
+\section{TaskSleep}
+\label{func:TaskSleep}
+\begin{pdfunction}
+{TaskSleep(U32\_t t\_ms) }
+{ 
+Calling task will sleep for the specified amount of 
+after exiting. After the sleep-timer expires, the task is 
+woken and executed. }
+\pdfunctionargin{(U32_t) t_ms}{ Sleep time in milliseconds. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the sleep timer was created. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the task could not be found. }
+\end{pdfunction}
+
+\section{TASK\_YIELD}
+\label{func:TASK\_YIELD}
+\begin{pdfunction}
+{TASK\_YIELD()}
+{ 
+Task yields execution volentarily. }
+\pdfunctionargin{(Id_t) object_id}{ ID of the event generating object. If INVALID\_ID 
+                             the task will be subscribed to all.}
+\pdfunctionargin{(U32_t) event}{ Event to subscribe to. }
+\pdfunctionargin{(U8_t) flags}{ Flags to be set, use EVENT\_FLAG\_ macros. }
+\pdfunctionargin{(U32_t) timeout_ms}{ Event timeout in milliseconds. If 0 is passed, 
+                               the task will wait indefinitely.}
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the subscription was successful. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if an error occurred. }
+\end{pdfunction}
+
+\section{TASK\_INIT\_ENTER}
+\label{func:TASK\_INIT\_ENTER}
+\begin{pdfunction}
+{TASK\_INIT\_ENTER()}
+{ 
+Initializes the variables required by the event handlers. All 
+code between \_ENTER and \_EXIT will only be executed once. 
+using event handlers within a task, calling TASK\_INIT\_ENTER() 
+combination with TASK\_INIT\_EXIT() is required otherwise compilation errors 
+occur. }
+\end{pdfunction}
+
+\section{TASK\_INIT\_EXIT}
+\label{func:TASK\_INIT\_EXIT}
+\begin{pdfunction}
+{TASK\_INIT\_EXIT()}
+{ 
+Indicates the exit of the TASK\_INIT block. To be called in 
+with TASK\_INIT\_ENTER(). 
+using event handlers within a task, calling TASK\_INIT\_ENTER() 
+combination with TASK\_INIT\_EXIT() is required otherwise compilation errors 
+occur. }
+\end{pdfunction}
+
+\section{TASK\_EVENT\_HANDLER\_ENTER}
+\label{func:TASK\_EVENT\_HANDLER\_ENTER}
+\begin{pdfunction}
+{TASK\_EVENT\_HANDLER\_ENTER(event\_id)}
+{ 
+User code between \_ENTER and \_EXIT will be executed when the 
+event has occurred (and the task is subscribed to said event) or 
+when the event has timed-out (for time-out handling use 
+TASK\_EVENT\_HANDLER\_TIMEOUT\_ENTER\_EXIT).}
+\pdfunctionargin{(Id_t) event_id}{ ID of the event to handle. }
+\end{pdfunction}
+
+\section{TASK\_EVENT\_HANDLER\_EXIT}
+\label{func:TASK\_EVENT\_HANDLER\_EXIT}
+\begin{pdfunction}
+{TASK\_EVENT\_HANDLER\_EXIT()}
+{ 
+Indicates the exit of the TASK\_EVENT\_HANDLER block. To be called in 
+with TASK\_EVENT\_HANDLER\_ENTER(). }
+\end{pdfunction}
+
+\section{TASK\_EVENT\_HANDLER\_TIMEOUT\_ENTER}
+\label{func:TASK\_EVENT\_HANDLER\_TIMEOUT\_ENTER}
+\begin{pdfunction}
+{TASK\_EVENT\_HANDLER\_TIMEOUT\_ENTER()}
+{ 
+User code between \_ENTER and \_EXIT will be executed when the 
+specified in TASK\_EVENT\_HANDLE\_ENTER has NOT occurred within the 
+time. }
+\end{pdfunction}
+
+\section{TASK\_EVENT\_HANDLER\_TIMEOUT\_EXIT}
+\label{func:TASK\_EVENT\_HANDLER\_TIMEOUT\_EXIT}
+\begin{pdfunction}
+{TASK\_EVENT\_HANDLER\_TIMEOUT\_EXIT()}
+{ 
+Indicates the exit of the TASK\_EVENT\_HANDLER\_TIMEOUT block. To 
+called in combination with TASK\_EVENT\_HANDLER\_TIMEOUT\_ENTER(). }
+\end{pdfunction}

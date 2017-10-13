@@ -1,0 +1,10 @@
+\section{Description}
+Enabled by setting at least one of the \textit{PRTOS\_CONFIG\_ENABLE\_LOGGER} settings to 1.\\
+The Logger module enables the programmer to log messages with different purposes at different levels. There are three logging categories, which are indicated by a tag in the log message; info, debug and error. Each of the logging tags will be discussed below.\\
+The logging API is implemented in the shape of logging macros. The advantage of this approach is that all calls to the logging API will be replaced by an empty line if the respective logging category or level has been disabled. This saves ROM or RAM space regardless of compiler optimization flags.\\
+Message format: [TIME-STAMP HH:SS:MS][TAG][Optional 0][Optional n]: Message
+\begin{pditemize}
+	\item Info: Reserved for the OS. All general information such as the output from the initialization sequence and object creations are logged in this category. Info messages contain a time-stamp and tag along with the message.
+	\item Debug: Can be used most effectively when debugging. A debug message is printed along with a time-stamp, tag, calling function name and line number.
+	\item Error: Is used to log/report errors. An error message is printed along with time-stamp, tag, source file name and line number.
+\end{pditemize}

@@ -1,0 +1,47 @@
+
+\clearpage
+\chapter{References}
+
+% Set the width of the first argument in \pdbibrow to the widest value.
+\settowidth{\bibrowwidth}{Author (Company):}
+% Add some horizontal space between the first and second arguments of \pdbibrow.
+\addtolength{\bibrowwidth}{0.5cm}
+
+\renewcommand{\bibname}{Mandatory}
+\begin{thebibliography}{99999} % '99999' indicates that the width of the label is 5 digits wide.
+	\bibitem[1.1]{mref1}
+	\pdbibrow{Title:}{SPD Globus Radio Module Hardware}
+	\pdbibrow{Author(s):}{Free Claessens}
+	\pdbibrow{ID, Version, Date:}{SPD6983160001, R06, 2017-01-18}
+	\pdbibrow{File:}{\pdorionurl[06]{SPD}{6983160001}}
+	
+	\bibitem[1.2]{mref2}
+	\pdbibrow{Title:}{SPD Globus Radio Module Software}
+	\pdbibrow{Author(s):}{Merijn van Eijk}
+	\pdbibrow{ID, Version, Date:}{SPD6983160016, R06, 2017-02-27}
+	\pdbibrow{File:}{\pdorionurl[06]{SPD}{6983160016}}
+		
+\end{thebibliography}
+
+
+\renewcommand{\bibname}{Referenced}
+\begin{thebibliography}{99999} % '99999' indicates that the width of the label is 5 digits wide.
+	\bibitem[2.1]{rref1}
+	\pdbibrow{Title:}{WL18x7MOD Wi-Fi and Bluetooth Controller datasheet}
+	\pdbibrow{Author(s):}{Texas Instruments}
+	\pdbibrow{URL:}{\pdurl[Datasheet]{http://www.ti.com/lit/ds/symlink/wl1837mod.pdf}}
+	
+	\bibitem[2.2]{rref3}
+	\pdbibrow{Title:}{CC2564 Bluetooth Controller datasheet}
+	\pdbibrow{Author(s):}{Texas Instruments}
+	\pdbibrow{URL:}{\pdurl[Datasheet]{http://www.ti.com/lit/ds/symlink/cc2564.pdf}}
+	
+	\bibitem[2.3]{rref2}
+	\pdbibrow{Title:}{BlueKitchen BTstack supported devices}
+	\pdbibrow{Author(s):}{BlueKitchen GmBH} 
+	\pdbibrow{URL:}{\pdurl[Supported chipsets]{https://github.com/bluekitchen/btstack\#supported-chipsets}}		
+	
+	
+\end{thebibliography}
+\newpage
+

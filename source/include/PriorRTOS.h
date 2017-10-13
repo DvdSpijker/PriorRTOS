@@ -1,0 +1,395 @@
+/******************************************************************************************************************************************
+ *  File: PriorRTOS.h
+ *  Description: OS API and main header.
+
+ *  OS Version: V0.4
+ *
+ *  Author(s)
+ *  -----------------
+ *  D. van de Spijker
+ *  -----------------
+ *
+ *  Copyright© 2017    D. van de Spijker
+ *
+ *  Permission is hereby granted, free of charge, to any person obtaining a copy
+ *  of this software AND associated documentation files (the "Software"), to deal
+ *  in the Software without restriction, including without limitation the rights to use,
+ *  copy, modify, merge, publish, distribute and/or sell copies of the Software,
+ *  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ *  1. Redistributions of source code must retain the above copyright notice,
+ *  this list of conditions and the following disclaimer.
+ *
+ *  2. The name of Prior RTOS may not be used to endorse or promote products derived
+ *    from this Software without specific written permission.
+ *
+ *  3. This Software may only be redistributed and used in connection with a
+ *    product in which Prior RTOS is integrated. Prior RTOS shall not be
+ *    distributed or sold, under a different name or otherwise, as a standalone product.
+ *
+ *
+ *  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ *  OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
+ *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ *  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+**********************************************************************************************************************************************/
+#ifndef PRIOR_RTOS_H
+#define PRIOR_RTOS_H
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define OS_VERSION 0x0041
+
+#include <stdlib.h>
+
+#include <PriorRTOSConfig.h>
+#include <Types.h>
+#include <Port.h>
+
+/*Core API includes*/
+#include <Mm.h>
+#include <Task.h>
+#include <Logger.h>
+#include <KernelTask.h>
+
+/* Utility API includes */
+#ifdef PRTOS_CONFIG_USE_CONVERT_LIB_IN_APP
+#include <Convert.h>
+#endif
+
+
+/* Optional includes */
+
+#if PRTOS_CONFIG_ENABLE_SOFTWARE_TIMERS==1
+#include <Timer.h>
+#endif
+
+#if PRTOS_CONFIG_ENABLE_EVENTGROUPS==1
+#include <Eventgroup.h>
+#endif
+
+#if PRTOS_CONFIG_ENABLE_MAILBOXES==1
+#include <Mailbox.h>
+#endif
+
+#if PRTOS_CONFIG_ENABLE_PIPES==1
+#include <Pipe.h>
+#endif
+
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+#include <Ringbuffer.h>
+#endif
+
+#if PRTOS_CONFIG_ENABLE_SIGNALS==1
+#include <Signal.h>
+#endif
+
+#if PRTOS_CONFIG_ENABLE_SEMAPHORES==1
+#include <Semaphore.h>
+#endif
+
+#if PRTOS_CONFIG_ENABLE_PERPHERALS==1
+#include <Peripheral.h>
+#endif
+
+
+
+
+/******************************************************************************
+ * @func: OsResult_t OsInit(OsResult_t *result_optional)
+ *
+ * @desc: Initializes the Prior RTOS kernel. This function has to be called
+ * before any other Prior API function.
+ *
+ * Arguments:
+ *  @argout: (OsResult_t *) result_optional; Result of optional module initialization.
+ *
+ * @rettype:  (OsResult_t) Sys call result
+ * @retval:   OS_OK; all essential modules were initialized successfully.
+ * @retval:   OS_ERROR; if one of the essential modules was not initiated successfully.
+ *          It is recommended to call OsReset or hard-reset the target.
+ ******************************************************************************/
+OsResult_t OsInit(OsResult_t *result_optional);
+
+
+
+/******************************************************************************
+ * @func: void OsStart (Id_t start_task_id)
+ *
+ * @desc: Starts the OS tick and scheduler. The first task to be executed
+ * can be specified by start_task_id. When an error occurs while loading the
+ * specified start task, the Idle task is loaded instead.
+ *
+ * Arguments:
+ * @argin: (Id_t) start_task_id; ID of the first task to be executed. itialization.
+ *
+ * @rettype:   N/A
+ ******************************************************************************/
+void OsStart(Id_t start_task_id);
+
+
+/******************************************************************************
+ * @func: void OsStop(void)
+ *
+ * @desc: Stops the OS tick and scheduler. The currently executing task
+ * will either finish execution (in cooperative mode) or be suspended
+ * (in pre-emptive mode). All tasks and other objects will be deleted.
+ *
+ * @rettype:   N/A
+ ******************************************************************************/
+void OsStop(void);
+
+/******************************************************************************
+ * @func: OsResult_t OsFrequencySet(U16_t os_frequency_hz)
+ *
+ * @desc: Sets a new OS tick frequency in Hz.
+ *
+ * Arguments:
+ * @argin: (U16_t) os_frequency; New OS frequency.
+ *
+ * @rettype:  (OsResult_t) Sys call result
+ * @retval:   OS_OK; if the new frequency was set.
+ * @retval:   OS_ERROR; if no configuration could be matched to the requested
+ *          frequency.
+ ******************************************************************************/
+OsResult_t OsFrequencySet(U16_t OS_frequency);
+
+
+/******************************************************************************
+ * @func: U16_t OsFrequencyGet(void)
+ *
+ * @desc: Returns the current OS frequency in Hz.
+ *
+ * @rettype:  (U16_t) Current OS frequency
+ * @retval:   0; if an error occurred.
+ * @retval:   Other; for valid frequencies.
+ ******************************************************************************/
+U16_t OsFrequencyGet(void);
+
+
+/******************************************************************************
+ * @func: OsVer_t OsVersionGet(void)
+ *
+ * @desc: Returns the OS version e.g. 0x0101 = V1.01. OsVer_t may be
+ * converted to a string format using ConvertOsVersionToString.
+ *
+ * @rettype:  (OsVer_t) Current OS version
+ * @retval:   0; if an error occurred.
+ * @retval:   Other; for valid versions.
+ ******************************************************************************/
+OsVer_t OsVersionGet(void);
+
+
+
+/******************************************************************************
+ * @func: OsResult_t OsRuntimeGet(U32_t *target)
+ *
+ * @desc: Copies the current OS runtime to the target array. Target has to have
+ * at least 2 nodes initialized at 0x00000000;
+ *
+ * Arguments:
+ *  @argout: (U32_t *) target; Target array to return the runtime.
+ *                             target[0] = hours, target[1] = microseconds.
+ *
+ * @rettype:  (OsResult_t) Sys call result
+ * @retval:   OS_OK; if the operation was successful.
+ * @retval:   OS_ERROR; if the array did NOT comply with the requirements stated
+ *          in the description.
+ ******************************************************************************/
+OsResult_t OsRuntimeGet(U32_t* target);
+
+U32_t OsRuntimeMicrosGet(void);
+U32_t OsRuntimeHoursGet(void);
+
+
+/******************************************************************************
+ * @func: U32_t OsTickPeriodGet(void)
+ *
+ * @desc: Returns the OS tick period in microseconds.
+ * Microseconds can be converted to milliseconds using ConvertUsToMs.
+ *
+ * @rettype:  (U32_t) OS tick period in us
+ * @retval:   0; if an error occurred.
+ * @retval:   Other; for valid tick periods.
+ ******************************************************************************/
+U32_t OsTickPeriodGet(void);
+
+
+/******************************************************************************
+ * @func: U32_t OsTasksTotalGet(void)
+ *
+ * @desc: Returns the total number of tasks currently present in the
+ * system.
+ *
+ * @rettype:  (U32_t) Total number of tasks.
+ * @retval:   0; if an error occurred.
+ * @retval:   Other; for valid number of tasks.
+ ******************************************************************************/
+U32_t OsTasksTotalGet(void);
+
+/******************************************************************************
+ * @func: U32_t OsTasksActiveGet(void)
+ *
+ * @desc: Returns the number of active tasks currently present in the
+ * system. A task is considered active if it occupies one of the following
+ * states: TASK_STATE_RUNNING, TASK_STATE_ACTIVE or TASK_STATE_CRITICAL.
+ *
+ * @rettype:  (U32_t) Number of active tasks.
+ * @retval:   0; if an error occurred.
+ * @retval:   Other; for valid number of tasks.
+ ******************************************************************************/
+U32_t OsTasksActiveGet(void);
+
+
+/******************************************************************************
+ * @func: U32_t OsEventsTotalGet(void)
+ *
+ * @desc: Returns the number of published events in the system at that
+ * moment.
+ *
+ * @rettype:  (U32_t) Total number of events.
+ * @retval:   0; if an error occurred.
+ * @retval:   Other; for valid number of events.
+ ******************************************************************************/
+U32_t OsEventsTotalGet(void);
+
+/******************************************************************************
+ * @func: bool OsTaskExists(Id_t task_id)
+ *
+ * @desc: Validates if the passed ID belongs to an existing task.
+ *
+ * @rettype:  (bool) Validation result.
+ * @retval:   false; if the ID does not belong to an existing task.
+ * @retval:   true; if the ID does belong to an existing task.
+ ******************************************************************************/
+bool OsTaskExists(Id_t task_id);
+
+
+/******************************************************************************
+ * @func: void OsCritSectBegin(void)
+ *
+ * @desc: Locks the scheduler and disables interrupts. This function
+ * should ONLY be used in critical sections that require precise timing.
+ * This function may be called recursively throughout other functions, as long
+ * as every OsCritSectBegin call is paired with a OsCritSectEnd call within
+ * the same function scope.
+ *
+ * @rettype:  N/A
+ ******************************************************************************/
+void OsCritSectBegin(void);
+
+
+
+/******************************************************************************
+ * @func: void OsCritSectEnd(void)
+ *
+ * @desc: Unlocks the scheduler and enables interrupts. This function should
+ * be called at the end of the critical code section.
+ * This function may be called recursively throughout other functions, as long
+ * as every OsCritSectBegin call is paired with a OsCritSectEnd call within
+ * the same function scope.
+ *
+ * @rettype:  N/A
+ ******************************************************************************/
+void OsCritSectEnd(void);
+
+
+
+/******************************************************************************
+ * @func: void OsIsrBegin(void)
+ *
+ * @desc: Informs the kernel that a user ISR is currently executing.
+ * This prevents the kernel from switching tasks during the executing of an
+ * interrupt. Note that the OS tick interrupt will keep occurring (if its
+ * priority is higher).
+ * The kernel will only switch tasks when all interrupts have finished execution.
+ * Note that a OsIsrBegin call HAS to be paired with a OsIsrEnd call within
+ * the same ISR scope.
+ *
+ * @rettype:  N/A
+ ******************************************************************************/
+void OsIsrBegin(void);
+
+
+
+/******************************************************************************
+ * @func: void OsIsrEnd(void)
+ *
+ * @desc: Informs the kernel that a user ISR has finished executing and is
+ * allowed to switch tasks.
+ * The kernel will only switch tasks when all interrupts have finished execution.
+ * Note that a OsIsrBegin call HAS to be paired with a OsIsrEnd call within
+ * the same ISR scope.
+ *
+ * @rettype:  N/A
+ ******************************************************************************/
+void OsIsrEnd(void);
+
+
+/******************************************************************************
+ * @func: S8_t OsIsrNestCountGet(void)
+ *
+ * @desc: Returns the number of Interrupt Service Routines that
+ * are nested and have called OsIsrBegin.
+ *
+ * @rettype:  (S8_t) Nest count
+ * @retval:   -1; Cannot access the nest counter at this moment.
+ * @retval:   0; No nesting.
+ * @retval:   Other; Nesting level.
+ ******************************************************************************/
+S8_t OsIsrNestCountGet(void);
+
+
+
+/******************************************************************************
+ * @func: void OsSchedulerLock(void)
+ *
+ * @desc: Locks the scheduler preventing the kernel from scheduling NEW
+ * tasks for execution. Already scheduled tasks will still execute. When the
+ * execution queue is empty the Idle task will be executed.
+ * This function may be called recursively throughout other functions, as long
+ * as every OsSchedulerLock call is paired with a OsSchedulerUnlock call within
+ * the same function scope.
+ *
+ * @rettype:  N/A
+ ******************************************************************************/
+void OsSchedulerLock(void);
+
+
+/******************************************************************************
+ * @func: void OsSchedulerUnlock(void)
+ *
+ * @desc: Unlocks the scheduler allowing it to scheduler new tasks if
+ * the schedule lock counter is equal to zero i.e. all nested locks have executed
+ * their respective unlocks.
+ * This function may be called recursively throughout other functions, as long
+ * as every OsSchedulerLock call is paired with a OsSchedulerUnlock call within
+ * the same function scope.
+ *
+ * @rettype:  N/A
+ ******************************************************************************/
+void OsSchedulerUnlock(void);
+
+
+/******************************************************************************
+ * @func: bool OsSchedulerIsLocked(void)
+ *
+ * @desc: Returns the scheduler lock state. Note that this lock can be
+ * recursive i.e. calling OsSchedulerUnlock does not imply that the scheduler
+ * is unlocked, only that the nesting levels has gone down.
+ *
+ * @rettype:  (bool) Scheduler lock state
+ * @retval:   false; Not locked.
+ * @retval:   true; Locked.
+ ******************************************************************************/
+bool OsSchedulerIsLocked(void);
+
+
+
+
+#ifdef __cplusplus
+}
+#endif
+#endif

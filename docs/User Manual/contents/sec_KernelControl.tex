@@ -1,0 +1,201 @@
+\section{\textit{Os} API}
+
+\subsection{OsInit}
+\label{func:OsInit}
+\begin{pdfunction}
+{OsInit(OsResult\_t result\_optional) }
+{ 
+Initializes the Prior RTOS kernel. This function has to be called 
+any other Prior API function. }
+\pdfunctionargout{(OsResult_t *) result_optional}{ Result of optional module initialization. }
+\pdfunctionreturn{(OsResult_t) }{Sys call result }{OS_OK}{all essential modules were initialized successfully. }
+\pdfunctionreturn{(OsResult_t) }{Sys call result }{OS_ERROR}{if one of the essential modules was not initiated successfully. }
+\end{pdfunction}
+
+\subsection{OsStart}
+\label{func:OsStart}
+\begin{pdfunction}
+{OsStart (Id\_t start\_task\_id) }
+{ 
+Starts the OS tick and scheduler. The first task to be executed 
+be specified by start\_task\_id. When an error occurs while loading the 
+start task, the Idle task is loaded instead. }
+\pdfunctionargin{(Id_t) start_task_id}{ ID of the first task to be executed. itialization. }
+\end{pdfunction}
+
+\subsection{OsFrequencySet}
+\label{func:OsFrequencySet}
+\begin{pdfunction}
+{OsFrequencySet(U16\_t os\_frequency\_hz) }
+{ 
+Sets a new OS tick frequency in Hz. }
+\pdfunctionargin{(U16_t) os_frequency}{ New OS frequency. }
+\pdfunctionreturn{(OsResult_t) }{Sys call result }{OS_OK}{if the new frequency was set. }
+\pdfunctionreturn{(OsResult_t) }{Sys call result }{OS_ERROR}{if no configuration could be matched to the requested frequency. }
+\end{pdfunction}
+
+\subsection{OsFrequencyGet}
+\label{func:OsFrequencyGet}
+\begin{pdfunction}
+{OsFrequencyGet(void) }
+{ 
+Returns the current OS frequency in Hz. }
+\pdfunctionreturn{(U16_t) }{Current OS frequency }{0}{if an error occurred. }
+\pdfunctionreturn{(U16_t) }{Current OS frequency }{Other}{for valid frequencies. }
+\end{pdfunction}
+
+\subsection{OsVersionGet}
+\label{func:OsVersionGet}
+\begin{pdfunction}
+{OsVersionGet(void) }
+{ 
+Returns the OS version e.g. 0x0101 = V1.01. OsVer\_t may be 
+to a string format using ConvertOsVersionToString. }
+\pdfunctionreturn{(OsVer_t) }{Current OS version }{0}{if an error occurred. }
+\pdfunctionreturn{(OsVer_t) }{Current OS version }{Other}{for valid versions. }
+\end{pdfunction}
+
+\subsection{OsRuntimeGet}
+\label{func:OsRuntimeGet}
+\begin{pdfunction}
+{OsRuntimeGet(U32\_t target) }
+{ 
+Copies the current OS runtime to the target array. Target has to have 
+least 2 elements initialized at 0x00000000; }
+\pdfunctionargout{(U32_t *) target}{ Target array to return the runtime. 
+                              target[0] = hours, target[1] = microseconds.}
+\pdfunctionreturn{(OsResult_t) }{Sys call result }{OS_OK}{if the operation was successful. }
+\pdfunctionreturn{(OsResult_t) }{Sys call result }{OS_ERROR}{if the array did NOT comply with the requirements stated in the description. }
+\end{pdfunction}
+
+\subsection{OsTickPeriodGet}
+\label{func:OsTickPeriodGet}
+\begin{pdfunction}
+{OsTickPeriodGet(void) }
+{ 
+Returns the OS tick period in microseconds. 
+can be converted to milliseconds using ConvertUsToMs. }
+\pdfunctionreturn{(U32_t) }{OS tick period in us }{0}{if an error occurred. }
+\pdfunctionreturn{(U32_t) }{OS tick period in us }{Other}{for valid tick periods. }
+\end{pdfunction}
+
+\subsection{OsTasksTotalGet}
+\label{func:OsTasksTotalGet}
+\begin{pdfunction}
+{OsTasksTotalGet(void) }
+{ 
+Returns the total number of tasks currently present in the 
+system.}
+\pdfunctionreturn{(U32_t) }{Total number of tasks. }{0}{if an error occurred. }
+\pdfunctionreturn{(U32_t) }{Total number of tasks. }{Other}{for valid number of tasks. }
+\end{pdfunction}
+
+\subsection{OsTasksActiveGet}
+\label{func:OsTasksActiveGet}
+\begin{pdfunction}
+{OsTasksActiveGet(void) }
+{ 
+Returns the number of active tasks currently present in the 
+A task is considered active if it occupies one of the following 
+TASK\_STATE\_RUNNING, TASK\_STATE\_ACTIVE or TASK\_STATE\_CRITICAL. }
+\pdfunctionreturn{(U32_t) }{Number of active tasks. }{0}{if an error occurred. }
+\pdfunctionreturn{(U32_t) }{Number of active tasks. }{Other}{for valid number of tasks. }
+\end{pdfunction}
+
+\subsection{OsEventsTotalGet}
+\label{func:OsEventsTotalGet}
+\begin{pdfunction}
+{OsEventsTotalGet(void) }
+{ 
+Returns the number of published events in the system at that 
+moment.}
+\pdfunctionreturn{(U32_t) }{Total number of events. }{0}{if an error occurred. }
+\pdfunctionreturn{(U32_t) }{Total number of events. }{Other}{for valid number of events. }
+\end{pdfunction}
+
+\subsection{OsTaskExists}
+\label{func:OsTaskExists}
+\begin{pdfunction}
+{OsTaskExists(Id\_t task\_id) }
+{ 
+Validates if the passed ID belongs to an existing task. }
+\pdfunctionreturn{(bool) }{Validation result. }{false}{if the ID does not belong to an existing task. }
+\pdfunctionreturn{(bool) }{Validation result. }{true}{if the ID does belong to an existing task. }
+\end{pdfunction}
+
+\subsection{OsCritSectEnter}
+\label{func:OsCritSectEnter}
+\begin{pdfunction}
+{OsCritSectEnter(void) }
+{ 
+Locks the scheduler and disables interrupts. This function 
+ONLY be used in critical sections like CRC generation/validation 
+sections that require precise timing. 
+function may be called recursively throughout other functions, as long 
+every OsCritSectEnter call is paired with a OsCritSectExit call within 
+same function scope. }
+\end{pdfunction}
+
+\subsection{OsCritSectExit}
+\label{func:OsCritSectExit}
+\begin{pdfunction}
+{OsCritSectExit(void) }
+{ 
+Unlocks the scheduler and enables interrupts. This function should 
+called after exiting the critical code section. 
+function may be called recursively throughout other functions, as long 
+every OsCritSectEnter call is paired with a OsCritSectExit call within 
+same function scope. }
+\end{pdfunction}
+
+\subsection{OsIsrEnter}
+\label{func:OsIsrEnter}
+\begin{pdfunction}
+{OsIsrEnter(void) }
+{ 
+Informs the kernel that a user ISR is currently executing. 
+prevents the kernel from switching tasks during the executing of an 
+Note that the OS tick interrupt will keep occurring (if its 
+is higher). 
+kernel will only switch tasks when all interrupts have finished execution. 
+that a OsIsrEnter call HAS to be paired with a OsIsrExit call within 
+same ISR scope. }
+\end{pdfunction}
+
+\subsection{OsIsrExit}
+\label{func:OsIsrExit}
+\begin{pdfunction}
+{OsIsrExit(void) }
+{ 
+Informs the kernel that a user ISR has finished executing and is 
+to switch tasks. 
+kernel will only switch tasks when all interrupts have finished execution. 
+that a OsIsrEnter call HAS to be paired with a OsIsrExit call within 
+same ISR scope. }
+\end{pdfunction}
+
+\subsection{OsSchedulerLock}
+\label{func:OsSchedulerLock}
+\begin{pdfunction}
+{OsSchedulerLock(void) }
+{ 
+Locks the scheduler preventing the kernel from scheduling NEW 
+for execution. Already scheduled tasks will still execute. When the 
+queue is empty the Idle task will be executed. 
+function may be called recursively throughout other functions, as long 
+every OsSchedulerLock call is paired with a OsSchedulerUnlock call within 
+same function scope. }
+\end{pdfunction}
+
+\subsection{OsSchedulerUnlock}
+\label{func:OsSchedulerUnlock}
+\begin{pdfunction}
+{OsSchedulerUnlock(void) }
+{ 
+Unlocks the scheduler allowing it to scheduler new tasks if 
+schedule lock counter is equal to zero i.e. all nested locks have executed 
+respective unlocks. 
+function may be called recursively throughout other functions, as long 
+every OsSchedulerLock call is paired with a OsSchedulerUnlock call within 
+same function scope. }
+\end{pdfunction}

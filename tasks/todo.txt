@@ -1,0 +1,155 @@
+|Prior RTOS V0.3.0 TODO
+|
+|KERNEL STATUS
+|-----------------------------------------------------------------
+|Not functional! 
+|Stops after running several tasks. Tick interrupt still works.
+|Scheduler and especially TimerUpdateAll consume too much time,
+|F_OS at 1000 Hz does not work.
+|Stable at 500 Hz, jitter in task scheduling times is high.
+|-----------------------------------------------------------------
+|
+|Last update: 03-03-2017
+|SFX key: 2d43V69p3R
+|-----------------------------------------------------------------
+|
+|1. To Fix
+|
+|- Start using Unit Test framework and Subversion system
+|
+|- check MmPoolCreate; mem_found
+|
+|- Rename MmOsHeapFreeSpaceGet
+|
+|- Kernelmode flag + add checks to all api functions
+|
+|- Add more preprocessor warnings and errors
+|
+|- Add 'Disclaimer' to all new kernel files
+|
+|- All build warnings: 59 to go 
+|
+|- Come up with better naming for OSDefinitions folder and 
+|_osdef_ headers.
+|
+|- Expand Stat_t with more error and warning types; new: e_restrict
+|
+|- Add Stat_t return to all API functions with void returns
+|
+|- Provide better diagnostics, done for os_Init
+|
+|- Add complete input boundary checks to all API functions
+|
+|- Fix all API function descriptions to look like mm_ReAlloc's 
+|description.
+|
+|- Change 'parameter'  to 'arguments' where necessary 
+|(e.g. task parameter and in the manual).
+|
+|------------------------------------------------------------------
+|
+|
+|2. To Test
+|
+|- mm_PoolCreate, mm_AllocDynamic, mm_AllocStatic, mm_Free 
+|& mm_OSHeapFreeSpaceGet; Works now.
+|
+|- Pipes, first test passed (open + single write and read + close)
+|
+|- Ring Buffers, first test failed, problem occurred after 
+|3rd read. Writing works.
+|
+|- Ring buffers, Dump and Flush.
+|
+|- Mailboxes: Create, OwnerAdd, Post, Pend, OwnerRemove, Delete. 
+|
+|- [P] Generalize lists: Corner cases. Seems to work well so far.
+|
+|-------------------------------------------------------------------
+|
+|
+|3. To Finish (highest priority first)
+|
+|- [P] Universal Event system (+ broadcast)
+|
+|- [P] ID buffering; Integrated in Generic Lists, TODO: ID 
+|searching.
+|
+|- Shell
+|
+|- Signals (SignalHandlerInstall, SignalSend) + Exception handlers
+|
+|- TaskTrace
+|
+|- SMX, current module is not functional.
+|
+|- Allocation table + defrag, move etc.
+|
+|-----------------------------------------------------------------
+|
+|
+|4. To Implement (highest priority first)
+|
+|- [P] Watchdog
+|
+|- [P] Logger
+|
+|- Speed up scheduler by separating active-non active tasks in
+|TcbGeneralList. ListElementInsertAtElement required. 
+|ListElementInsert => ListElementInsertAtPosition.
+|
+|- List sorting
+|
+|- RingbufSearch
+|
+|- File System
+|
+|- MessageSend/MessageReceive
+|
+|- Rpcs
+|
+|- Total task count, active task count.
+| 
+|- Module abstraction and module loader.
+|
+|- MmWriteSafe/MmReadSafe (bounded write/read) 
+| 
+|- MmWriteEncrypt/MmReadDecrypt (encrypted write/read)
+|
+|- Better isolation between kernel space and user space.
+|
+|- Memory protection (pool padding, checksum(fletcher16) for 
+|error detection, possibly hash for error correction)
+|
+|- Pre-Emptive scheduler
+|
+|- Pool ownership(groups); OS objects created by owners 
+|of pools should have their data allocated in that pool.
+|
+|- Boot loader
+|
+|- High frequency timers
+|
+|- GUI Framework
+|
+|- Garbage collector
+|
+|
+|-----------------------------------------------------------------
+|
+|
+|5. To Improve 
+|
+|- Split active (active_H on top, active_L following active_H) 
+|and idle tasks in TCB list to improve scheduler efficiency.
+|
+|- Delete functions should have IDs passed as pointers to 
+|implicitly assign these IDs INV_ID.This ensures that said IDs 
+|cannot be used anymore. 
+|
+|-----------------------------------------------------------------
+|
+|
+|
+|
+

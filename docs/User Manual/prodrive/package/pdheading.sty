@@ -1,0 +1,62 @@
+\ProvidesPackage{prodrive/package/pdheading}
+\RequirePackage{titlesec}
+
+% Add a counter to the label of the subsubsection
+\setcounter{secnumdepth}{3}
+
+% Modify the \chapter format
+\titleformat{\chapter}
+	{\LARGE\bf} 	% format
+	{\thechapter.}	% label
+	{6pt}			% horizontal separation between label and title body
+	{}				% before code
+	
+\titlespacing*{\chapter}
+	{0pt}
+	{-\topskip} % correct space above chapter
+	{0pt}
+
+% Modify numberless chapter titles
+% Is used solely for heading of distribution list, document history, table of contents etc.
+\titleformat{name=\chapter, numberless}
+	{\vspace{0.8cm}\Large\bf\filcenter}
+	{}
+	{0pt}
+	{}
+	[\vspace{3pt}]
+
+% Modify the \section format
+\titleformat{\section}
+	{\vspace{5pt}\Large\bf}
+	{\thesection.}
+	{3pt}
+	{}
+
+\titlespacing*{\section}
+	{0pt}
+	{0pt}
+	{0pt}
+
+% Modify the \subsection format
+\titleformat{\subsection}
+	{\vspace{5pt}\large\bf}
+	{\thesubsection.}
+	{3pt}
+	{}
+	
+\titlespacing*{\subsection}
+	{0pt}
+	{0pt}
+	{0pt}
+
+% Modify the \subsubsection format
+\titleformat{\subsubsection}
+	{\vspace{5pt}\large\bf}
+	{\thesubsubsection.}
+	{3pt}
+	{}
+	
+\titlespacing*{\subsubsection}
+	{0pt}
+	{0pt}
+	{0pt}

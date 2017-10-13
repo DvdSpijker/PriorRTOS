@@ -1,0 +1,13 @@
+\section{Description}
+
+An Eventgroup is a set of 8 flags that can be individually set, cleared and checked. Each flag can publish events on set and clear operations. Eventgroups are versatile in usage due to their simplicity. 
+
+\section{Events}
+
+\begin{pdtable}{tbl:eventgroupevents}{Eventgroup events}
+	\begin{pdtabular}{l|c|p{7cm}}
+		\pdtablehead{\textbf{Event}  & \textbf{Event type} & \textbf{Description}}
+		\pdtablerow{\textit{EVENTGROUP\_EVENT\_FLAG\_SET(flag\_mask)} & State change & Published when the specified flag is set. }
+		\pdtablerow{\textit{EVENTGROUP\_EVENT\_FLAG\_CLEAR(flag\_mask)} & State change & Published when the specified flag is cleared. }
+	\end{pdtabular}
+\end{pdtable}

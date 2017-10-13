@@ -1,0 +1,299 @@
+\ProvidesPackage{prodrive/package/pdreq}
+\RequirePackage{prodrive/package/pdtable}
+\RequirePackage{prodrive/package/pdtabular}
+\RequirePackage{prodrive/package/pdtabularx}
+\RequirePackage{etoolbox}
+\RequirePackage{pdfcomment}
+\RequirePackage{marvosym}
+\RequirePackage{marginnote}
+
+% We do want to require package 'hyperref' but this will introduce a LaTeX warning, 
+% indicating a conflict between package 'hyperref' and 'pdfcomment'. Package 
+% 'pdfcomment' namely also requires package 'hyperref'. This package also requires 
+% package 'pdfcomment' and therefor package 'hyperref' is included implicitly. Not 
+% requiring package 'hyperref' will solve the issue.
+%\RequirePackage{hyperref}
+
+\RequirePackage{hanging}
+
+% pdreqshowid: a toggle indicating whether to show identifiers requirements.
+\newtoggle{pdreqshowid}%
+
+\newcounter{pdreqshowratio}%
+\newcounter{pdreqshownote}%
+
+\newcommand{\pdreqshowid}%
+{%
+	\toggletrue{pdreqshowid}%
+}%
+
+% Requirement rationale
+\newcommand{\pdreqratio}[1]%
+{%
+	\iftoggle{pdreqshowid}%
+	{%
+		\ifnumequal{\value{pdreqshowratio}}{0}%
+		{%
+			\stepcounter{pdreqshowratio}%
+			Rationale:%
+		}%
+		{}%
+		&#1\\%
+	}%
+	{}%
+}%
+
+% Requirement note
+\newcommand{\pdreqnote}[1]%
+{%
+	\iftoggle{pdreqshowid}%
+	{%
+		\ifnumequal{\value{pdreqshownote}}{0}%
+		{%
+			\stepcounter{pdreqshownote}%
+			Note:%
+		}%
+		{}%
+		&#1\\%
+	}%
+	{}%
+}%
+
+% pdreqshowicon: a toggle indicating whether to show information icons for requirements.
+\newtoggle{pdreqshowicon}
+
+\newcommand{\pdreqshowicon}%
+{%
+	\toggletrue{pdreqshowicon}%
+}%
+
+% pdreqsmall: a toggle indicating whether the font of the requirements must be somewhat smaller.
+\newtoggle{pdreqsmall}
+
+\newcommand{\pdreqsmall}%
+{%
+	\toggletrue{pdreqsmall}%
+}%
+
+\newenvironment{pdreqdef}[1]%
+{%
+	\iftoggle{pdreqsmall}%
+	{%
+		\small%
+	}%
+	{}%
+	\phantomsection\label{pdreqdef:#1}%
+	\newbool{pdreqdef:#1}\global\booltrue{pdreqdef:#1}%
+	
+	\iftoggle{pdreqshowicon}%
+	{%
+		\marginnote{\pdftooltip{\Info}{[\detokenize{#1}]}}%
+	}%
+	{}%
+	
+	\iftoggle{pdreqshowid}%
+	{%
+		\begin{hangparas}{2em}{1}\texttt{[\detokenize{#1}]}%
+	}%
+	{}%
+}%
+{%
+	\iftoggle{pdreqshowid}%
+	{%
+		\end{hangparas}%
+	}%
+	{}%
+}%
+
+\newenvironment{pdreqdefx}[3]%
+{%
+	\def\argmust{M}%
+	\def\argshould{S}%
+	\def\argcould{C}%
+	\def\argwont{W}%
+	
+	\setcounter{pdreqshowratio}{0}%
+	\setcounter{pdreqshownote}{0}%
+
+	\iftoggle{pdreqsmall}%
+	{%
+		\small%
+	}%
+	{}%
+
+	\phantomsection\label{pdreqdef:#1}%  
+	\newbool{pdreqdef:#1}\global\booltrue{pdreqdef:#1}%
+
+	\iftoggle{pdreqshowicon}%
+	{%
+		\marginnote{\pdftooltip{\Info}{[\detokenize{#1}]}}%
+	}%
+	{}%
+
+	\iftoggle{pdreqshowid}%
+	{%
+		\noindent\tabularx{\textwidth}{>{\hsize=.25\hsize}X>{\hsize=1.75\hsize}X}%
+		\texttt{[\detokenize{#1}]} & #2\\%
+		\ifdefstring{\argmust}{#3}%
+		{%
+			Priority: & Must have\\%
+		}%
+		{%
+			\ifdefstring{\argshould}{#3}%
+			{%
+				Priority: & Should have\\%
+			}%
+			{%
+				\ifdefstring{\argcould}{#3}%
+				{%
+					Priority: & Could have\\%
+				}%
+				{%
+					\ifdefstring{\argwont}{#3}%
+					{%
+						Priority: & Won't have\\%
+					}%
+					{%
+						\PackageError%
+						{pdreq.sty}%
+						{unsupported requirement priority #1 should be one out of set {\argmust, \argshould, \argcould, \argwont}}%
+						{no help, only panic!}%
+					}%
+				}%
+			}%
+		}%
+	}%
+	{%
+		#2%
+	}%
+}%
+{%
+	\iftoggle{pdreqshowid}%
+	{%
+		\endtabularx%
+	}%
+	{}%
+}%
+
+\newtoggle{inpdreqimpl}
+
+\newenvironment{pdreqimpl}%
+{%
+	\toggletrue{inpdreqimpl}%
+}%
+{%
+	\togglefalse{inpdreqimpl}%
+}%
+
+\newtoggle{inpdreqval}
+
+\newenvironment{pdreqval}%
+{%
+	\toggletrue{inpdreqval}%
+	\iftoggle{pdreqshowid}%
+	{%
+		\pdunderline{Requirement validation:}%
+
+		\pdtabularx{\textwidth}{l|l|X}%
+			\pdtablehead{Source requirement & Coverage & Comment}%
+	}%
+	{}%
+}%
+{%
+	\iftoggle{pdreqshowid}%
+	{%
+		\endpdtabularx
+	}%
+	{}%
+	\togglefalse{inpdreqval}%
+}%
+
+\newcommand{\pdsrcreq}[3]%
+{%
+	\iftoggle{pdreqshowid}%
+	{%
+		\iftoggle{inpdreqval}%
+		{%
+			\pdtablerow{\texttt{[\detokenize{#1}]} & #2 & #3}
+		}%
+		{}%
+	}%
+	{}%
+}%
+
+\let\oldcref\cref%
+\renewcommand{\cref}[1]%
+{%
+	\providebool{pdreqdef:#1}% (is false by default)
+	\ifbool{pdreqdef:#1}%
+	{%
+		\hyperref[pdreqdef:#1]{\texttt{[\detokenize{#1}]}}%
+	}%
+	{%
+		\oldcref{#1}%
+	}%
+}%
+
+\newenvironment{pdreqtabularx}[2]%
+{%
+	\iftoggle{pdreqshowid}%
+	{%
+		\pdtabularx{#1}{l|#2}%
+	}%
+	{%
+		\pdtabularx{#1}{#2}%
+	}%
+}%
+{%
+	\endpdtabularx%
+}%
+
+\newenvironment{pdreqtabular}[1]%
+{%
+	\iftoggle{pdreqshowid}%
+	{%
+		\begin{pdtabular}{l|#1}%
+	}%
+	{%
+		\begin{pdtabular}{#1}%
+	}%
+}%
+{%
+	\end{pdtabular}	
+}%
+
+\newcommand{\pdreqtablehead}[1]%
+{%
+	\iftoggle{pdreqshowid}%
+	{%
+		\pdtablehead{ID & #1}%
+	}%
+	{%
+		\pdtablehead{#1}%
+	}%
+}%
+
+\newcommand{\pdreqtablerow}[2]%
+{%
+	\phantomsection\label{pdreqdef:#1}%
+	\providebool{pdreqdef:#1}\ifbool{pdreqdef:#1}{}{\global\booltrue{pdreqdef:#1}}%
+	\iftoggle{pdreqshowid}%
+	{%
+		\iftoggle{pdreqshowicon}%
+		{%
+			\pdtablerow{\texttt{[\detokenize{#1}]} & #2\marginnote{\pdftooltip{\Info}{[\detokenize{#1}]}}}%
+		}%
+		{%
+			\pdtablerow{\texttt{[\detokenize{#1}]} & #2}%
+		}%
+	}%
+	{%
+		\iftoggle{pdreqshowicon}%
+		{%
+			\pdtablerow{#2\marginnote{\pdftooltip{\Info}{[\detokenize{#1}]}}}%
+		}%
+		{%
+			\pdtablerow{#2}%
+		}%
+	}%
+}%

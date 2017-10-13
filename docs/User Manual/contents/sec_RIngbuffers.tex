@@ -1,0 +1,123 @@
+\section{\textit{Ringbuffer} API}
+
+\subsection{RingbufCreate}
+\label{func:RingbufCreate}
+\begin{pdfunction}
+{RingbufCreate(U32\_t size) }
+{ 
+Creates a ring-buffer of given size. Note that the width of 
+element in the buffer is defined by RingbufBase\_t (U8\_t by default). }
+\pdfunctionargin{(U32_t) size}{ Ring-buffer size in elements. }
+\pdfunctionreturn{(Id_t) }{Ring-buffer ID }{INVALID_ID}{if an error occurred during creation. }
+\pdfunctionreturn{(Id_t) }{Ring-buffer ID }{Other}{valid ID if the ring-buffer was created. }
+\end{pdfunction}
+
+\subsection{}
+\label{func:}
+\begin{pdfunction}
+{RingbufDelete (Id\_t ringbuf\_id) }
+{ 
+Deletes the specified ring-buffer. ringbuf\_id is set to INVALID\_ID if 
+operation is successful. }
+\pdfunctionargin{(Id_t *) ringbuf_id}{ ID of the ring-buffer to delete. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the ring-buffer was deleted. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the ring-buffer could not be found. }
+\end{pdfunction}
+
+\subsection{RingbufWrite}
+\label{func:RingbufWrite}
+\begin{pdfunction}
+{RingbufWrite(Id\_t ringbuf\_id, RingbufBase\_t data,  U32\_t length) }
+{ 
+Writes a given number of data elements to the ring-buffer. The 
+of elements actually written is returned. }
+\pdfunctionargin{(Id_t) ringbuf_id}{ Ring-buffer ID. }
+\pdfunctionargin{(RingbufBase_t) data}{ Array of data elements. }
+\pdfunctionargin{(U32_t *) length}{ Length of data in elements. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if data was written. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_FAIL}{if the buffer is empty. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_LOCKED}{if the ringbuffer is already locked for writing. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the ringbuffer could not be found. }
+\end{pdfunction}
+
+\subsection{RingbufRead}
+\label{func:RingbufRead}
+\begin{pdfunction}
+{RingbufRead(Id\_t ringbuf\_id, RingbufBase\_t data,  U32\_t amount) }
+{ 
+Reads a given number of data elements from the ring-buffer. The 
+of elements actually read is returned. Read data is copied to the 
+target array. The target array has to comply with the pre-conditions 
+below. }
+\pdfunctionargin{(Id_t) ringbuf_id}{ Ring-buffer ID. }
+\pdfunctionargin{(RingbufBase_t) target}{ Target data array. 
+                         Pre-condition: target[0] = 0xFE, target[amount-1] = 0xEF}
+\pdfunctionargin{(U32_t *) amount}{ Amount of data to read in elements. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if data was read. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_LOCKED}{if the ringbuffer is already locked for reading. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_FAIL}{if the buffer is empty. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OUT_OF_BOUNDS}{if the target array was not compliant. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the ringbuffer could not be found. }
+\end{pdfunction}
+
+\subsection{RingbufDump}
+\label{func:RingbufDump}
+\begin{pdfunction}
+{RingbufDump(Id\_t ringbuf\_id, RingbufBase\_t target) }
+{ 
+Dumps all data present in the ring-buffer in the target array. 
+number of elements actually read is returned. The target array has to comply 
+the pre-conditions stated below. }
+\pdfunctionargin{(Id_t) ringbuf_id}{ Ring-buffer ID. }
+\pdfunctionargin{(RingbufBase_t) target}{ Target data array. 
+                         Pre-condition: target[0] = 0xFE,
+                         target[ring-buffer size-1] = 0xEF}
+\pdfunctionreturn{(U32_t) }{Actual amount of elements read from the ring-buffer. 0 if }{}{}
+\end{pdfunction}
+
+\subsection{RingbufFlush}
+\label{func:RingbufFlush}
+\begin{pdfunction}
+{RingbufFlush(Id\_t ringbuf\_id) }
+{ 
+Resets the ring-buffer's read and write locations as well as 
+current data count resulting in all its initial space becoming available. }
+\pdfunctionargin{(Id_t) ringbuf_id}{ Ring-buffer ID. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_OK}{if the ring-buffer was flushed. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_LOCKED}{if the ring-buffer is locked for reading or writing. }
+\pdfunctionreturn{(OsResult_t) }{sys call result }{OS_ERROR}{if the ring-buffer could not be found. }
+\end{pdfunction}
+
+\subsection{RingbufSearch}
+\label{func:RingbufSearch}
+\begin{pdfunction}
+{RingbufSearch(Id\_t ringbuf\_id, RingbufBase\_t query,  U32\_t query\_length) }
+{ 
+Searched the ring-buffer for the given query of given length. 
+number of occurrences of the query in the buffer is returned. }
+\pdfunctionargin{(Id_t) ringbuf_id}{ Ring-buffer ID. }
+\pdfunctionargin{(RingbufBase_t) query}{ Search query. }
+\pdfunctionargin{(U32_t) query_length}{ Length of the search query. }
+\pdfunctionreturn{(U32_t) }{Number of occurrences. }{}{}
+\end{pdfunction}
+
+\subsection{RingbufDataCountGet}
+\label{func:RingbufDataCountGet}
+\begin{pdfunction}
+{RingbufDataCountGet(Id\_t ringbuf\_id) }
+{ 
+Returns the amount of data elements are present in the ring- 
+buffer.}
+\pdfunctionargin{(Id_t) ringbuf_id}{ Ring-buffer ID. }
+\pdfunctionreturn{(U32_t) }{Number of data elements. }{}{}
+\end{pdfunction}
+
+\subsection{RingbufDataSpaceGet}
+\label{func:RingbufDataSpaceGet}
+\begin{pdfunction}
+{RingbufDataSpaceGet(Id\_t ringbuf\_id) }
+{ 
+Returns the amount of space left in the ring-buffer. }
+\pdfunctionargin{(Id_t) ringbuf_id}{ Ring-buffer ID. }
+\pdfunctionreturn{(U32_t) }{Data space left. }{}{}
+\end{pdfunction}

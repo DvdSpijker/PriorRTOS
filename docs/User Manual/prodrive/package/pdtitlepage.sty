@@ -1,0 +1,45 @@
+\ProvidesPackage{prodrive/package/pdtitlepage}
+\RequirePackage{prodrive/package/pdattribute}
+\RequirePackage{fancyhdr}
+\RequirePackage{graphicx}
+\RequirePackage{tikz}
+
+\fancypagestyle{titlepage}{%
+	\renewcommand{\headrulewidth}{0pt}
+	\renewcommand{\footrulewidth}{0pt}
+	\renewcommand{\headheight}{82.5pt}
+
+	\fancyhead[L]{%
+		\begin{picture}(0,0)
+			\put(20,-50){\includegraphics[scale=1.5]{prodrive/fig/prior_logo.png}}
+		\end{picture}}
+	\fancyhead[R]{}
+	\fancyfoot[L]{}
+	\fancyfoot[R]{}
+	\fancyfoot[C]{}
+}
+
+\renewcommand*\maketitle{
+\thispagestyle{titlepage}
+	% Disable linelumbers
+	\begin{nolinenumbers}
+	
+	\vspace*{5.8cm}
+	
+	\begin{flushleft}
+		\LARGE\bf{\thedocumenttitle }
+
+	\end{flushleft}
+	
+	\begin{tikzpicture}[remember picture,overlay]%
+		\draw[fill=color_titlepage_gray,draw=none] (-2.74,-5.42) -- (-0.34, -5.42) -- (0.05, -5.87) -- (0.44, -5.42) -- (18.26,-5.42) -- (18.26, -8.09) -- (-2.74,-8.09);%
+		\node[right] at (-0.12, -6.92) {
+			\begin{tabular}{@{}ll@{}}% Use @{} to remove the column separation space on the left (and possibly on the right)
+				Author(s): & \mbox{\theauthor}\\
+			\end{tabular}
+		};
+	\end{tikzpicture}%
+
+	\end{nolinenumbers}
+	\newpage
+}

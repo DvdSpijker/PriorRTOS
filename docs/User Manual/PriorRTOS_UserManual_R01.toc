@@ -1,0 +1,156 @@
+\select@language {english}
+\select@language {english}
+\contentsline {chapter}{\numberline {1}References}{8}{chapter.1}
+\contentsline {chapter}{\numberline {2}Abbreviations and definitions}{9}{chapter.2}
+\contentsline {section}{\numberline {2.1}Abbreviations}{9}{section.2.1}
+\contentsline {section}{\numberline {2.2}Definitions}{9}{section.2.2}
+\contentsline {chapter}{\numberline {3}Introduction}{10}{chapter.3}
+\contentsline {section}{\numberline {3.1}What is Prior RTOS?}{10}{section.3.1}
+\contentsline {section}{\numberline {3.2}Core values}{10}{section.3.2}
+\contentsline {section}{\numberline {3.3}Features}{10}{section.3.3}
+\contentsline {chapter}{\numberline {4}Types}{11}{chapter.4}
+\contentsline {section}{\numberline {4.1}List of types}{11}{section.4.1}
+\contentsline {section}{\numberline {4.2}The Object ID}{11}{section.4.2}
+\contentsline {section}{\numberline {4.3}The OS result type}{11}{section.4.3}
+\contentsline {chapter}{\numberline {5}Events}{12}{chapter.5}
+\contentsline {section}{\numberline {5.1}Publishing}{12}{section.5.1}
+\contentsline {section}{\numberline {5.2}Subscribing}{12}{section.5.2}
+\contentsline {section}{\numberline {5.3}Handling}{12}{section.5.3}
+\contentsline {section}{\numberline {5.4}Characteristics}{12}{section.5.4}
+\contentsline {chapter}{\numberline {6}Scheduling policy}{14}{chapter.6}
+\contentsline {chapter}{\numberline {7}Kernel Control}{15}{chapter.7}
+\contentsline {section}{\numberline {7.1}Description}{15}{section.7.1}
+\contentsline {section}{\numberline {7.2}\textit {Os} API}{16}{section.7.2}
+\contentsline {subsection}{\numberline {7.2.1}OsInit}{16}{subsection.7.2.1}
+\contentsline {subsection}{\numberline {7.2.2}OsStart}{16}{subsection.7.2.2}
+\contentsline {subsection}{\numberline {7.2.3}OsFrequencySet}{16}{subsection.7.2.3}
+\contentsline {subsection}{\numberline {7.2.4}OsFrequencyGet}{16}{subsection.7.2.4}
+\contentsline {subsection}{\numberline {7.2.5}OsVersionGet}{16}{subsection.7.2.5}
+\contentsline {subsection}{\numberline {7.2.6}OsRuntimeGet}{16}{subsection.7.2.6}
+\contentsline {subsection}{\numberline {7.2.7}OsTickPeriodGet}{17}{subsection.7.2.7}
+\contentsline {subsection}{\numberline {7.2.8}OsTasksTotalGet}{17}{subsection.7.2.8}
+\contentsline {subsection}{\numberline {7.2.9}OsTasksActiveGet}{17}{subsection.7.2.9}
+\contentsline {subsection}{\numberline {7.2.10}OsEventsTotalGet}{17}{subsection.7.2.10}
+\contentsline {subsection}{\numberline {7.2.11}OsTaskExists}{17}{subsection.7.2.11}
+\contentsline {subsection}{\numberline {7.2.12}OsCritSectEnter}{17}{subsection.7.2.12}
+\contentsline {subsection}{\numberline {7.2.13}OsCritSectExit}{18}{subsection.7.2.13}
+\contentsline {subsection}{\numberline {7.2.14}OsIsrEnter}{18}{subsection.7.2.14}
+\contentsline {subsection}{\numberline {7.2.15}OsIsrExit}{18}{subsection.7.2.15}
+\contentsline {subsection}{\numberline {7.2.16}OsSchedulerLock}{18}{subsection.7.2.16}
+\contentsline {subsection}{\numberline {7.2.17}OsSchedulerUnlock}{18}{subsection.7.2.17}
+\contentsline {chapter}{\numberline {8}Tasks}{19}{chapter.8}
+\contentsline {section}{\numberline {8.1}\textit {Task} API}{19}{section.8.1}
+\contentsline {subsection}{\numberline {8.1.1}TaskCreate}{19}{subsection.8.1.1}
+\contentsline {subsection}{\numberline {8.1.2}TaskDelete}{19}{subsection.8.1.2}
+\contentsline {subsection}{\numberline {8.1.3}TaskDeadlineSet}{19}{subsection.8.1.3}
+\contentsline {subsection}{\numberline {8.1.4}TaskPrioritySet}{19}{subsection.8.1.4}
+\contentsline {subsection}{\numberline {8.1.5}TaskPriorityGet}{20}{subsection.8.1.5}
+\contentsline {subsection}{\numberline {8.1.6}TaskCategorySet}{20}{subsection.8.1.6}
+\contentsline {subsection}{\numberline {8.1.7}TaskCategoryGet}{20}{subsection.8.1.7}
+\contentsline {subsection}{\numberline {8.1.8}TaskStateGet}{20}{subsection.8.1.8}
+\contentsline {subsection}{\numberline {8.1.9}TaskRuntimeGet}{20}{subsection.8.1.9}
+\contentsline {subsection}{\numberline {8.1.10}TaskIdGet}{20}{subsection.8.1.10}
+\contentsline {subsection}{\numberline {8.1.11}TaskNotify}{21}{subsection.8.1.11}
+\contentsline {subsection}{\numberline {8.1.12}TaskSleep}{21}{subsection.8.1.12}
+\contentsline {subsection}{\numberline {8.1.13}TaskPoll}{21}{subsection.8.1.13}
+\contentsline {chapter}{\numberline {9}Memory Management}{22}{chapter.9}
+\contentsline {section}{\numberline {9.1}Description}{22}{section.9.1}
+\contentsline {section}{\numberline {9.2}\textit {Mm} API}{23}{section.9.2}
+\contentsline {subsection}{\numberline {9.2.1}MmPoolCreate}{23}{subsection.9.2.1}
+\contentsline {subsection}{\numberline {9.2.2}MmPoolDelete}{23}{subsection.9.2.2}
+\contentsline {subsection}{\numberline {9.2.3}MmPoolFormat}{23}{subsection.9.2.3}
+\contentsline {subsection}{\numberline {9.2.4}MmPoolFreeSpaceGet}{24}{subsection.9.2.4}
+\contentsline {subsection}{\numberline {9.2.5}MmOsHeapFreeSpaceGet}{24}{subsection.9.2.5}
+\contentsline {subsection}{\numberline {9.2.6}MmAlloc}{24}{subsection.9.2.6}
+\contentsline {subsection}{\numberline {9.2.7}MmReAlloc}{24}{subsection.9.2.7}
+\contentsline {subsection}{\numberline {9.2.8}MmFree}{24}{subsection.9.2.8}
+\contentsline {subsection}{\numberline {9.2.9}MmAllocSizeGet}{25}{subsection.9.2.9}
+\contentsline {chapter}{\numberline {10}Timers}{26}{chapter.10}
+\contentsline {section}{\numberline {10.1}Description}{26}{section.10.1}
+\contentsline {subsection}{\numberline {10.1.1}Timer parameter}{26}{subsection.10.1.1}
+\contentsline {subsection}{\numberline {10.1.2}States}{26}{subsection.10.1.2}
+\contentsline {subsection}{\numberline {10.1.3}Events}{26}{subsection.10.1.3}
+\contentsline {section}{\numberline {10.2}\textit {Timer} API}{27}{section.10.2}
+\contentsline {subsection}{\numberline {10.2.1}TimerCreate}{27}{subsection.10.2.1}
+\contentsline {subsection}{\numberline {10.2.2}TimerDelete}{27}{subsection.10.2.2}
+\contentsline {subsection}{\numberline {10.2.3}TimerStop}{27}{subsection.10.2.3}
+\contentsline {subsection}{\numberline {10.2.4}TimerStart}{27}{subsection.10.2.4}
+\contentsline {subsection}{\numberline {10.2.5}TimerPause}{27}{subsection.10.2.5}
+\contentsline {subsection}{\numberline {10.2.6}TimerReset}{28}{subsection.10.2.6}
+\contentsline {subsection}{\numberline {10.2.7}TimerStartAll}{28}{subsection.10.2.7}
+\contentsline {subsection}{\numberline {10.2.8}TimerStopAll}{28}{subsection.10.2.8}
+\contentsline {subsection}{\numberline {10.2.9}TimerResetAll}{28}{subsection.10.2.9}
+\contentsline {subsection}{\numberline {10.2.10}}{28}{subsection.10.2.10}
+\contentsline {subsection}{\numberline {10.2.11}}{28}{subsection.10.2.11}
+\contentsline {subsection}{\numberline {10.2.12}TimerIntervalSet}{28}{subsection.10.2.12}
+\contentsline {subsection}{\numberline {10.2.13}}{29}{subsection.10.2.13}
+\contentsline {subsection}{\numberline {10.2.14}TimerIterationsGet}{29}{subsection.10.2.14}
+\contentsline {subsection}{\numberline {10.2.15}TimerIterationsSet}{29}{subsection.10.2.15}
+\contentsline {subsection}{\numberline {10.2.16}}{29}{subsection.10.2.16}
+\contentsline {subsection}{\numberline {10.2.17}}{29}{subsection.10.2.17}
+\contentsline {chapter}{\numberline {11}Semaphores}{30}{chapter.11}
+\contentsline {section}{\numberline {11.1}\textit {Semaphore} API}{30}{section.11.1}
+\contentsline {subsection}{\numberline {11.1.1}SemaphoreCreate}{30}{subsection.11.1.1}
+\contentsline {subsection}{\numberline {11.1.2}SemaphoreDelete}{30}{subsection.11.1.2}
+\contentsline {subsection}{\numberline {11.1.3}SemaphoreAcquire}{30}{subsection.11.1.3}
+\contentsline {subsection}{\numberline {11.1.4}SemaphoreAcquire}{30}{subsection.11.1.4}
+\contentsline {subsection}{\numberline {11.1.5}SemaphoreRelease}{30}{subsection.11.1.5}
+\contentsline {subsection}{\numberline {11.1.6}SemaphoreCountSet}{31}{subsection.11.1.6}
+\contentsline {subsection}{\numberline {11.1.7}SemaphoreCountGet}{31}{subsection.11.1.7}
+\contentsline {subsection}{\numberline {11.1.8}SemaphoreCountReset}{31}{subsection.11.1.8}
+\contentsline {chapter}{\numberline {12}Mailboxes}{32}{chapter.12}
+\contentsline {section}{\numberline {12.1}\textit {Mailbox} API}{32}{section.12.1}
+\contentsline {subsection}{\numberline {12.1.1}MailboxCreate}{32}{subsection.12.1.1}
+\contentsline {subsection}{\numberline {12.1.2}MailboxDelete}{32}{subsection.12.1.2}
+\contentsline {subsection}{\numberline {12.1.3}MailboxPost}{32}{subsection.12.1.3}
+\contentsline {subsection}{\numberline {12.1.4}MailboxPend}{32}{subsection.12.1.4}
+\contentsline {subsection}{\numberline {12.1.5}MailboxPendCounterGet}{33}{subsection.12.1.5}
+\contentsline {chapter}{\numberline {13}Eventgroups}{34}{chapter.13}
+\contentsline {section}{\numberline {13.1}Description}{34}{section.13.1}
+\contentsline {section}{\numberline {13.2}Events}{34}{section.13.2}
+\contentsline {section}{\numberline {13.3}\textit {Eventgroup} API}{35}{section.13.3}
+\contentsline {subsection}{\numberline {13.3.1}EventgroupCreate}{35}{subsection.13.3.1}
+\contentsline {subsection}{\numberline {13.3.2}EventgroupDelete}{35}{subsection.13.3.2}
+\contentsline {subsection}{\numberline {13.3.3}EventgroupFlagsSet}{35}{subsection.13.3.3}
+\contentsline {subsection}{\numberline {13.3.4}EventgroupFlagsClear}{35}{subsection.13.3.4}
+\contentsline {subsection}{\numberline {13.3.5}EventgroupFlagsGet}{35}{subsection.13.3.5}
+\contentsline {chapter}{\numberline {14}Ringbuffers}{36}{chapter.14}
+\contentsline {section}{\numberline {14.1}\textit {Ringbuffer} API}{36}{section.14.1}
+\contentsline {subsection}{\numberline {14.1.1}RingbufCreate}{36}{subsection.14.1.1}
+\contentsline {subsection}{\numberline {14.1.2}}{36}{subsection.14.1.2}
+\contentsline {subsection}{\numberline {14.1.3}RingbufWrite}{36}{subsection.14.1.3}
+\contentsline {subsection}{\numberline {14.1.4}RingbufRead}{36}{subsection.14.1.4}
+\contentsline {subsection}{\numberline {14.1.5}RingbufDump}{37}{subsection.14.1.5}
+\contentsline {subsection}{\numberline {14.1.6}RingbufFlush}{37}{subsection.14.1.6}
+\contentsline {subsection}{\numberline {14.1.7}RingbufSearch}{37}{subsection.14.1.7}
+\contentsline {subsection}{\numberline {14.1.8}RingbufDataCountGet}{37}{subsection.14.1.8}
+\contentsline {subsection}{\numberline {14.1.9}RingbufDataSpaceGet}{37}{subsection.14.1.9}
+\contentsline {chapter}{\numberline {15}Logger}{38}{chapter.15}
+\contentsline {section}{\numberline {15.1}Description}{38}{section.15.1}
+\contentsline {section}{\numberline {15.2}\textit {LOG} API}{38}{section.15.2}
+\contentsline {subsection}{\numberline {15.2.1}LOG\_ERROR\_NEWLINE}{38}{subsection.15.2.1}
+\contentsline {subsection}{\numberline {15.2.2}LOG\_ERROR\_APPEND}{38}{subsection.15.2.2}
+\contentsline {subsection}{\numberline {15.2.3}LOG\_DEBUG\_NEWLINE}{38}{subsection.15.2.3}
+\contentsline {subsection}{\numberline {15.2.4}LOG\_DEBUG\_APPEND}{38}{subsection.15.2.4}
+\contentsline {chapter}{\numberline {16}Conversions}{39}{chapter.16}
+\contentsline {section}{\numberline {16.1}Description}{39}{section.16.1}
+\contentsline {section}{\numberline {16.2}\textit {Convert} API}{39}{section.16.2}
+\contentsline {subsection}{\numberline {16.2.1}ConvertUsToMs}{39}{subsection.16.2.1}
+\contentsline {subsection}{\numberline {16.2.2}ConvertMsToUs}{39}{subsection.16.2.2}
+\contentsline {subsection}{\numberline {16.2.3}ConvertResultToString}{39}{subsection.16.2.3}
+\contentsline {subsection}{\numberline {16.2.4}ConvertIntToString}{39}{subsection.16.2.4}
+\contentsline {subsection}{\numberline {16.2.5}ConvertIntToBytes}{39}{subsection.16.2.5}
+\contentsline {subsection}{\numberline {16.2.6}ConvertOsVersionToString}{40}{subsection.16.2.6}
+\contentsline {chapter}{\numberline {17}Shell}{41}{chapter.17}
+\contentsline {section}{\numberline {17.1}Description}{41}{section.17.1}
+\contentsline {section}{\numberline {17.2}Commands}{41}{section.17.2}
+\contentsline {subsection}{\numberline {17.2.1}\textit {help}}{41}{subsection.17.2.1}
+\contentsline {subsection}{\numberline {17.2.2}\textit {kstat}}{41}{subsection.17.2.2}
+\contentsline {subsection}{\numberline {17.2.3}\textit {tstat}}{41}{subsection.17.2.3}
+\contentsline {subsection}{\numberline {17.2.4}\textit {run}}{41}{subsection.17.2.4}
+\contentsline {section}{\numberline {17.3}\textit {Shell} API}{42}{section.17.3}
+\contentsline {subsection}{\numberline {17.3.1}ShellCommandRegister}{42}{subsection.17.3.1}
+\contentsline {subsection}{\numberline {17.3.2}ShellReplyInvalidArgs}{42}{subsection.17.3.2}
+\contentsline {subsection}{\numberline {17.3.3}ShellPut}{42}{subsection.17.3.3}
+\contentsline {subsection}{\numberline {17.3.4}ShellPutRaw}{42}{subsection.17.3.4}
+\contentsline {subsection}{\numberline {17.3.5}ShellPutRawNewline}{42}{subsection.17.3.5}

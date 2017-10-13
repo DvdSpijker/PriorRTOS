@@ -1,0 +1,39 @@
+\section{\textit{LOG} API}
+
+
+\subsection{LOG\_ERROR\_NEWLINE}
+\label{func:LOGERRORNEWLINE}
+\begin{pdfunction}
+{LOG\_ERROR\_NEWLINE(message, ...) }
+{ 
+Logs an error message on a new line. A new line includes the 
+tag, function name and line number. }
+\end{pdfunction}
+
+\subsection{LOG\_ERROR\_APPEND}
+\label{func:LOGERRORAPPEND}
+\begin{pdfunction}
+{LOG\_ERROR\_APPEND(message, ...) }
+{ 
+Appends the error message to the current logging line. 
+appended message will NOT contain a timestamp, tag, function name 
+line number. }
+\end{pdfunction}
+
+\subsection{LOG\_DEBUG\_NEWLINE}
+\label{func:LOGDEBUGNEWLINE}
+\begin{pdfunction}
+{LOG\_DEBUG\_NEWLINE(message, ...) }
+{ 
+Logs a debug message on a new line. A new line includes the 
+tag, source and line number. }
+\end{pdfunction}
+
+\subsection{LOG\_DEBUG\_APPEND}
+\label{func:LOGDEBUGAPPEND}
+\begin{pdfunction}
+{LOG\_DEBUG\_APPEND(message, ...) }
+{ 
+Appends the debug message to the current logging line. 
+appended message will NOT contain a timestamp, tag, source and line number. }
+\end{pdfunction}

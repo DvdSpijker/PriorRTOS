@@ -1,0 +1,20 @@
+\ProvidesPackage{prodrive/package/pdappendix}
+\RequirePackage{titlesec}
+
+%After the \pdappendix command every chapter becomes an appendix
+%this command sets the Appendix chapter and section layout to the
+%Prodrive B.V. style (e.g add the word Appendix before the appendix chapter title)
+\newcommand* \pdappendix {
+	\appendix
+	
+	%Update layout of appendix chapter heading
+	\titleformat{\chapter}
+	{\LARGE\bf} 				% format
+	{Appendix \thechapter.}		% label
+	{3pt}						% horizontal separation between label and title body
+	{}							% before code
+	
+	%Update the figure and table naming to include appendix letter
+	\renewcommand{\thefigure}{\Alph{chapter}.\arabic{figure}}
+	\renewcommand{\thetable}{\Alph{chapter}.\arabic{table}}
+}

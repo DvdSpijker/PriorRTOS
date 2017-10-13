@@ -1,0 +1,14 @@
+\ProvidesPackage{prodrive/package/pdlandscape}
+\RequirePackage{pdflscape}
+
+\ExplSyntaxOn
+\NewDocumentEnvironment{pdlandscape}{}
+{
+	\begin{landscape}
+	\nolinenumbers % disable line numbers since they will be placed over the footer.
+}
+{
+	\end{landscape} % re-enable line numbers
+	\linenumbers
+}
+\ExplSyntaxOff

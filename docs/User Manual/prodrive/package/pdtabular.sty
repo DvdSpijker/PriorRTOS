@@ -1,0 +1,18 @@
+\ProvidesPackage{prodrive/package/pdtabular}
+\RequirePackage{prodrive/package/pdtable}
+
+% Prodrive tabular environment
+\newenvironment{pdtabular}[1]
+{%
+	\begingroup%
+	\setlength{\tabcolsep}{4pt}%
+	\fontsize{8pt}{8pt}\selectfont%
+	\renewcommand*{\arraystretch}{1.4}%
+	\begin{tabular}{!{\pdoutline} #1 !{\pdoutline}}%
+	\pdtoprule%
+}
+{%
+	\pdbottomrule%
+	\end{tabular}%
+	\endgroup%
+}

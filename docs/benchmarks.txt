@@ -1,0 +1,26 @@
+AVR8 @ 16 MHz
+OS @ 1 KHz
+
+TASK_EVENT_HANDLER_ENTER - 71.667 us
+TASK_EVENT_HANDLER_EXIT  - 73.333 us
+
+CPU load from tick: 23 %
+SchedulerCycle (4 tasks) - 178.5  us
+TimerupdateAll (1 timer) - 23.5   us
+
+
+
+AVR32 @ 24 MHz
+OS @ 1 KHz
+
+CPU load from tick: 9.2 % - 91.333 us
+
+
+AVR32 @ 48 MHz
+OS @ 1 KHz
+
+CPU load from tick: 5.25 % - 52.333 us
+
+
+
+

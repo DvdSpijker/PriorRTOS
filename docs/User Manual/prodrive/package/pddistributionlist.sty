@@ -1,0 +1,24 @@
+\ProvidesPackage{prodrive/package/pddistributionlist}
+\RequirePackage{prodrive/package/pdtabular}
+
+\newenvironment{pddistributionlist}[2]
+{
+	\begingroup
+	\let\clearpage\relax
+	\chapter*{Distribution list}
+	\endgroup
+	\begin{pdtabular}{l | #1}
+	\pdtablehead{Name & #2}
+}
+{
+	\end{pdtabular}
+}
+
+\newenvironment{pddistributionlist*}[2]
+{
+	\begin{pdtabular}{l | #1}
+	\pdtablehead{Name & #2}
+}
+{
+	\end{pdtabular}
+}

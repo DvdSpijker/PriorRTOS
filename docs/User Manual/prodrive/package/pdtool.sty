@@ -1,0 +1,15 @@
+\ProvidesPackage{prodrive/package/pdtool}
+
+% syntax: \ifequalstr{str1}{str2}{equal}{notequal}
+% determines if 'str1' is equal to 'str2', 
+% if so, 'equal' will be the output, otherwise 'notequal' will be the output.
+% \ifthen, \equal or similar commands are not used due to problems with 
+% unexpandable commands.
+\makeatletter
+\newcommand{\ifequalstr}[2]{%
+  \ifnum\pdfstrcmp{#1}{#2}=\z@
+    \expandafter\@firstoftwo
+  \else
+    \expandafter\@secondoftwo
+  \fi}
+\makeatother

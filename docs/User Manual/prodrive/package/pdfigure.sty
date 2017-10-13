@@ -1,0 +1,34 @@
+\ProvidesPackage{prodrive/package/pdfigure}
+\RequirePackage{caption}
+\RequirePackage{etoolbox}
+\RequirePackage{xparse}
+\RequirePackage{float}
+\RequirePackage{tikz}
+
+\usetikzlibrary{shapes,decorations,arrows,chains,positioning,calc} % Load tikz libraries
+
+\graphicspath{{figures/}}                                   % Set graphicspath to the subdir figures/
+\renewcommand{\thefigure}{\arabic{chapter}.\arabic{figure}} % Set figure caption style
+
+% define pdfigure environment
+\ExplSyntaxOn
+\NewDocumentEnvironment{pdfigure}{O{!ht} O{raggedright}}
+{
+	\begin{figure}[#1]
+	\captionsetup{format=plain, font=it, justification=#2, singlelinecheck=off, skip=6pt}
+	\ifstrequal{#2}{centering}{\centering}{}
+}
+{
+	\end{figure}
+}
+\ExplSyntaxOff
+
+%define pdincludegraphics command
+% When figures/#4.tikz exists use \input
+% Else use \includegraphics
+\newcommand*\pdincludegraphics[4][]
+{
+	\IfFileExists{figures/#4.tikz}{\input{figures/#4.tikz}}{\includegraphics[#1]{#4}}
+	\caption{#3}
+	\label{#2}
+}

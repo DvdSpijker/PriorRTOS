@@ -1,0 +1,23 @@
+\section{Description}
+
+\TODO{Cross-refs}
+
+Dynamic allocation in real-time systems is frowned upon by some programmers because it could introduce possible sources of instability like fragmentation, dangling pointers and memory leaks. Prior’s Memory Management module was designed to provide dynamic allocation while keeping the chances of said instabilities arising low.\\
+The OS heap is a statically allocated part of the RAM of fixed size \textit{CONFIG\_OS\_HEAP\_SIZE\_BYTES} to avoid collision with the stack and native heap, it also provides a better estimation of the software’s memory usage at compile time. The heap can be split into N pools, where N is defined by \textit{CONFIG\_N\_USER\_POOLS}. Each pool’s size is configured upon creation. The concept described above is depicted in \cref{fig:memlayout}.\\
+Furthermore, allocating memory in a pool using \hyperref[func:MmAlloc]{\textbf{MmAlloc}} has the following advantages:
+\begin{pditemize}
+\item It can be protected by padding and a pool-checksum. If an executing task using allocated memory overwrites any of the padding, it will be dispatched and disabled. The padding is repaired afterwards.
+\item It is guaranteed to be zeroed when initially allocated.
+\item It is guaranteed to be consecutive.
+\item It can be managed by pool operations allowing for sorting, de-fragmenting, formatting and moving.
+\end{pditemize}
+All API functions related to Memory Management are prefixed with \textit{Mm}.
+
+\begin{pdfigure}
+	\pdincludegraphics[scale=0.45]
+	{fig:memlayout}
+	{\texttt{}Memory layout}
+	{mem_layout}
+\end{pdfigure}
+
+\FloatBarrier

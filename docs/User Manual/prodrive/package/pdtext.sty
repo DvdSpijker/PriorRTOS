@@ -1,0 +1,15 @@
+\ProvidesPackage{prodrive/package/pdtext}
+\RequirePackage[normalem]{ulem}
+\RequirePackage{microtype} % better support for hyphenation in \texttt{}
+
+\makeatletter
+\newcommand*{\pdoverline}[1]{$\overline{\hbox{#1}}\m@th$}
+\makeatother
+
+\makeatletter
+\newcommand*{\pdunderline}[1]{\uline{#1}}
+\makeatother
+
+\newcommand{\pdst}[1]{\texorpdfstring{\st{#1}}{#1}}
+
+\newcommand{\pdstrikethrough}[1]{\pdst{#1}}

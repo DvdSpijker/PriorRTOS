@@ -1,0 +1,91 @@
+\ProvidesPackage{prodrive/package/pdtoc}
+\RequirePackage[titles]{tocloft}
+
+\newcommand\pdtableofcontents
+{%
+	\begingroup
+		% correct the spacing above the heading 'table of contents'
+		\titleformat{name=\chapter, numberless}
+		{\vspace{0.45cm}\Large\bf\filcenter} % \vspace was equal to 0.8cm
+		{}
+		{0pt}
+		{}
+		[\vspace{3pt}]
+		\tableofcontents
+	\endgroup
+	\newpage
+}
+
+\newcommand{\pdlistoffigures}
+{%
+	\begingroup
+		% correct the spacing above the heading 'list of figures'
+		\titleformat{name=\chapter, numberless}
+		{\vspace{0.52cm}\Large\bf\filcenter} % \vspace was equal to 0.8cm
+		{}
+		{0pt}
+		{}
+		[\vspace{3pt}]
+		\let\clearpage\relax
+		\listoffigures
+	\endgroup
+}
+
+\newcommand{\pdlistoftables}
+{%
+	\begingroup
+	\let\clearpage\relax
+	\listoftables
+	\endgroup
+}
+
+\newcommand{\pdlistoflistings}
+{%
+	\begingroup
+		% correct the spacing above the heading 'list of figures'
+		\titleformat{name=\chapter, numberless}
+		{\vspace{0.52cm}\Large\bf\filcenter} % \vspace was equal to 0.8cm
+		{}
+		{0pt}
+		{}
+		[\vspace{3pt}]
+		\renewcommand{\lstlistlistingname}{List of Listings}
+		\renewcommand\@dotsep{1}
+		\renewcommand*{\l@lstlisting}{\@dottedtocline{1}{1.5em}{3em}}
+		\let\clearpage\relax
+		\lstlistoflistings{}
+	\endgroup
+}
+
+%redefine the list of figures font
+\renewcommand{\cftfigfont}{\sc}
+
+%redefine the list of tables font
+\renewcommand{\cfttabfont}{\sc}
+
+%redefine the table of contents font
+%changing the chapter font to upper case breaks with package hyperref
+%therefore small caps was chosen instead
+\renewcommand{\cftchapfont}{\sc\bfseries}
+\renewcommand{\cftsecfont}{\sc}
+\renewcommand{\cftsubsecfont}{\sc\itshape}
+
+\setlength\cftfignumwidth{3em}
+\setlength\cfttabnumwidth{3em}
+\setlength\cftsecnumwidth{3em}
+\setlength\cftsubsecnumwidth{3em}
+\setlength\cftsubsubsecnumwidth{3em}
+
+\cftsetindents{chapter}{0em}{1.5em}
+\cftsetindents{section}{1.5em}{3em}
+\cftsetindents{subsection}{4.5em}{3em}
+
+%redefine the dot distance
+\renewcommand{\cftfigdotsep}{1.0}
+\renewcommand{\cfttabdotsep}{1.0}
+\renewcommand{\cftchapdotsep}{1.0}
+\renewcommand{\cftsecdotsep}{1.0}
+\renewcommand{\cftsubsecdotsep}{1.0}
+\renewcommand{\cftsubsubsecdotsep}{1.0}
+\renewcommand{\cftfigleader}{\cftdotfill{\cftfigdotsep}}
+\renewcommand{\cfttableader}{\cftdotfill{\cfttabdotsep}}

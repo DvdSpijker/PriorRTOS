@@ -1,0 +1,29 @@
+\ProvidesPackage{prodrive/package/pdlongtable}
+\RequirePackage{prodrive/package/pdtool}
+\RequirePackage{etoolbox}
+\RequirePackage{ifthen}
+\RequirePackage{longtable}
+
+% define pdlongtable environment
+\newenvironment{pdlongtable}[4]
+{
+	\begingroup
+	\ifequalstr{#4}{centering}
+		{\centering}
+		{\setlength{\LTleft}{0pt}} %set left space to zero for longtable, otherwise longtable will be centered.
+	
+	\setlength{\tabcolsep}{4pt}%
+	\fontsize{8pt}{8pt}\selectfont%
+	\renewcommand*{\arraystretch}{1.4}%
+	\begin{longtable}[b]{!{\pdoutline} #1 !{\pdoutline}}
+	\ifequalstr{centering}{#4}
+		{\captionsetup{format=plain, font=it, justification=centering, singlelinecheck=off, skip=6pt}}
+		{\captionsetup{format=plain, font=it, justification=raggedright, singlelinecheck=off, skip=6pt}}
+	\caption{#3}\label{#2}\\
+	\specialrule{1.5pt}{0pt}{0pt}
+}
+{
+	\specialrule{1.1pt}{0pt}{0pt} %1.5pt - 0.4pt (\pdtablerow) = 1.1pt
+	\end{longtable}
+	\endgroup
+}

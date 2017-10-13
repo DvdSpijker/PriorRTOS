@@ -1,0 +1,16 @@
+\chapter{Scheduling policy}
+Tasks in a system typically have different timing requirements. This has been reflected on the scheduling policies and the way of assingning priorities to tasks. 
+Four categories were implemented that indicate the major priority level of each task, indicating its timing requirements; realtime, high, medium, low. More information on the task categories can be found in \cref{tbl:taskcats}. Each priority category has 5 minor priority levels ranging from 1 through 5, where 5 is the highest priority within its respective category. 
+
+\begin{pdtable}{tbl:taskcats}{Task categories}
+\begin{pdtabular}{c|p{10cm}}
+	\pdtablehead{\textbf{Category} & \textbf{Description}}
+	\pdtablerow{OS(5) & Restricted category only to be used by the kernel.}
+	\pdtablerow{Real-Time(4) & Tasks in this category have to make their deadline and are essential to their system. The maximum amount of time allowed between activation and execution is defined in its deadline. 
+	Real-Time tasks are scheduled using a policy that consists of Shortest Deadline First (SDF) combined with
+	its minor priority level. }
+	\pdtablerow{High (3) & High priority tasks are still very important to their system, but missing a deadline would not result in critical errors. }
+	\pdtablerow{Medium (2) & Medium priority tasks are less important to the stability of their system and are allowed to miss their deadline. The time between the deadline and the actual execution are minimized by the scheduler.}
+	\pdtablerow{Low (1) & Low priority tasks are the least important to their system. Tasks in this category are allowed to miss their deadline to allow higher priority tasks to execute. }
+\end{pdtabular}
+\end{pdtable}

@@ -1,0 +1,30 @@
+\chapter{Abbreviations and definitions}
+
+
+This chapter describes the used abbreviations and convention definitions throughout this document.
+
+\section{Abbreviations}
+
+\begin{tabularx}{\textwidth}{lX}
+	API & Application Programming Interface\\
+	CLI & Command Line Interface\\
+	ID & Identity\\
+	OS & Operating System\\
+	RTOS & Real-Time Operating System\\
+	UART & Universal Asynchronous Receiver Transmitter\\
+\end{tabularx}%
+
+\section{Definitions}
+
+\begin{tabularx}{\textwidth}{p{3cm}X}
+	`\textit{a}'             & Numeric binary notation (\textit{a} can be multiple 0s or 1s). E.g. `\texttt{010}' is a 3-bit value representing the binary number two. This kind of notation implies a specific bit length.\\
+	`\textit{aa.aaaa}'       & Numeric binary notation with `.' separations for clear reading of long binary numbers.\\
+	0x\textit{a}             & Numeric hexadecimal notation (\textit{a} can be a digit 0 through 9, A through F). E.g. `\texttt{0x1A}' is hexadecimal number twenty-six. This kind of notation does not directly imply a bit length.\\
+	0x\textit{aa.aaaa}       & Numeric hexadecimal notation with '.' separations for clear reading of long hexadecimal numbers.\\
+	\textit{a}d              & Numeric (explicit) decimal notation. This kind of notation does not directly imply a bit length.\\
+	X[b:a]                   & Vector notation for vector X with bit range b downto a (little endian notation).\\ 
+	\\
+	\textit{Type}			& References to types, macros, fields that are used throughout the OS.\\
+	\\
+	\textbf{SomeFunction}   & Function is a part of the Prior RTOS API.\\
+\end{tabularx}%

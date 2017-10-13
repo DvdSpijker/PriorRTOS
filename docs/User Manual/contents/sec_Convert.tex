@@ -1,0 +1,72 @@
+\section{\textit{Convert} API}
+
+\subsection{ConvertUsToMs}
+\label{func:ConvertUsToMs}
+\begin{pdfunction}
+{ConvertUsToMs(U32\_t us) }
+{ 
+Convert microseconds (us) to milliseconds (ms). }
+\pdfunctionargin{(U32_t) us}{ Value in microseconds. }
+\pdfunctionreturn{(U32_t) }{Value in milliseconds. }{0}{Operation failed. }
+\pdfunctionreturn{(U32_t) }{Value in milliseconds. }{Other}{Valid value. }
+\end{pdfunction}
+
+\subsection{ConvertMsToUs}
+\label{func:ConvertMsToUs}
+\begin{pdfunction}
+{ConvertMsToUs(U32\_t ms) }
+{ 
+Convert milliseconds (ms) to microseconds (us). }
+\pdfunctionargin{(U32_t) ms}{ Value in milliseconds. }
+\pdfunctionreturn{(U32_t) }{Value in microseconds. }{0}{Operation failed. }
+\pdfunctionreturn{(U32_t) }{Value in microseconds. }{Other}{Valid value. }
+\end{pdfunction}
+
+\subsection{ConvertResultToString}
+\label{func:ConvertResultToString}
+\begin{pdfunction}
+{ConvertResultToString(OsResult\_t result,  char out\_result\_str) }
+{ 
+Converts a result of type OsResult\_t to a null-terminated 
+string.}
+\pdfunctionargin{(OsResult_t) result}{ Result to convert. }
+\pdfunctionreturn{(U8_t) }{number of characters (excluding null }{0}{Operation failed. }
+\pdfunctionreturn{(U8_t) }{number of characters (excluding null }{Other}{Valid number of characters. }
+\end{pdfunction}
+
+\subsection{ConvertIntToString}
+\label{func:ConvertIntToString}
+\begin{pdfunction}
+{ConvertIntToString(U32\_t integer, char out\_int\_str) }
+{ 
+Converts a integer value to a null-terminated string. }
+\pdfunctionargin{(U32_t) integer}{ Integer value. }
+\pdfunctionreturn{(U8_t) }{number of characters (excluding null }{0}{Operation failed. }
+\pdfunctionreturn{(U8_t) }{number of characters (excluding null }{Other}{Valid number of characters. }
+\end{pdfunction}
+
+\subsection{ConvertIntToBytes}
+\label{func:ConvertIntToBytes}
+\begin{pdfunction}
+{ConvertIntToBytes(U32\_t integer, U8\_t num\_bytes,  U8\_t out\_bytes) }
+{ 
+Convert an integer value into separate bytes. This allows 
+easy splitting of for instance 32-bits value into 4 bytes. 
+bytes will be stored with the LSB at 0. }
+\pdfunctionargin{(U32_t) integer}{ Integer value. }
+\pdfunctionargin{(U8_t)num_bytes}{ Number of bytes present in the integer value. 1-4. }
+\pdfunctionreturn{(U8_t) }{result. }{0}{Number of bytes has an illegal value i.e. 0 or >4. }
+\pdfunctionreturn{(U8_t) }{result. }{1}{Operation successful. }
+\end{pdfunction}
+
+\subsection{ConvertOsVersionToString}
+\label{func:ConvertOsVersionToString}
+\begin{pdfunction}
+{ConvertOsVersionToString(OsVer\_t os\_version,  char out\_os\_version\_str) }
+{ 
+Converts OS version to a null-terminated string in the following 
+V<M>.<m>.<u> Major, minor, update. }
+\pdfunctionargin{(OsVer_t) os_version}{ OS Version to convert. }
+\pdfunctionreturn{(U8_t) }{number of characters (excluding null }{0}{Operation failed. }
+\pdfunctionreturn{(U8_t) }{number of characters (excluding null }{Other}{Valid number of characters. }
+\end{pdfunction}
