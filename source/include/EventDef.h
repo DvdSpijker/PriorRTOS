@@ -42,6 +42,7 @@
 extern "C" {
 #endif
 
+
 /* Event types. */
 #define    EVENT_TYPE_CREATE        0x00010000
 #define    EVENT_TYPE_DELETE        0x00020000
@@ -49,12 +50,6 @@ extern "C" {
 #define    EVENT_TYPE_STATE_CHANGE  0x00040000
 #define    EVENT_TYPE_EXCEPTION     0x00050000
 #define    EVENT_TYPE_SIGNAL        0x00060000
-
-/* Public Event flags. */
-#define    EVENT_FLAG_NONE          0x00
-#define    EVENT_FLAG_PERMANENT     0x01
-#define    EVENT_FLAG_TRIGGER       0x02
-#define    EVENT_FLAG_NO_HANDLER    0x04
 
 #ifdef __cplusplus
 }

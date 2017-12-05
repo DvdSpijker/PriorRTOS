@@ -89,21 +89,28 @@ typedef enum {
     TASK_CAT_LOW        = 0x00  /* Scheduled according to a Shortest Job First policy. */
 } TaskCat_t;
 
-#define TASK_PARAM_NONE         0x00
-#define TASK_PARAM_INSTANT_WAKE 0x01 /* This task is woken instantly and placed in the execution queue. */
+#define TASK_PARAM_NONE         0x00 /* This task has no parameters. */
+#define TASK_PARAM_START        0x01 /* This task is promoted to the active state after creation. */
 #define TASK_PARAM_ESSENTIAL    0x02 /* This task is essential, when it fails the system fails. System failure exception is raised. */
 #define TASK_PARAM_TIMESLICED   0x04 /* This task has a configurable time slice that can be set using TaskTimeSliceSet. */
 #define TASK_PARAM_NO_PREEM     0x08 /* Locks the scheduler by default when this task is executing. */
 
 
 /* Task Event macros */
+#ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
 #define TASK_EVENT_CREATE         EVENT_TYPE_CREATE
 #define TASK_EVENT_DELETE         EVENT_TYPE_DELETE
+#endif
+
+#ifdef PRTOS_CONFIG_USE_EVENT_TASK_YIELD_SUSPEND
+#define TASK_EVENT_YIELD_SUSPEND  (EVENT_TYPE_STATE_CHANGE | 0x00003000)
+#endif
+
+#ifdef PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
 #define TASK_EVENT_EXECUTE        (EVENT_TYPE_STATE_CHANGE | 0x00001000)
 #define TASK_EVENT_EXIT           (EVENT_TYPE_STATE_CHANGE | 0x00002000)
-#define TASK_EVENT_YIELD_SUSPEND  (EVENT_TYPE_STATE_CHANGE | 0x00003000)
-#define TASK_EVENT_TERMINATE      (EVENT_TYPE_STATE_CHANGE | 0x00004000)
-#define TASK_EVENT_DISABLE        (EVENT_TYPE_STATE_CHANGE | 0x00005000)
+#define TASK_EVENT_DISABLE        (EVENT_TYPE_STATE_CHANGE | 0x00003000)
+#endif
 
 /******************************************************************************
  * @func: Id_t TaskCreate(Task_t handler, TaskCat_t category,
@@ -205,44 +212,6 @@ Prio_t TaskPriorityGet(Id_t task_id);
 
 
 /******************************************************************************
- * @func: Id_t TaskCategorySet(Id_t task_id, TaskCat_t new_cat)
- *
- * @desc: Assigns a new category to the task.
- *
- * Arguments:
- * @argin: (Id_t) task_id; Task ID. INVALID_ID = Running task ID.
- * @argin: (TaskCat_t) new_cat; New Task category: TASK_CAT_LOW, TASK_CAT_MEDIUM,
- *                               TASK_CAT_HIGH, TASK_CAT_REALTIME.
- *
- * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if operation was successful.
- * @retval:   OS_OUT_OF_BOUNDS; if new_cat is not a member of TaskCat_t.
- * @retval:   OS_ERROR; if the task was not found in any of the lists.
- * @retval:   OS_RESTRICTED; if the OS category was assigned in user-mode.
- ******************************************************************************/
-OsResult_t TaskCategorySet(Id_t task_id, TaskCat_t new_cat);
-
-
-
-/******************************************************************************
- * @func: TaskCat_t TaskCategoryGet(Id_t task_id)
- *
- * @desc: Returns the task's category.
- *
- * Arguments:
- * @argin: (Id_t) task_id; Task ID. INVALID_ID = Running task ID.
- *
- * @rettype:  (TskCat_t) task category
- * @retval:   TASK_CAT_REALTIME;
- * @retval:   TASK_CAT_HIGH;
- * @retval:   TASK_CAT_MEDIUM;
- * @retval:   TASK_CAT_LOW;
- ******************************************************************************/
-TaskCat_t TaskCategoryGet(Id_t task_id);
-
-
-
-/******************************************************************************
  * @func: TaskState_t TaskStateGet(Id_t task_id)
  *
  * @desc: Returns the task's current state.
@@ -257,65 +226,70 @@ TaskState_t TaskStateGet(Id_t task_id);
 
 
 /******************************************************************************
- * @func: U32_t TaskRuntimeGet(Id_t task_id)
+ * @func: U32_t TaskRunTimeGet()
  *
- * @desc: Returns the task's average runtime in microseconds.
- *
- * Arguments:
- * @argin: (Id_t) task_id; Task ID. INVALID_ID = Running task ID.
+ * @desc: Returns the current task's runtime (since last task switch) in microseconds. 
  *
  * @rettype:  (U32_t) task runtime in us.
  * @retval:   0; if the task could not be found.
  * @retval:   Other; if valid.
  ******************************************************************************/
-U32_t TaskRuntimeGet(Id_t task_id);
+U32_t TaskRunTimeGet(void);
 
 
 /******************************************************************************
- * @func: Id_t TaskIdGet(void)
+ * @func: OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg)
  *
- * @desc: Returns the ID of the current running task.
- *
- * @rettype:  (Id_t) Task ID
- * @retval:   INVALID_ID; error occurred.
- * @retval:   Other; valid Task ID.
- ******************************************************************************/
-Id_t TaskIdGet(void);
-
-
-/******************************************************************************
- * @func: OsResult_t TaskWake(Id_t task_id)
- *
- * @desc: Wakes a task, promoting it to the Active state and
- * making it available for scheduling.
- * The specified arguments will be passed to the task upon execution.
+ * @desc: Resumes the task and passes a value argument to it.
+ * The value argument will be passed to the task upon execution.
  *
  * NOTE 1:  This does NOT work when the task is disabled (TASK_STATE_DISABLED).
  * NOTE 2:  If task v_arg is unused, pass 0.
- * NOTE 3:  A task CANNOT notify itself
+ * NOTE 3:  A task CANNOT resume itself.
  *
  * Arguments:
  * @argin: (Id_t) task_id; Task ID.
  * @argin: (U32_t) v_arg; Task Value argument.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the task was activated.
+ * @retval:   OS_OK; if the task was resumed.
  * @retval:   OS_ERROR; if the task could not be found.
  ******************************************************************************/
-OsResult_t TaskWake(Id_t task_id, U32_t v_arg);
+OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg);
+
+/******************************************************************************
+ * @func: OsResult_t TaskResume(Id_t task_id)
+ *
+ * @desc: Resumes the task.
+ *
+ * NOTE 1:  This does NOT work when the task is disabled (TASK_STATE_DISABLED).
+ * NOTE 2:  A task CANNOT resume itself
+ *
+ * Arguments:
+ * @argin: (Id_t) task_id; Task ID.
+ *
+ * @rettype:  (OsResult_t) sys call result
+ * @retval:   OS_OK; if the task was resumed.
+ * @retval:   OS_ERROR; if the task could not be found.
+ ******************************************************************************/
+OsResult_t TaskResume(Id_t task_id);
 
 
 /* Pre-emptive only. Not ready to use. */
-
 #ifdef PRTOS_CONFIG_USE_SCHEDULER_PREEM
 
 OsResult_t TaskSuspend(Id_t task_id);
 
+void TaskSuspendSelf(void);
+
 void TaskSuspendAll(void);
 
-void TaskResume(Id_t task_id);
-
 void TaskResumeAll(void);
+
+#else
+
+#define TaskSuspendSelf()   \
+return;                     \
 
 #endif
 
@@ -339,84 +313,74 @@ void TaskResumeAll(void);
 OsResult_t TaskSleep(U32_t t_ms);
 
 
-/******************************************************************************
- * @func: TASK_YIELD()
- *
- * @desc: Task yields execution volentarily.
- *
- * @rettype: N/A
- ******************************************************************************/
-#define TASK_YIELD() \
-return;              \
-
+Id_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms);
+OsResult_t TaskPollRemove(Id_t object_id, U32_t event);
 
 /******************************************************************************
- * @func: OsResult_t TaskPoll(Id_t object_id, U32_t event, U8_t flags,
- *                                  U32_t timeout_ms, Id_t *out_event_id)
+ * @func: OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll)
  *
- * @desc: Subscribes the task to the specified event published by the
+ * @desc: The task will poll for the event emitted by the
  * specified object in a NON-BLOCKING fashion.
- * When this event occurs the task will receive it and, depending on the
- * event flags passed, be activated.
- * If the event does not occur within the specified time, the event subscription
+ * When this event occurs the task will be activated.
+ * If the event does not occur within the specified time, the event
  * times out and the task will be activated to handle the timeout.
  *
  * Arguments:
  * @argin: (Id_t) object_id; ID of the event generating object. If INVALID_ID
- *                            the task will be subscribed to all.
- * @argin: (U32_t) event; Event to subscribe to.
- * @argin: (U8_t) flags; Flags to be set, use EVENT_FLAG_ macros.
- * @argin: (U32_t) timeout_ms; Event timeout in milliseconds. If 0 is passed,
- *                              the task will wait indefinitely.
- * @argout: (Id_t) *out_event_id; Contains the unique event ID when the sys call
- *                                returns. This ID is used in the TASK_EVENT_HANDLE
- *                                blocks.
+ *                            the task will be listened to all.
+ * @argin: (U32_t) event; Event to listen to.
+ * @argin: (U32_t) timeout_ms; Event timeout in milliseconds. If OS_TIMEOUT_INFINITE
+ *                              is passed, the task will wait indefinitely.                            
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the subscription was successful.
+ * @retval:   OS_POLL; if the event is being polled.
+ * @retval:   OS_EVENT; if the polled event has occurred.
+ * @retval:   OS_TIMEOUT; if the timeout expired.
+ * @retval:   OS_FAIL; if the task is not polling the event (and !add_poll).
  * @retval:   OS_ERROR; if an error occurred.
  ******************************************************************************/
-OsResult_t TaskPoll(Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *out_event_id);
+OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll);
 
 
 /******************************************************************************
- * @func: OsResult_t TaskWait(Id_t object_id, U32_t event, U8_t flags,
- *                                  U32_t timeout_ms, Id_t *out_event_id)
+ * @func: OsResult_t TaskWait(Id_t object_id, U32_t event, U32_t timeout_ms)
  *
- * @desc: Subscribes the task to the specified event published by the
+ * @desc: Listens the task to the specified event emitted by the
  * specified object in a BLOCKING fashion.
- * When this event occurs the task will receive it and, depending on the
- * event flags passed, be activated.
+ * When this event occurs the task will be activated.
  * If the event does not occur within the specified time, the event subscription
  * times out and the task will be activated to handle the timeout.
  *
  * Arguments:
  * @argin: (Id_t) object_id; ID of the event generating object. If INVALID_ID
- *                            the task will be subscribed to all.
- * @argin: (U32_t) event; Event to subscribe to.
- * @argin: (U8_t) flags; Flags to be set, use EVENT_FLAG_ macros.
+ *                            the task will be listened to all.
+ * @argin: (U32_t) event; Event to listen to.
  * @argin: (U32_t) timeout_ms; Event timeout in milliseconds. If 0 is passed,
  *                              the task will wait indefinitely.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the event has occurred.
+ * @retval:   OS_EVENT; if the event has occurred.
  * @retval:   OS_TIMEOUT; if the timeout expired.
  * @retval:   OS_ERROR; if an error occurred.
  ******************************************************************************/
-OsResult_t TaskWait(Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms);
+OsResult_t TaskWait(Id_t object_id, U32_t event, U32_t timeout_ms);
 
-/* TaskEventStateGet and TaskEventHandle are not part of the API, they
- * are only used by the macros defined below. */
-
-/* -3 Event does not exist.
- * -2 No events in task event list.
- * -1 Event has not occurred.
- * 0  Event has occurred.
- * 1  Event has timed out */
-S8_t TaskEventStateGet(Id_t event_id);
-
-S8_t TaskEventHandle(Id_t event_id);
-
+/******************************************************************************
+ * @func: OsResult_t TaskJoin(Id_t task_id)
+ *
+ * @desc: The calling task will wait/poll for the specified task to be deleted.
+ * Calling task will only wait/poll until the timeout.
+ *
+ * Arguments:
+ * @argin: (Id_t) task_id; Task ID to join with.
+ * @argin: (U32_t) timeout; Amount of time to wait/poll.
+ *
+ * @rettype:  (OsResult_t) sys call result
+ * @retval:   OS_EVENT; if the event has occurred.
+ * @retval:   OS_TIMEOUT; if the timeout expired.
+ * @retval:   OS_ERROR; if the task could not be found.
+ ******************************************************************************/
+OsResult_t TaskJoin(Id_t task_id, U32_t timeout);
 
 /******************************************************************************
  * @func: TASK_INIT_BEGIN()
@@ -434,7 +398,6 @@ S8_t TaskEventHandle(Id_t event_id);
  ******************************************************************************/
 #define TASK_INIT_BEGIN()               \
 static U8_t init_done = 0;              \
-static U8_t handler_enter_cnt = 0;      \
 if(init_done == 0) {                    \
 
 
@@ -454,81 +417,8 @@ if(init_done == 0) {                    \
  * @rettype: N/A
  ******************************************************************************/
 #define TASK_INIT_END()                \
-    init_done = 1;                      \
-}                                       \
-
-
-
-/******************************************************************************
- * @func: TASK_EVENT_HANDLER_BEGIN(event_id)
- *
- * @desc: User code between _BEGIN and _END will be executed when the
- * specified event has occurred (and the task is subscribed to said event).
- *
- * Arguments:
- * @argin: (Id_t) event_id; ID of the event to handle.
- *
- * @rettype: N/A
- ******************************************************************************/
-#define TASK_EVENT_HANDLER_BEGIN(event_id)          \
-if(handler_enter_cnt == 0) {                        \
-    if(TaskEventStateGet((Id_t)event_id) == 0) {    \
-        TaskEventHandle((Id_t)event_id);            \
-        handler_enter_cnt++;                        \
-
-
-/******************************************************************************
- * @func: TASK_EVENT_HANDLER_END()
- *
- * @desc: Indicates the end of the TASK_EVENT_HANDLER block. To be called in
- * combination with TASK_EVENT_HANDLER_BEGIN().
- *
- * Arguments:
- * N/A
- *
- * @rettype: N/A
- ******************************************************************************/
-#define TASK_EVENT_HANDLER_END()                    \
-}                                                   \
-if(handler_enter_cnt == 1) {                        \
-    handler_enter_cnt--;                            \
-} }                                                 \
-
-
-/******************************************************************************
- * @func: TASK_EVENT_HANDLER_TIMEOUT_BEGIN(event_id)
- *
- * @desc: User code between _BEGIN and _END will be executed when the
- * specified event has timed-out (and the task is subscribed to said event).
- *
- * Arguments:
- * @argin: (Id_t) event_id; ID of the event to handle.
- *
- * @rettype: N/A
- ******************************************************************************/
-#define TASK_EVENT_HANDLER_TIMEOUT_BEGIN(event_id)  \
-if(handler_enter_cnt == 0) {                        \
-    if(TaskEventStateGet((Id_t)event_id) == 1) {    \
-        TaskEventHandle((Id_t)event_id);            \
-        handler_enter_cnt++;                        \
-
-
-/******************************************************************************
- * @func: TASK_EVENT_HANDLER_TIMEOUT_END()
- *
- * @desc:Indicates the end of the TASK_EVENT_HANDLER_TIMEOUT block. To be
- * called in combination with TASK_EVENT_HANDLER_TIMEOUT_BEGIN().
- *
- * Arguments:
- * N/A
- *
- * @rettype: N/A
- ******************************************************************************/
-#define TASK_EVENT_HANDLER_TIMEOUT_END()       \
-}                                                   \
-if(handler_enter_cnt == 1) {                        \
-    handler_enter_cnt--;                            \
-} }                                                 \
+    init_done = 1;                     \
+}                                      \
 
 
 #if PRTOS_CONFIG_ENABLE_TASKNAMES>0

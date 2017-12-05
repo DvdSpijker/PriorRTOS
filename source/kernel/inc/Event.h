@@ -46,12 +46,13 @@ extern "C" {
 #include <EventDef.h>
 
 /* Private Event flags. */
-#define    EVENT_FLAG_PERIODIC      0x08 /* When flag is set: Event is expected to occur periodically. */
-#define    EVENT_FLAG_ADDRESSED     0x10
-#define    EVENT_FLAG_NO_TIMEOUT    0x20
-
-#define    EVENT_FLAG_TIMED_OUT     0x40
-#define    EVENT_FLAG_OCCURRED      0x80
+#define     EVENT_FLAG_NONE          0x00
+#define     EVENT_FLAG_NO_HANDLER    0x80
+#define     EVENT_FLAG_PERMANENT     0x40
+#define     EVENT_FLAG_NO_TIMEOUT    0x20
+#define     EVENT_FLAG_ADDRESSED     0x10
+#define     EVENT_FLAG_TIMED_OUT     0x08
+#define     EVENT_FLAG_OCCURRED      0x04
 
 
 /* Extraction macro-expansions. */
@@ -84,16 +85,18 @@ OsResult_t  EventInit(void);
 OsResult_t  EventDestroy(LinkedList_t *list, pEvent_t event);
 OsResult_t  EventListDestroy(LinkedList_t *list);
 ListSize_t  EventListSizeGet(LinkedList_t *event_list);
+pEvent_t    EventListContainsEvent(LinkedList_t *event_list, Id_t source_id, U32_t event_code);
 
 OsResult_t  EventAddToList(LinkedList_t *event_list, pEvent_t event);
-OsResult_t  EventSubscribe(LinkedList_t *task_event_list, Id_t object_id, U32_t event_code, U8_t flags, U32_t life_time_us, Id_t *out_event_id);
-OsResult_t  EventPublish(Id_t source_id, U32_t event_code, U8_t flags);
+OsResult_t  EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t event_code, U8_t flags, U32_t life_time_us, Id_t *out_event_id);
+OsResult_t  EventEmit(Id_t source_id, U32_t event_code, U8_t flags);
 
 S8_t        EventLifeTimeIncrement(pEvent_t event, U32_t t_us);
 void        EventLifeTimeReset(pEvent_t event);
 S8_t        EventOccurrenceCountIncrement(pEvent_t event);
 void        EventOccurrenceCountReset(pEvent_t event);
 
+void        EventHandle(pEvent_t event);
 pEvent_t    EventHandleFromId(LinkedList_t *list, Id_t event_id);
 pEvent_t    EventHandleFifo(LinkedList_t *list);
 pEvent_t    EventFromId(LinkedList_t *list, Id_t event_id);

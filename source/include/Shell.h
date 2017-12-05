@@ -114,6 +114,7 @@ U16_t ShellPutRaw(char *message, ...);
  ******************************************************************************/
 U16_t ShellPutRawNewline(char *message, ...);
 
+struct ShellCommand *ShellCommandFromName(char *name);
 
 
 #ifdef __cplusplus

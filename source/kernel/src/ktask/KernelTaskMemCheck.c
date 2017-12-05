@@ -16,6 +16,9 @@
 
 void KernelTaskMemCheck(const void *p_arg, U32_t v_arg)
 {
+    OS_ARG_UNUSED(p_arg);
+    OS_ARG_UNUSED(v_arg);
+    
     /* Check memory integrity of all pools. */
     /* Check memory integrity of all stacks. */
     /* If integrity is breached, throw exception. */

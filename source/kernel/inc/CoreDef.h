@@ -23,17 +23,17 @@ typedef enum {
     CORE_FLAG_EXCEPTION  =0x0020,
 } CoreFlags_t;
 
-void CoreFlagSet(CoreFlags_t flag);
-void CoreFlagClear(CoreFlags_t flag);
-U16_t CoreFlagGet(CoreFlags_t flag);
+void KCoreFlagSet(CoreFlags_t flag);
+void KCoreFlagClear(CoreFlags_t flag);
+U16_t KCoreFlagGet(CoreFlags_t flag);
 
-U8_t CoreKernelModeEnter(void);
-U8_t CoreKernelModeExit(void);
+U8_t KCoreKernelModeEnter(void);
+U8_t KCoreKernelModeExit(void);
 
 
-/* Wraps MmAllocDynamic to allocate objects. */
-void *CoreObjectAlloc(U32_t obj_size, U32_t obj_data_size, void **obj_data);
-OsResult_t CoreObjectFree(void **obj, void **obj_data);
+/* Wraps MemAllocDynamic to allocate objects. */
+void *KCoreObjectAlloc(U32_t obj_size, U32_t obj_data_size, void **obj_data);
+OsResult_t KCoreObjectFree(void **obj, void **obj_data);
 
 #ifdef __cplusplus
 }

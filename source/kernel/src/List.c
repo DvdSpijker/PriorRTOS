@@ -8,7 +8,7 @@
 
 #include "../inc/List.h"
 #include <Convert.h>
-
+#include <Logger.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -42,31 +42,29 @@ extern void OsCritSectBegin(void);
 extern void OsCritSectEnd(void);
 
 /* Internal functions. */
-static void ListIdBufferInit(LinkedList_t *list, IdType_t id_type, Id_t *id_buffer, U8_t id_buffer_size);
-static U8_t ListIdBufferSlotGet(Id_t *id_buffer, U8_t id_buffer_size, U8_t slot_type);
-static Id_t ListIdBufferFreeIdGet(LinkedList_t *list);
-static void ListIdBufferFreeIdAdd(LinkedList_t *list, Id_t id);
+static void IListIdInit(LinkedList_t *list, IdType_t id_type);
+static Id_t IListIdGet(LinkedList_t *list);
 
 static OsResult_t UtilLock(volatile U8_t *lock, U8_t mode);
-static OsResult_t UtilUnlock(volatile U8_t *lock, U8_t mode);
+static OsResult_t UtilUnlock(volatile U8_t *lock);
 
 /* List Public API. */
 
 
 
-void ListInit(LinkedList_t *list, IdType_t id_type, Id_t *id_buffer, U8_t id_buffer_size)
+void ListInit(LinkedList_t *list, IdType_t id_type)
 {
     list->head = list->tail = NULL;
     list->lock = 0;
     list->size = 0;
     list->sorted = false;
-    list->id_cap_reached =  false;
+    list->id_rollover =  false;
 
 #ifdef PRTOS_CONFIG_USE_SORTED_LISTS
     list->middle = NULL;
 #endif
 
-    ListIdBufferInit(list, id_type, id_buffer, id_buffer_size);
+    IListIdInit(list, id_type);
 }
 
 OsResult_t ListDestroy(LinkedList_t *list)
@@ -95,7 +93,7 @@ OsResult_t ListDestroy(LinkedList_t *list)
 
     ListLock(list, LIST_LOCK_MODE_WRITE);
     list->head = list->tail = NULL;
-    list->last_id = 0;
+    list->free_id = 0;
     list->id_type = 0;
     list->size = 0;
 
@@ -118,16 +116,16 @@ OsResult_t ListLock(LinkedList_t *list, U8_t mode)
     return result;
 }
 
-OsResult_t ListUnlock(LinkedList_t *list, U8_t mode)
+OsResult_t ListUnlock(LinkedList_t *list)
 {
     if(list == NULL) {
         return OS_NULL_POINTER;
     }
-    OsResult_t result = UtilUnlock(&list->lock, mode);
+    OsResult_t result = UtilUnlock(&list->lock);
     /* TODO: Catch OS_LOCKED case and wait for it to unlock. */
 
     if(result != OS_OK) {
-        LOG_ERROR_NEWLINE("Failed to unlock list %p in %s mode. Lock val: 0x%02x", list, (mode == 0 ? "READ" : "WRITE"), list->lock);
+        LOG_ERROR_NEWLINE("Failed to unlock list %p in %s mode. Lock val: 0x%02x", list, (LOCK_MODE_IS_READ(list->lock) ? "READ" : "WRITE"), list->lock);
     }
 
     return result;
@@ -143,7 +141,7 @@ ListSize_t ListSizeGet(LinkedList_t *list)
     ListSize_t size  = 0;
     if(ListLock(list, LIST_LOCK_MODE_READ) == OS_OK) {
         size = list->size;
-        ListUnlock(list, LIST_LOCK_MODE_READ);
+        ListUnlock(list);
     }
     return (size);
 }
@@ -164,7 +162,7 @@ OsResult_t ListMerge(LinkedList_t *list_x, LinkedList_t *list_y)
     if(result == OS_OK) {
         result = ListLock(list_y, LIST_LOCK_MODE_WRITE);
         if(result != OS_OK) {
-            ListUnlock(list_x, LIST_LOCK_MODE_WRITE);
+            ListUnlock(list_x);
             return result;
         }
     } else {
@@ -183,8 +181,8 @@ OsResult_t ListMerge(LinkedList_t *list_x, LinkedList_t *list_y)
     list_y->tail = list_x->tail;
     list_y->size += list_x->size;
 
-    ListUnlock(list_x, LIST_LOCK_MODE_WRITE);
-    ListUnlock(list_y, LIST_LOCK_MODE_WRITE);
+    ListUnlock(list_x);
+    ListUnlock(list_y);
 
     result = ListDestroy(list_x);
 
@@ -205,12 +203,12 @@ ListNode_t *ListSearchLinear(LinkedList_t *list, Id_t id)
         LIST_ITERATOR_BEGIN(&it, list, LIST_ITERATOR_DIRECTION_FORWARD);
         {
             if (it.current_node->id == id) {
-                ListUnlock(list, LIST_LOCK_MODE_READ);
+                ListUnlock(list);
                 return it.current_node;
             }
         }
         LIST_ITERATOR_END(&it);
-        ListUnlock(list, LIST_LOCK_MODE_READ);
+        ListUnlock(list);
     }
     // LOG_DEBUG_NEWLINE("Search it: %u", cnt);
     return NULL;
@@ -234,7 +232,7 @@ ListNode_t *ListSearch(LinkedList_t *list, Id_t id)
 #endif
         LIST_ITERATOR_BEGIN(&it, list, search_dir) {
             if (it.current_node->id == id) {
-                ListUnlock(list, LIST_LOCK_MODE_READ);
+                ListUnlock(list);
                 return it.current_node;
             }
 #ifdef PRTOS_CONFIG_USE_SORTED_LISTS
@@ -251,7 +249,7 @@ ListNode_t *ListSearch(LinkedList_t *list, Id_t id)
 #endif
         }
         LIST_ITERATOR_END(&it);
-        ListUnlock(list, LIST_LOCK_MODE_READ);
+        ListUnlock(list);
     }
     return NULL;
 }
@@ -267,15 +265,13 @@ OsResult_t ListNodeInit(ListNode_t *node, void *child)
     node->next_node = node->prev_node = NULL;
     node->child = child;
     node->lock = 0;
-    node->id = INVALID_ID;
+    node->id = OS_ID_INVALID;
     return OS_OK;
 }
 
 OsResult_t ListNodeDeinit(LinkedList_t *list, ListNode_t *node)
 {
     ListNode_t *rm_node = node;
-
-    ListIdBufferFreeIdAdd(list, rm_node->id);
 
     if((rm_node->next_node != NULL) || (rm_node->prev_node != NULL)) {
         rm_node = ListNodeRemove(list, rm_node);
@@ -299,13 +295,13 @@ OsResult_t ListNodeLock(ListNode_t *node, U8_t mode)
     return result;
 }
 
-OsResult_t ListNodeUnlock(ListNode_t *node, U8_t mode)
+OsResult_t ListNodeUnlock(ListNode_t *node)
 {
     if(node == NULL) {
         return OS_NULL_POINTER;
     }
     /* TODO: Catch OS_LOCKED case and wait for it to unlock. */
-    return (UtilUnlock(&node->lock, mode));
+    return (UtilUnlock(&node->lock));
 }
 
 
@@ -324,11 +320,11 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
         while(1);
     }
 
-    OsResult_t result;
+    OsResult_t result = OS_ERROR;
     if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_OK) {
-        if(node->id == INVALID_ID) {
-            node->id = ListIdBufferFreeIdGet(list);
-            if(node->id == INVALID_ID) {
+        if(node->id == OS_ID_INVALID) {
+            node->id = IListIdGet(list);
+            if(node->id == OS_ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node, list);
                 result = OS_INVALID_ID;
                 goto unlock;
@@ -357,7 +353,7 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
         list->sorted = false;
 
 unlock:
-        ListUnlock(list, LIST_LOCK_MODE_WRITE);
+        ListUnlock(list);
     }
 
 #if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
@@ -373,11 +369,11 @@ OsResult_t ListNodeAddAtNode(LinkedList_t *list, ListNode_t *node_y, ListNode_t 
         LOG_ERROR_NEWLINE("List (%p) has reached its max capacity.", list);
         return OS_FAIL;
     }
-    OsResult_t result;
+    OsResult_t result = OS_ERROR;
     if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_OK) {
-        if(node_y->id == INVALID_ID) {
-            node_y->id = ListIdBufferFreeIdGet(list);
-            if(node_y->id == INVALID_ID) {
+        if(node_y->id == OS_ID_INVALID) {
+            node_y->id = IListIdGet(list);
+            if(node_y->id == OS_ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node_y, list);
                 result = OS_INVALID_ID;
                 goto unlock;
@@ -456,7 +452,7 @@ insert_after:
         result = OS_OK;
         list->sorted = false;
 unlock:
-        ListUnlock(list, LIST_LOCK_MODE_WRITE);
+        ListUnlock(list);
     }
 
 #if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
@@ -491,9 +487,9 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
         bool stop_loop = false;
 
         /* Acquire ID if necessary. */
-        if(node->id == INVALID_ID) {
-            node->id = ListIdBufferFreeIdGet(list);
-            if(node->id == INVALID_ID) {
+        if(node->id == OS_ID_INVALID) {
+            node->id = IListIdGet(list);
+            if(node->id == OS_ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node, list);
                 result = OS_INVALID_ID;
                 goto unlock;
@@ -552,7 +548,7 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
             list->sorted = true;
         }
 unlock:
-        ListUnlock(list, LIST_LOCK_MODE_WRITE);
+        ListUnlock(list);
     }
 #endif
 
@@ -612,7 +608,7 @@ ListNode_t *ListNodeRemove(LinkedList_t *list, ListNode_t *node)
 
         y->prev_node = y->next_node = NULL;
 
-        ListUnlock(list, LIST_LOCK_MODE_WRITE);
+        ListUnlock(list);
     }
 
 #if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
@@ -717,7 +713,7 @@ OsResult_t ListNodeSwap(LinkedList_t *list, ListNode_t *node_x, ListNode_t *node
 
         list->sorted = false;
 
-        ListUnlock(list, LIST_LOCK_MODE_WRITE);
+        ListUnlock(list);
     }
 
 
@@ -785,7 +781,7 @@ OsResult_t ListNodeChildSet(ListNode_t *node, void *child)
     }
     if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_OK) {
         node->child = child;
-        ListNodeUnlock(node, LIST_LOCK_MODE_WRITE);
+        ListNodeUnlock(node);
         return OS_OK;
     } else {
         return OS_LOCKED;
@@ -799,7 +795,7 @@ Id_t ListNodeIdGet(ListNode_t *node)
         return node->id;
     }
 
-    return INVALID_ID;
+    return OS_ID_INVALID;
 }
 
 bool ListNodeIsInList(LinkedList_t *list, ListNode_t *node)
@@ -879,14 +875,12 @@ S8_t ListIntegrityVerify(LinkedList_t *list)
         }
     }
 
-    if(result >= LIST_INTEGRITY_RESULT_LIST_INTACT) {
-        goto unlock;
-    } else {
+    if(result < LIST_INTEGRITY_RESULT_LIST_INTACT) {
         goto ret;
     }
 
 unlock:
-    ListUnlock(list, LIST_LOCK_MODE_READ);
+    ListUnlock(list);
 
 ret:
     if(result < LIST_INTEGRITY_RESULT_LIST_INTACT) {
@@ -929,7 +923,7 @@ OsResult_t ListIteratorInit(struct ListIterator *list_it, LinkedList_t *list, U8
             list_it->current_position = (list->size - 1);
         }
 
-        ListUnlock(list, LIST_LOCK_MODE_READ);
+        ListUnlock(list);
         return OS_OK;
     }
 
@@ -993,132 +987,32 @@ bool ListIteratorEnd(struct ListIterator *list_it)
 /**** ID buffering API ****/
 
 
-static void ListIdBufferInit(LinkedList_t *list, IdType_t id_type, Id_t *id_buffer, U8_t id_buffer_size)
+static void IListIdInit(LinkedList_t *list, IdType_t id_type)
 {
     list->id_type = id_type;
-    list->id_buf = id_buffer;
-    list->id_cap_reached = false;
-    list->id_buf_size = id_buffer_size;
-    list->last_id = (id_type | 0x0000);
-    if(list->id_buf != NULL) {
-        for (U8_t i = 0; i < id_buffer_size; i++) {
-            id_buffer[i] = INVALID_ID;
-        }
-    }
-    while(ListIdBufferFillCycle(list) == OS_OK); /* Fill buffer with IDs. */
+    list->id_rollover = false;
+    list->free_id = (id_type | 0x0000);
 }
 
-
-static U8_t ListIdBufferSlotGet(Id_t *id_buffer, U8_t id_buffer_size, U8_t slot_type)
+static Id_t IListIdGet(LinkedList_t *list)
 {
-    U8_t found = 0;
-    U8_t i = 0;
-    for (; i < id_buffer_size; i++) {
-        if(id_buffer[i] == INVALID_ID && slot_type == ID_BUFFER_SLOT_FREE) {
-            found = 1;
-            break;
-        } else if (id_buffer[i] != INVALID_ID && slot_type == ID_BUFFER_SLOT_OCCUP) {
-            found = 1;
-            break;
+    Id_t free_id = OS_ID_INVALID;
+
+    /* Check ID rollover, if false the last free ID can be incremented. */
+    if(list->id_rollover == false) {
+        free_id = list->free_id;
+        list->free_id++;
+        /* Check if last possible ID was assigned. */
+        if((list->free_id & 0x0FFF) == 0x0FFF) {
+            list->id_rollover = true;
         }
-
-    }
-
-    if(found == 1) {
-        return i;
     } else {
-        return ID_BUFFER_SLOT_INVALID;
+        /* In case of an ID rollover free IDs have to be searched. */
     }
-}
-
-static void ListIdBufferFreeIdAdd(LinkedList_t *list, Id_t id)
-{
-    // ListLock(list);
-
-    Id_t *id_buffer = list->id_buf;
-
-    if(list->n_id_avail == list->id_buf_size) { /* Buffer is full. */
-        goto unlock;
-    }
-
-
-    U8_t slot = ListIdBufferSlotGet(id_buffer, list->id_buf_size, ID_BUFFER_SLOT_FREE);
-    if(slot != ID_BUFFER_SLOT_INVALID) {
-        id_buffer[slot] = id;
-        list->n_id_avail++;
-    }
-
-unlock:
-    //ListUnlock(list);
-
-    return;
-}
-
-
-static Id_t ListIdBufferFreeIdGet(LinkedList_t *list)
-{
-    //ListLock(list);
-
-    Id_t free_id = INVALID_ID;
-
-    if (list->n_id_avail == 0) {
-        if(ListIdBufferFillCycle(list) != OS_OK) {
-            goto unlock;
-        }
-    }
-
-    U8_t slot = ListIdBufferSlotGet(list->id_buf, list->id_buf_size, ID_BUFFER_SLOT_OCCUP);
-    if(slot != ID_BUFFER_SLOT_INVALID) {
-        free_id = list->id_buf[slot];
-        list->id_buf[slot] = INVALID_ID;
-        list->n_id_avail--;
-    }
-
-unlock:
-    // ListUnlock(list);
-
 
     return free_id;
-
 }
 
-OsResult_t ListIdBufferFillCycle(LinkedList_t *list)
-{
-    OsResult_t status = OS_FAIL;
-    // ListLock(list);
-
-    Id_t *id_buffer = list->id_buf;
-
-    if(id_buffer != NULL) {
-        if(list->n_id_avail == list->id_buf_size) { /* Buffer is full. */
-            goto unlock;
-        }
-
-        U8_t slot = ListIdBufferSlotGet(id_buffer, list->id_buf_size, ID_BUFFER_SLOT_FREE);
-        if(slot != ID_BUFFER_SLOT_INVALID) { /* If a slot if available. */
-            if(list->id_cap_reached == false) { /* Check for ID cap. */
-                list->last_id++;
-                if((list->last_id & ID_MASK_UID) == ID_MASK_UID) {
-                    list->id_cap_reached = true;
-                }
-            } else { /* ID cap was reached. */
-                /* TODO: Add search for ID function. */
-            }
-            id_buffer[slot] = list->last_id;
-            list->n_id_avail++;
-            status = OS_OK;
-        } else {
-            status = OS_ERROR;
-        }
-    }
-
-
-
-unlock:
-    // ListUnlock(list);
-
-    return status;
-}
 
 const char *PrintToBufferText[] = {
     "\nList:\t",
@@ -1127,7 +1021,6 @@ const char *PrintToBufferText[] = {
     "Nodes:",
     "\n\tID:",
 };
-
 
 char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size)
 {
@@ -1141,11 +1034,11 @@ char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size)
 
     struct ListIterator it;
     U32_t buffer_write_offset = 0;
-    *buffer_size = sizeof(PrintToBufferText[0] + sizeof(list))
-                   + sizeof(PrintToBufferText[1] + sizeof(list->size))
-                   + sizeof(PrintToBufferText[2] + sizeof(list->lock))
+    *buffer_size = sizeof(PrintToBufferText[0]) + sizeof(list)
+                   + sizeof(PrintToBufferText[1]) + sizeof(list->size)
+                   + sizeof(PrintToBufferText[2]) + sizeof(list->lock)
                    + sizeof(PrintToBufferText[3])
-                   + (sizeof(PrintToBufferText[4] + sizeof(Id_t))  * list->size);
+                   + (sizeof(PrintToBufferText[4]) + sizeof(Id_t)  * list->size);
     *buffer_size *= 3;
     char *format_buffer = (char*)malloc(*buffer_size);
     if(format_buffer != NULL) {
@@ -1212,7 +1105,7 @@ static OsResult_t UtilLock(volatile U8_t *lock, U8_t mode)
                 LOCK_MODE_SET_WRITE(*lock);
                 LOCK_CHECKED_BIT_SET(*lock);
                 LOCK_COUNT_INC(*lock);
-                OsCritSectBegin();
+                //OsCritSectBegin();
                 result = OS_OK;
                 goto exit;
             }
@@ -1227,22 +1120,21 @@ exit:
 }
 
 
-static OsResult_t UtilUnlock(volatile U8_t *lock, U8_t mode)
+static OsResult_t UtilUnlock(volatile U8_t *lock)
 {
     OsCritSectBegin();
     OsResult_t result = OS_ERROR;
 
-    if(mode == LIST_LOCK_MODE_READ || mode == LIST_LOCK_MODE_WRITE) {
-        LOCK_COUNT_DEC(*lock);
-        if(LOCK_COUNT_GET(*lock) == 0) {
-            LOCK_CHECKED_BIT_CLEAR(*lock);
-            LOCK_MODE_SET_READ(*lock);
-            OsCritSectEnd();
+    LOCK_COUNT_DEC(*lock);
+    if(LOCK_COUNT_GET(*lock) == 0) {
+        if(LOCK_MODE_IS_WRITE(*lock)) {
+            // OsCritSectEnd();
         }
-        result = OS_OK;
-    } else { /* Invalid mode. */
-        result = OS_ERROR;
+        LOCK_CHECKED_BIT_CLEAR(*lock);
+        LOCK_MODE_SET_READ(*lock);
     }
+    result = OS_OK;
+
 
     OsCritSectEnd();
     return result;

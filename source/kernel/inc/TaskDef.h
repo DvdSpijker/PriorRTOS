@@ -23,12 +23,9 @@ extern "C" {
 
 typedef enum {
     TASK_FLAG_DELETE         = 0x80,
-    TASK_FLAG_WAIT_ONCE      = 0x40,
-    TASK_FLAG_WAIT_PERMANENT = 0x20,
-    TASK_FLAG_WAIT_BLOCKING  = 0x10,
-    TASK_FLAG_INIT           = 0x08,
-    TASK_FLAG_ESSENTIAL      = 0x04,
-    TASK_FLAG_NO_PREEM       = 0x02,
+    TASK_FLAG_INIT           = 0x40,
+    TASK_FLAG_ESSENTIAL      = 0x20,
+    TASK_FLAG_NO_PREEM       = 0x10,
 } TaskFlags_t;
 
 union DynamicPrio {
@@ -67,7 +64,6 @@ typedef struct Tcb_t {
 
 
     Task_t              handler; /* Task handler entry point. */
-    TaskFlags_t         flags;
     const void          *p_arg;
     U32_t               v_arg;
 
@@ -75,6 +71,7 @@ typedef struct Tcb_t {
     char                generic_name[PRTOS_CONFIG_TASK_NAME_LENGTH];
 #endif
 
+    TaskFlags_t         flags;
     Prio_t              priority;
     TaskCat_t           category;
     TaskState_t         state;
@@ -106,20 +103,25 @@ pTcb_t TcbIdle;/* Holds a pointer to the TCB
 
 /* Kernel Task API */
 
-OsResult_t   TaskInit(void);
-OsResult_t UtilTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to_list);
-void UtilTcbSwap(pTcb_t x, pTcb_t y, LinkedList_t* list);
-void UtilTcbDestroy(pTcb_t TCB, LinkedList_t* list);
-LinkedList_t* UtilTcbLocationGet(pTcb_t tcb);
-void UtilTaskStateSet(pTcb_t tcb_pointer, TaskState_t new_state);
-pTcb_t UtilTcbFromId(Id_t task_id);
-void UtilTaskFlagSet(pTcb_t tcb, TaskFlags_t flag);
-void UtilTaskFlagClear(pTcb_t tcb ,TaskFlags_t flag);
-U8_t UtilTaskFlagGet(pTcb_t tcb, TaskFlags_t flag);
-Prio_t UtilCalculateInvPriority(Prio_t P, TaskCat_t Mj);
-Prio_t UtilCalculatePriority(TaskCat_t Mj,Prio_t Mi);
-void UtilTaskRuntimeAdd(pTcb_t tcb, U32_t t_us);
-void UtilTaskRuntimeReset(pTcb_t tcb);
+OsResult_t   KTaskInit(void);
+
+pTcb_t KTaskRunningGet(void);
+OsResult_t KTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to_list);
+void KTcbSwap(pTcb_t x, pTcb_t y, LinkedList_t* list);
+void KTcbDestroy(pTcb_t TCB, LinkedList_t* list);
+LinkedList_t* KTcbLocationGet(pTcb_t tcb);
+void KTaskStateSet(pTcb_t tcb_pointer, TaskState_t new_state);
+pTcb_t KTcbFromId(Id_t task_id);
+
+void KTaskFlagSet(pTcb_t tcb, TaskFlags_t flag);
+void KTaskFlagClear(pTcb_t tcb ,TaskFlags_t flag);
+U8_t KTaskFlagGet(pTcb_t tcb, TaskFlags_t flag);
+
+Prio_t KCalculateInvPriority(Prio_t P, TaskCat_t Mj);
+Prio_t KCalculatePriority(TaskCat_t Mj,Prio_t Mi);
+
+void KTaskRunTimeUpdate(void);
+void KTaskRunTimeReset(pTcb_t tcb);
 
 
 #ifdef __cplusplus

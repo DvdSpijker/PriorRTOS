@@ -49,7 +49,7 @@ extern "C" {
 #include <Port.h>
 
 /*Core API includes*/
-#include <Mm.h>
+#include <Memory.h>
 #include <Task.h>
 #include <Logger.h>
 #include <KernelTask.h>
@@ -184,7 +184,7 @@ OsVer_t OsVersionGet(void);
 
 
 /******************************************************************************
- * @func: OsResult_t OsRuntimeGet(U32_t *target)
+ * @func: OsResult_t OsRunTimeGet(U32_t *target)
  *
  * @desc: Copies the current OS runtime to the target array. Target has to have
  * at least 2 nodes initialized at 0x00000000;
@@ -198,9 +198,23 @@ OsVer_t OsVersionGet(void);
  * @retval:   OS_ERROR; if the array did NOT comply with the requirements stated
  *          in the description.
  ******************************************************************************/
-OsResult_t OsRuntimeGet(U32_t* target);
+OsResult_t OsRunTimeGet(U32_t* target);
 
-U32_t OsRuntimeMicrosGet(void);
+/******************************************************************************
+ * @func: U32_t OsRunTimeMicrosDeltaGet(U32_t us)
+ *
+ * @desc: Returns the difference between us and the current micros.
+ *
+ * Arguments:
+ *  @argin:   (U32_t *) us; Earlier moment in time in microseconds.
+ *  @argout:   (U32_t *) us; Current time in microseconds.
+ *
+ * @rettype:  (U32_t) Delta micros
+ * @retval:   0; if the calculation could not be performed.
+ * @retval:   Other; valid delta value.
+ ******************************************************************************/
+U32_t OsRunTimeMicrosDeltaGet(U32_t *us);
+U32_t OsRunTimeMicrosGet(void);
 U32_t OsRuntimeHoursGet(void);
 
 
@@ -246,7 +260,7 @@ U32_t OsTasksActiveGet(void);
 /******************************************************************************
  * @func: U32_t OsEventsTotalGet(void)
  *
- * @desc: Returns the number of published events in the system at that
+ * @desc: Returns the number of emitted events in the system at that
  * moment.
  *
  * @rettype:  (U32_t) Total number of events.
@@ -265,6 +279,18 @@ U32_t OsEventsTotalGet(void);
  * @retval:   true; if the ID does belong to an existing task.
  ******************************************************************************/
 bool OsTaskExists(Id_t task_id);
+
+
+/******************************************************************************
+ * @func: Id_t OsCurrentTaskGet(void)
+ *
+ * @desc: Returns the ID of the current running task.
+ *
+ * @rettype:  (Id_t) Task ID
+ * @retval:   INVALID_ID; error occurred.
+ * @retval:   Other; valid current task ID.
+ ******************************************************************************/
+Id_t OsCurrentTaskGet(void);
 
 
 /******************************************************************************

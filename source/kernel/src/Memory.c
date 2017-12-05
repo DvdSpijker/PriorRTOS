@@ -38,18 +38,18 @@
  **********************************************************************************************************************************************/
 
 
-#include <Mm.h>
-#include <MmDef.h>
+#include <Memory.h>
+#include <MemoryDef.h>
 #include <CoreDef.h>
 #include <Logger.h>
 
-LOG_FILE_NAME("Mm.c");
+LOG_FILE_NAME("Mem.c");
 
 #if PRTOS_CONFIG_ENABLE_MEMORY_PROTECTION==1
 #include <Fletcher.h>
 #define POOL_PADDING_START 0xCADEADFE
 #define POOL_PADDING_END   0xDECAFBEE
-static U16_t UtilPoolChecksumGenerate(pPmb_t pool);
+static U16_t IPoolChecksumGenerate(pPmb_t pool);
 #endif
 
 #include <stdlib.h>
@@ -73,10 +73,11 @@ MemBase_t* OsHeapEnd;
 Id_t KernelHeapId;
 Id_t ObjectHeapId;
 
+U16_t IPoolIdFromPointer(MemBase_t* ptr);
 
 /************OS Memory Management************/
 
-OsResult_t MmInit(void)
+OsResult_t KMemInit(void)
 {
     TotalHeapPools = (U16_t)(N_POOLS);
     TotalHeapSize = (U32_t)sizeof(OsHeap);
@@ -95,9 +96,9 @@ OsResult_t MmInit(void)
     return OS_OK;
 }
 
-OsResult_t MmKernelHeapSet(Id_t kernel_heap)
+OsResult_t KMemKernelHeapSet(Id_t kernel_heap)
 {
-    if(CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
+    if(KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
         return OS_RESTRICTED;
     }
@@ -107,9 +108,9 @@ OsResult_t MmKernelHeapSet(Id_t kernel_heap)
     return OS_OK;
 }
 
-OsResult_t MmObjectHeapSet(Id_t object_heap)
+OsResult_t KMemObjectHeapSet(Id_t object_heap)
 {
-    if(CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
+    if(KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
         return OS_RESTRICTED;
     }
@@ -119,10 +120,10 @@ OsResult_t MmObjectHeapSet(Id_t object_heap)
     return OS_OK;
 }
 
-Id_t MmPoolCreate(U32_t pool_size)
+Id_t MemPoolCreate(U32_t pool_size)
 {
     if((pool_size == 0) || (pool_size > TotalHeapSize)) {
-        return INVALID_ID;
+        return OS_ID_INVALID;
     }
 
     OsCritSectBegin();
@@ -143,7 +144,7 @@ Id_t MmPoolCreate(U32_t pool_size)
     if(PoolTable[pool_id].start_addr != NULL) {
         LOG_ERROR_NEWLINE("Pool ID %04x is invalid.");
         OsCritSectEnd();
-        return INVALID_ID;
+        return OS_ID_INVALID;
     }
 
     pmb = &(PoolTable[pool_id]);
@@ -152,8 +153,8 @@ Id_t MmPoolCreate(U32_t pool_size)
     mem_ptr = OsHeapStart;
 
     while(mem_found < mem_req && (mem_ptr + mem_offset) < OsHeapEnd) {
-        tmp_pool_id = UtilPoolIdFromPointer((mem_ptr + mem_offset));
-        if(tmp_pool_id == INVALID_ID) {
+        tmp_pool_id = IPoolIdFromPointer((mem_ptr + mem_offset));
+        if(tmp_pool_id == OS_ID_INVALID) {
             mem_offset += 1;
             mem_found += sizeof(MemBase_t);
         } else {
@@ -173,18 +174,18 @@ Id_t MmPoolCreate(U32_t pool_size)
         pmb->end_padding = pmb->end_addr;
         *(pmb->start_padding) = POOL_PADDING_START;
         *(pmb->end_padding) = POOL_PADDING_END;
-        pmb->checksum = UtilPoolChecksumGenerate(pmb);
+        pmb->checksum = IPoolChecksumGenerate(pmb);
 #endif
     } else {
         LOG_ERROR_NEWLINE("Not enough memory available (%u bytes) to create a new pool (%u bytes).", mem_found, mem_req);
-        pool_id = INVALID_ID;    //No memory available for the requested pool size
+        pool_id = OS_ID_INVALID;    //No memory available for the requested pool size
     }
 
     OsCritSectEnd();
     return pool_id;
 }
 
-OsResult_t MmPoolDelete(Id_t pool_id)
+OsResult_t MemPoolDelete(Id_t pool_id)
 {
     if(pool_id >= N_POOLS) {
         return OS_INVALID_ID;
@@ -194,7 +195,7 @@ OsResult_t MmPoolDelete(Id_t pool_id)
         return OS_RESTRICTED;
     }
     OsCritSectBegin();
-    MmPoolFormat(pool_id);
+    MemPoolFormat(pool_id);
     PoolTable[pool_id].pool_size = 0;
     PoolTable[pool_id].end_addr = NULL;
     PoolTable[pool_id].start_addr = NULL;
@@ -203,12 +204,12 @@ OsResult_t MmPoolDelete(Id_t pool_id)
     return OS_OK;
 }
 
-OsResult_t MmPoolFormat(Id_t pool_id)
+OsResult_t MemPoolFormat(Id_t pool_id)
 {
     if(pool_id >= N_POOLS) {
         return OS_INVALID_ID;
     }
-    if((pool_id == KernelHeapId || pool_id == ObjectHeapId) && (CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
+    if((pool_id == KernelHeapId || pool_id == ObjectHeapId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
         return OS_RESTRICTED;
     }
@@ -227,7 +228,7 @@ OsResult_t MmPoolFormat(Id_t pool_id)
 }
 
 
-U32_t MmPoolFreeSpaceGet(Id_t pool_id)
+U32_t MemPoolFreeSpaceGet(Id_t pool_id)
 {
     if(pool_id >= N_POOLS) {
         return 0;
@@ -240,7 +241,7 @@ U32_t MmPoolFreeSpaceGet(Id_t pool_id)
     return mem_left;
 }
 
-U32_t MmPoolUsedSpaceGet(Id_t pool_id)
+U32_t MemPoolUsedSpaceGet(Id_t pool_id)
 {
     if(pool_id >= N_POOLS) {
         return 0;
@@ -253,7 +254,7 @@ U32_t MmPoolUsedSpaceGet(Id_t pool_id)
     return mem_used;
 }
 
-U32_t MmOsHeapFreeSpaceGet(void)
+U32_t MemOsHeapFreeSpaceGet(void)
 {
     volatile U32_t total_data=0;
     OsCritSectBegin();
@@ -267,7 +268,7 @@ U32_t MmOsHeapFreeSpaceGet(void)
 }
 
 
-void *MmAlloc(Id_t pool_id, U32_t size)
+void *MemAlloc(Id_t pool_id, U32_t size)
 {
     if(size == 0) {
         return NULL;
@@ -276,12 +277,15 @@ void *MmAlloc(Id_t pool_id, U32_t size)
         return NULL;
     }
     /* Only allow allocations in Kernel pool/Object pool in Kernel mode. */
-    if((pool_id == KernelHeapId || pool_id == ObjectHeapId) && CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
+    if((pool_id == KernelHeapId || pool_id == ObjectHeapId) && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
         return NULL;
     }
 
     size += sizeof(U32_t); /* Reserve extra space to save the size. */
+    //if(size % sizeof(U32_t)) {
+        //size += sizeof(U32_t) - (size % sizeof(U32_t));
+    //}
     if(PoolTable[pool_id].mem_left < size) {
 
         return NULL;
@@ -333,30 +337,29 @@ void *MmAlloc(Id_t pool_id, U32_t size)
 
 
 
-OsResult_t MmReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_size)
+OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_size)
 {
 
     if(cur_pool_id > TotalHeapPools || new_pool_id > TotalHeapPools) {
         return OS_OUT_OF_BOUNDS;
     }
 
-    if((cur_pool_id == KernelHeapId || new_pool_id == KernelHeapId) && (CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
+    if((cur_pool_id == KernelHeapId || new_pool_id == KernelHeapId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
         return OS_RESTRICTED;
-    } else if((cur_pool_id ==ObjectHeapId || new_pool_id == ObjectHeapId) && (CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
+    } else if((cur_pool_id ==ObjectHeapId || new_pool_id == ObjectHeapId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
         return OS_RESTRICTED;
     }
 
 
 
-    if(new_pool_id == INVALID_ID) {
+    if(new_pool_id == OS_ID_INVALID) {
         new_pool_id = cur_pool_id;
     }
     OsCritSectBegin();
-    U32_t size = MmAllocSizeGet(*ptr);
 
-    void* tmp_ptr = MmAlloc(new_pool_id,new_size);
+    void* tmp_ptr = MemAlloc(new_pool_id,new_size);
 
     if(tmp_ptr == NULL) {
         OsCritSectEnd();
@@ -366,9 +369,9 @@ OsResult_t MmReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_s
 //for (U32_t i = 0; (i < size) && (i < new_size); i++) {
 //(MemBase_t *)tmp_ptr[i] = (MemBase_t *)(*ptr)[i];
 //}
-    /* TODO: Copy data in MmReAlloc. */
+    /* TODO: Copy data in MemReAlloc. */
 
-    MmFree(ptr);
+    MemFree(ptr);
 
     *ptr = tmp_ptr;
 
@@ -380,19 +383,19 @@ OsResult_t MmReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_s
 
 
 
-OsResult_t MmFree(void **ptr)
+OsResult_t MemFree(void **ptr)
 {
     if(*ptr == NULL) {
         return OS_NULL_POINTER;
     }
 
     MemBase_t* tmp_ptr = (MemBase_t*)(*ptr);
-    Id_t pool_id = UtilPoolIdFromPointer(tmp_ptr);
+    Id_t pool_id = IPoolIdFromPointer(tmp_ptr);
 
-    if(pool_id == INVALID_ID) { /* Pool not found. */
+    if(pool_id == OS_ID_INVALID) { /* Pool not found. */
         return OS_INVALID_ID;
     }
-    if((pool_id == KernelHeapId || pool_id == ObjectHeapId) && CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
+    if((pool_id == KernelHeapId || pool_id == ObjectHeapId) && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
         return OS_RESTRICTED;
     }
@@ -419,7 +422,7 @@ OsResult_t MmFree(void **ptr)
     return result;
 }
 
-U32_t MmAllocSizeGet(void *ptr)
+U32_t MemAllocSizeGet(void *ptr)
 {
     if(ptr == NULL) {
         return 0;
@@ -433,10 +436,10 @@ U32_t MmAllocSizeGet(void *ptr)
     in a pool space or within the kernel pool.
     Operations that access the kernel pool may only
     be executed if kernel-mode flag is set*/
-    U16_t pool_id = UtilPoolIdFromPointer(tmp_ptr);
-    if(pool_id == KernelHeapId && CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
+    U16_t pool_id = IPoolIdFromPointer(tmp_ptr);
+    if(pool_id == KernelHeapId && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         return 0;
-    } else if(pool_id == INVALID_ID) {
+    } else if(pool_id == OS_ID_INVALID) {
         return 0;
     }
 
@@ -449,22 +452,22 @@ U32_t MmAllocSizeGet(void *ptr)
 /*******************************/
 
 
-U16_t UtilPoolIdFromPointer(MemBase_t* ptr)
+U16_t IPoolIdFromPointer(MemBase_t* ptr)
 {
-    U16_t id = INVALID_ID;
-    OsCritSectBegin();
+    U16_t id = OS_ID_INVALID;
+    //OsCritSectBegin();
     for (U16_t i = 0; i < (TotalHeapPools); i++) {
         if(ptr >= PoolTable[i].start_addr && ptr <= PoolTable[i].end_addr) {
             id = i;
         }
     }
-    OsCritSectEnd();
+    //OsCritSectEnd();
     return id;
 }
 
 
 #if PRTOS_CONFIG_ENABLE_MEMORY_PROTECTION==1
-static U16_t UtilPoolChecksumGenerate(pPmb_t pool)
+static U16_t IPoolChecksumGenerate(pPmb_t pool)
 {
     U8_t checksum_feed[(2 * sizeof(U32_t) + pool->N)];
     ConvertIntToBytes(*(pool->start_padding), 4, checksum_feed);

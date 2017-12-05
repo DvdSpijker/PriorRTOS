@@ -114,22 +114,27 @@ typedef enum {
      * to be locked. */
     OS_LOCKED           = 9,
 
-    /* The system call could not be completed, the calling task will have to
-     * wait for the resource. The calling task is now subscribed to the specific
-     * event that indicates that the resource is again available.  */
-    OS_WAIT             = 10,
-
-
+    /* The system call's calling task is now polling for a event.  */
+    OS_POLL             = 10,
+    
     /* The calling task has NOT received the specified event
      * within the set time span. */
     OS_TIMEOUT          = 11,
+    
+    
+    /* TaskPoll or TaskWait will return this value if the
+     * event has occurred.  */
+    OS_EVENT            = 12,
 
 } OsResult_t;
 
 
-#define INVALID_ID          0xFFFF //Invalid ID
-#define ID_MASK_TYPE    0xF000
-#define ID_MASK_UID     0x0FFF
+#define OS_ID_INVALID           0xFFFF //Invalid ID
+#define OS_ID_MASK_TYPE         0xF000
+#define OS_ID_MASK_UID          0x0FFF
+
+#define OS_TIMEOUT_INFINITE  0xFFFFFFFF
+
 
 typedef enum {
     ID_TYPE_POOL        = 0x0000,

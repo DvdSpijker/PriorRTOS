@@ -148,6 +148,10 @@ OsResult_t EventgroupFlagsClear(Id_t eventgroup_id, U8_t mask);
  ******************************************************************************/
 U8_t   EventgroupFlagsGet(Id_t eventgroup_id, U8_t mask);
 
+OsResult_t  EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t timeout);
+
+OsResult_t  EventgroupFlagsRequireSet(Id_t eventgroup_id, U8_t mask, U32_t timeout);
+
 #ifdef __cplusplus
 }
 #endif

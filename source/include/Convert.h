@@ -149,13 +149,13 @@ U8_t ConvertCharToHex(char character);
 U8_t ConvertCharToDec(char character);
 
 /* Converts OS version to a null-terminated string of length 7.
- * Format: V<M>.<m>.<u> Major, minor, update. */
+ * Format: V<M>.<m>.<u> Major, minor, subversion. */
 /******************************************************************************
  * @func: U8_t ConvertOsVersionToString(OsVer_t os_version,
  *              char *out_os_version_str)
  *
- * @desc: Converts OS version to a null-terminated string in the following
- * format: V<M>.<m>.<u> Major, minor, update.
+ * @desc: Converts OS version to a null-terminated string of length 7 in the following
+ * format: V<M>.<m>.<svn> Major, minor, subversion.
  *
  * Arguments:
  * @argin: (OsVer_t) os_version; OS Version to convert.
@@ -172,6 +172,7 @@ U8_t ConvertOsVersionToString(OsVer_t os_version, char *out_os_version_str);
 U8_t ConvertIdToString(Id_t id, char *out_id_str);
 
 Id_t ConvertStringToId(char *id_str);
+
 
 Id_t ConvertHexStringToId(char *hex_id_str);
 

@@ -42,18 +42,17 @@
 #include <CoreDef.h>
 #include <Event.h>
 #include <List.h>
+#include <Task.h>
+#include <SystemCall.h>
 
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <math.h>
 
-#define EVENTGROUP_ID_BUFFER_SIZE 3
-Id_t EventgroupIdBuffer[EVENTGROUP_ID_BUFFER_SIZE];
-
-OsResult_t EventgroupInit (void)
+OsResult_t KEventgroupInit (void)
 {
-    ListInit(&EventGroupList, ID_TYPE_EVENTGROUP, EventgroupIdBuffer, EVENTGROUP_ID_BUFFER_SIZE);
+    ListInit(&EventGroupList, ID_TYPE_EVENTGROUP);
     return OS_OK;
 }
 
@@ -62,16 +61,16 @@ OsResult_t EventgroupInit (void)
 Id_t EventgroupCreate(void)
 {
     //pEventGrp_t new_eventgrp = (pEventGrp_t)malloc(sizeof(EventGrp_t));
-    pEventGrp_t new_eventgrp = (pEventGrp_t)CoreObjectAlloc(sizeof(EventGrp_t), 0, NULL);
+    pEventGrp_t new_eventgrp = (pEventGrp_t)KCoreObjectAlloc(sizeof(EventGrp_t), 0, NULL);
 
     if(new_eventgrp == NULL) {
-        return INVALID_ID;
+        return OS_ID_INVALID;
     }
 
     ListNodeInit(&new_eventgrp->list_node, (void*)new_eventgrp);
     if(ListNodeAddSorted(&EventGroupList, &new_eventgrp->list_node) != OS_OK) {
-        CoreObjectFree((void **)&new_eventgrp, NULL);
-        return INVALID_ID;
+        KCoreObjectFree((void **)&new_eventgrp, NULL);
+        return OS_ID_INVALID;
     }
 
     new_eventgrp->event_reg = 0;
@@ -81,7 +80,7 @@ Id_t EventgroupCreate(void)
 
 OsResult_t EventgroupDelete(Id_t *eventgroup_id)
 {
-    if(*eventgroup_id == INVALID_ID) {
+    if(*eventgroup_id == OS_ID_INVALID) {
         return OS_INVALID_ID;
     }
     if((*eventgroup_id & ID_TYPE_EVENTGROUP) == 0) {
@@ -96,9 +95,9 @@ OsResult_t EventgroupDelete(Id_t *eventgroup_id)
     ListNode_t *node = ListSearch(&EventGroupList, *eventgroup_id);
     void *eventgroup = ListNodeChildGet(node);
     ListNodeDeinit(&EventGroupList, node);
-    CoreObjectFree((void **)&eventgroup, NULL);
+    KCoreObjectFree((void **)&eventgroup, NULL);
 
-    *eventgroup_id = INVALID_ID;
+    *eventgroup_id = OS_ID_INVALID;
 
     return OS_OK;
 }
@@ -114,14 +113,14 @@ void EventgroupFlagsSet(Id_t eventgroup_id, U8_t mask)
             U8_t bitmask = 0x80;
             for (S8_t i = 8; i > 0; i--) {
                 if(bitmask & mask) {
-                    EventPublish(eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), 0);
+                    EventEmit(eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), EVENT_FLAG_NONE);
                 }
                 bitmask = bitmask >> 1;
             }
 #endif
         }
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
 }
 
 OsResult_t EventgroupFlagsClear(Id_t eventgroup_id, U8_t mask)
@@ -139,14 +138,14 @@ OsResult_t EventgroupFlagsClear(Id_t eventgroup_id, U8_t mask)
             U8_t bitmask = 0x80;
             for (S8_t i = 8; i > 0; i--) {
                 if(bitmask & mask) {
-                    result = EventPublish(eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), 0);
+                    result = EventEmit(eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), EVENT_FLAG_NONE);
                 }
                 bitmask = bitmask >> 1;
             }
 #endif
         }
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
     return result;
 }
 
@@ -160,7 +159,73 @@ U8_t EventgroupFlagsGet(Id_t eventgroup_id, U8_t mask)
             event_flag_state = ((eventgroup->event_reg & mask) ? 1 : 0);
         }
     }
-    LIST_NODE_ACCESS_READ_END()
+    LIST_NODE_ACCESS_END()
 
     return event_flag_state;
+}
+
+OsResult_t EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t timeout)
+{
+    OsResult_t result = OS_ERROR;
+
+#ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_CLEAR
+
+    SYSTEM_CALL_WAIT_HANDLE_EVENT;
+    
+    SYSTEM_CALL_POLL_HANDLE_EVENT(eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), &result) {
+        /* Do nothing. Normal execution flow. */
+    }
+    SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
+        return result;
+    }
+    SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
+        return result;
+    }
+ 
+    LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) { 
+        U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
+        if((flags & mask) != ~mask) { /* Not all flags have been cleared. */
+            SYSTEM_CALL_POLL_WAIT_EVENT(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), &result, timeout);
+        } else {
+            result = OS_OK;
+        }
+    }    
+    LIST_NODE_ACCESS_END();
+ #endif  
+ 
+    
+ 
+    return result;
+}
+
+OsResult_t EventgroupFlagsRequireSet(Id_t eventgroup_id, U8_t mask, U32_t timeout)
+{
+    OsResult_t result = OS_ERROR;
+    
+#ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_CLEAR
+
+    SYSTEM_CALL_WAIT_HANDLE_EVENT;
+    
+    SYSTEM_CALL_POLL_HANDLE_EVENT(eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result) {
+        /* Do nothing. Normal execution flow. */            
+    } 
+    SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
+         return result;    
+    }
+    SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
+         return result;    
+    }
+    
+    LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {     
+        U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
+        if((flags & mask) != mask) { /* Not all flags have been set. */
+            SYSTEM_CALL_POLL_WAIT_EVENT(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result, timeout);
+        } else {
+            result = OS_OK;
+        }
+    }
+    LIST_NODE_ACCESS_END();
+    
+ #endif
+    return result;
 }

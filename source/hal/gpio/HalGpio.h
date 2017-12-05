@@ -15,6 +15,7 @@ extern "C" {
 
 #include <stdint.h>
 #include <gpio.h>
+#include <conf_board.h>
 
 enum HalGpioPinMode {
     PIN_MODE_INPUT,

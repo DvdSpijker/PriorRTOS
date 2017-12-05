@@ -14,14 +14,14 @@
 #include <errno.h>
 #endif
 
-static void LogFormat(U8_t log_line_opt, const char *tag, const char *source, const int line_nr, const char *message, va_list args);
+static void ILogFormat(U8_t log_line_opt, const char *tag, const char *source, const int line_nr, const char *message, va_list args);
 
 #if PRTOS_CONFIG_USE_NEWLIB==0
-static int LogPutChar(char c, FILE *stream);
-static FILE mystdout = FDEV_SETUP_STREAM(LogPutChar, NULL, _FDEV_SETUP_WRITE);
+static int ILogPutChar(char c, FILE *stream);
+static FILE mystdout = FDEV_SETUP_STREAM(ILogPutChar, NULL, _FDEV_SETUP_WRITE);
 #endif
 
-extern OsResult_t OsRuntimeGet(U32_t* target);
+extern OsResult_t OsRunTimeGet(U32_t* target);
 
 OsResult_t LogInit(void)
 {
@@ -41,11 +41,11 @@ OsResult_t LogInit(void)
     return OS_OK;
 }
 
-static void LogFormat(U8_t log_line_opt, const char *tag, const char *source, const int line_nr, const char *message, va_list args)
+static void ILogFormat(U8_t log_line_opt, const char *tag, const char *source, const int line_nr, const char *message, va_list args)
 {
     if(log_line_opt == LOG_LINE_NEW) {
         U32_t runtime[2] = {0, 0};
-        OsRuntimeGet(runtime);
+        OsRunTimeGet(runtime);
         U32_t runtime_h = runtime[0];
         U32_t runtime_s = runtime[1] / 1e6;
         U32_t runtime_ms = (runtime[1] / 1e3) - (runtime_s * 1e3);
@@ -72,19 +72,19 @@ void LogError(U8_t log_line_opt, const char *source, const char* message, ...)
 {
     va_list args;
     va_start(args, message);
-    LogFormat(log_line_opt, "error", source, 0, message, args);
+    ILogFormat(log_line_opt, "error", source, 0, message, args);
     va_end(args);
 
 }
 #endif
 
 #if PRTOS_CONFIG_ENABLE_LOG_INFO==1
-void LogInfo(U8_t log_line_opt, const char* message, ...)
+void KLogInfo(U8_t log_line_opt, const char* message, ...)
 {
 #if PRTOS_CONFIG_ENABLE_LOG_INFO==1
     va_list args;
     va_start(args, message);
-    LogFormat(log_line_opt, "info", NULL, 0, message, args);
+    ILogFormat(log_line_opt, "info", NULL, 0, message, args);
     va_end(args);
 #endif
 }
@@ -95,13 +95,13 @@ void LogDebug(U8_t log_line_opt, const char *source, const int line_nr, const ch
 {
     va_list args;
     va_start(args, message);
-    LogFormat(log_line_opt, "debug", source, line_nr, message, args);
+    ILogFormat(log_line_opt, "debug", source, line_nr, message, args);
     va_end(args);
 }
 #endif
 
 #if PRTOS_CONFIG_ENABLE_LOG_EVENT==1
-void LogEvent(pEvent_t event)
+void KLogEvent(pEvent_t event)
 {
     char src_buffer[10];
     char msg_buffer[100];
@@ -109,13 +109,13 @@ void LogEvent(pEvent_t event)
     snprintf(src_buffer, sizeof(src_buffer), "%04x", event->source_id);
     snprintf(msg_buffer, sizeof(msg_buffer), "Event Code: 0x%08x | Occurrence Count: %u | Lifetime (set/cnt): %u/%u", event->event_code,
              event->occurrence_cnt, event->life_time_us, event->life_time_us_cnt);
-    LogFormat(LOG_LINE_NEW, "event", src_buffer, 0, msg_buffer, NULL);
+    ILogFormat(LOG_LINE_NEW, "event", src_buffer, 0, msg_buffer, NULL);
 }
 #endif
 
 
 #if PRTOS_CONFIG_USE_NEWLIB==0
-static int LogPutChar(char c, FILE *stream)
+static int ILogPutChar(char c, FILE *stream)
 {
     HalUartSendChar(&LoggerUartHandle, c);
     return 1;

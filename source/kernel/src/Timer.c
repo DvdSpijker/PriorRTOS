@@ -57,16 +57,14 @@
 
 LOG_FILE_NAME("Timer.c")
 
-pTimer_t UtilTimerCreate(void);
-pTimer_t UtilTimerFromID(Id_t timer_id);
+pTimer_t ITimerCreate(void);
+pTimer_t ITimerFromId(Id_t timer_id);
 
 extern U32_t OsTickPeriodGet();
-#define TIMER_ID_BUFFER_SIZE 10
-Id_t TimerIdBuffer[TIMER_ID_BUFFER_SIZE];
 
-OsResult_t TimerInit(void)
+OsResult_t KTimerInit(void)
 {
-    ListInit(&TimerList, (Id_t)ID_TYPE_TIMER, TimerIdBuffer, TIMER_ID_BUFFER_SIZE);
+    ListInit(&TimerList, (Id_t)ID_TYPE_TIMER);
 
     KernelTaskIdTimerUpdate = KernelTaskCreate(KernelTaskTimerUpdate, 1, TASK_PARAM_ESSENTIAL, 0, NULL,
                               PRTOS_CONFIG_TIMER_INTERVAL_RESOLUTION_MS);
@@ -75,16 +73,11 @@ OsResult_t TimerInit(void)
     return OS_OK;
 }
 
-void TimerUpdateAll(U32_t t_accu)
+void KTimerUpdateAll(U32_t t_us)
 {
-    U32_t dt;
-
-    dt = t_accu; /* Calculate passed time since last update. */
-
     Id_t timer_id;
     bool destroy = false;
-    U8_t list_size;
-    pTimer_t timer = NULL, tmp_timer = NULL;
+    pTimer_t timer = NULL;
     ListNode_t *list_pointer = ListNodePeek(&TimerList, LIST_POSITION_HEAD);
     struct ListIterator it;
     if(list_pointer != NULL) {
@@ -94,16 +87,21 @@ void TimerUpdateAll(U32_t t_accu)
                 destroy = false;
 
                 if(timer->state == TIMER_STATE_RUNNING) {
-                    timer->ticks += dt;
+                    timer->ticks += t_us;
 
                     if(timer->ticks >= timer->T_us) { /* Timer overflow. */
                         timer_id = ListNodeIdGet(&timer->list_node);
 
 #ifdef PRTOS_CONFIG_USE_EVENT_TIMER_OVERFLOW
-                        // LOG_DEBUG_NEWLINE("Timer (%04x) overflow event.", timer_id);
-                        EventPublish(timer_id, TIMER_EVENT_OVERFLOW, EVENT_FLAG_PERIODIC);
+                        //LOG_DEBUG_NEWLINE("Timer (%04x) overflow event.", timer_id);
+                        EventEmit(timer_id, TIMER_EVENT_OVERFLOW, EVENT_FLAG_NONE);
 #endif
-                        if(!(timer->parameter & TIMER_PARAMETER_PERIODIC)) { /* If timer is not Permanent. */
+                        /* Timer overflow callback. */
+                        if(timer->ovf_callback != NULL) {
+                            timer->ovf_callback(ListNodeIdGet(&timer->list_node));
+                        }
+                        
+                        if(!(timer->parameter & TIMER_PARAMETER_PERIODIC)) { /* If timer is not Periodic. */
                             U8_t iter = TIMER_PARAMETER_ITR_GET(timer->parameter); /* Acquire iterations */
                             iter--;
                             if(iter == 0) {
@@ -138,22 +136,23 @@ void TimerUpdateAll(U32_t t_accu)
 
 
 
-Id_t TimerCreate(U32_t interval, U8_t parameter)
+Id_t TimerCreate(U32_t interval, U8_t parameter, TimerOverflowCallback_t overflow_callback)
 {
     if(interval == 0) {
-        return INVALID_ID;
+        return OS_ID_INVALID;
     }
 
-    pTimer_t new_timer = UtilTimerCreate();
+    pTimer_t new_timer = ITimerCreate();
 
     if(new_timer == NULL) {
-        return INVALID_ID;
+        return OS_ID_INVALID;
     }
 
     Id_t new_timer_id = ListNodeIdGet(&new_timer->list_node);
 
     new_timer->T_us = interval;
     new_timer->parameter = parameter;
+    new_timer->ovf_callback = overflow_callback;
     if (parameter & TIMER_PARAMETER_ON) { //ON bit
         TimerStart(new_timer_id);
     }
@@ -165,19 +164,19 @@ Id_t TimerCreate(U32_t interval, U8_t parameter)
 
 OsResult_t TimerDelete(Id_t *timer_id)
 {
-    if(*timer_id == INVALID_ID) {
+    if(*timer_id == OS_ID_INVALID) {
         return OS_INVALID_ID;
     }
     if((*timer_id & (Id_t)ID_TYPE_TIMER) == 0) {
         return OS_INVALID_ID;
     }
 
-    pTimer_t rm_timer = UtilTimerFromID(*timer_id);
+    pTimer_t rm_timer = ITimerFromId(*timer_id);
     if(rm_timer != NULL) {
         ListNodeDeinit(&TimerList, &rm_timer->list_node);
-        CoreObjectFree((void **)&rm_timer, NULL);
+        KCoreObjectFree((void **)&rm_timer, NULL);
         LOG_INFO_NEWLINE("Deleted timer %04x", *timer_id);
-        *timer_id = INVALID_ID;
+        *timer_id = OS_ID_INVALID;
         return OS_OK;
     }
     LOG_ERROR_NEWLINE("Failed to delete timer %04x", *timer_id);
@@ -197,7 +196,7 @@ OsResult_t TimerReset(Id_t timer_id)
             result = OS_OK;
         }
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
     return result;
 }
 
@@ -207,7 +206,7 @@ void TimerPause(Id_t timer_id)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         tmp_timer->state = TIMER_STATE_WAITING;
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
 }
 
 void TimerStop(Id_t timer_id)
@@ -217,7 +216,7 @@ void TimerStop(Id_t timer_id)
         tmp_timer->state = TIMER_STATE_STOPPED;
         tmp_timer->ticks = 0;
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
 }
 
 void TimerStart(Id_t timer_id)
@@ -226,7 +225,7 @@ void TimerStart(Id_t timer_id)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         tmp_timer->state = TIMER_STATE_RUNNING;
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
 }
 
 void TimerStartAll(void)
@@ -272,7 +271,7 @@ TmrState_t TimerStateGet(Id_t timer_id)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         timer_state = tmp_timer->state;
     }
-    LIST_NODE_ACCESS_READ_END();
+    LIST_NODE_ACCESS_END();
     return timer_state;
 }
 
@@ -283,7 +282,7 @@ U32_t TimerTicksGet(Id_t timer_id)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         ticks = tmp_timer->ticks;
     }
-    LIST_NODE_ACCESS_READ_END();
+    LIST_NODE_ACCESS_END();
     return ticks;
 }
 
@@ -293,7 +292,7 @@ void TimerIntervalSet(Id_t timer_id, U32_t new_interval_us)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         tmp_timer->T_us = new_interval_us;
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
 }
 
 U32_t TimerIntervalGet(Id_t timer_id)
@@ -303,7 +302,7 @@ U32_t TimerIntervalGet(Id_t timer_id)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         interval = tmp_timer->T_us;
     }
-    LIST_NODE_ACCESS_READ_END();
+    LIST_NODE_ACCESS_END();
     return interval;
 }
 
@@ -314,7 +313,7 @@ U8_t TimerIterationsGet(Id_t timer_id)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         itr = TIMER_PARAMETER_ITR_GET(tmp_timer->parameter);
     }
-    LIST_NODE_ACCESS_READ_END();
+    LIST_NODE_ACCESS_END();
     return itr;
 }
 
@@ -333,7 +332,7 @@ OsResult_t TimerIterationsSet(Id_t timer_id, U8_t iterations)
             result = OS_ERROR;
         }
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
     return result;
 }
 
@@ -344,7 +343,7 @@ U8_t TimerParameterGet(Id_t timer_id)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         param = tmp_timer->parameter;
     }
-    LIST_NODE_ACCESS_READ_END();
+    LIST_NODE_ACCESS_END();
     return param;
 }
 
@@ -354,7 +353,7 @@ void TimerParameterSet(Id_t timer_id, U8_t paramtr)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         tmp_timer->parameter = paramtr;
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
 }
 
 
@@ -362,7 +361,7 @@ void TimerParameterSet(Id_t timer_id, U8_t paramtr)
 /********************************/
 
 
-pTimer_t UtilTimerFromID(Id_t timer_id)
+pTimer_t ITimerFromId(Id_t timer_id)
 {
     ListNode_t *node = ListSearch(&TimerList, timer_id);
     if(node != NULL) {
@@ -372,11 +371,11 @@ pTimer_t UtilTimerFromID(Id_t timer_id)
 }
 
 
-pTimer_t UtilTimerCreate(void)
+pTimer_t ITimerCreate(void)
 {
 
     pTimer_t new_timer;
-    new_timer = (pTimer_t)CoreObjectAlloc(sizeof(Timer_t), 0, NULL); //malloc(sizeof(Timer_t));
+    new_timer = (pTimer_t)KCoreObjectAlloc(sizeof(Timer_t), 0, NULL); //malloc(sizeof(Timer_t));
     if(new_timer == NULL) {
         return NULL;
     }
@@ -386,13 +385,14 @@ pTimer_t UtilTimerCreate(void)
     OsResult_t result = ListNodeAddSorted(&TimerList, &new_timer->list_node);
     if(result != OS_OK) {
         ListNodeDeinit(&TimerList, &new_timer->list_node);
-        CoreObjectFree((void **)&new_timer, NULL);
+        KCoreObjectFree((void **)&new_timer, NULL);
         return NULL;
     }
     new_timer->T_us = 0;
     new_timer->state = TIMER_STATE_STOPPED;
     new_timer->ticks = 0;
     new_timer->parameter = 0;
+    new_timer->ovf_callback = NULL;
 
     return new_timer;
 }

@@ -28,14 +28,12 @@ typedef struct  Sem_t {
     U8_t        aq_cnt;
 
     Id_t        *owner_task_ids; /* List of tasks that successfully acquired the semaphore. */
-
-    void        *resource;
-
+    
 } Sem_t;
 
 typedef struct Sem_t * pSem_t;
 
-OsResult_t SemaphoreInit(void);
+OsResult_t KSemaphoreInit(void);
 
 #ifdef __cplusplus
 }

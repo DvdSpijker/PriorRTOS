@@ -1,13 +1,13 @@
 /*
- * MmDef.h
+ * MemDef.h
  *
  * Created: 27-9-2017 23:07:23
  *  Author: Dorus
  */
 
 
-#ifndef MM_DEF_H_
-#define MM_DEF_H_
+#ifndef MEM_DEF_H_
+#define MEM_DEF_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -51,14 +51,14 @@ typedef struct Pmb_t {
 typedef struct Pmb_t *  pPmb_t;
 
 
-OsResult_t MmInit(void);
-OsResult_t MmKernelHeapSet(Id_t kernel_heap);
-OsResult_t MmObjectHeapSet(Id_t object_heap);
-U16_t UtilPoolIdFromPointer(MemBase_t* ptr);
+OsResult_t KMemInit(void);
+OsResult_t KMemKernelHeapSet(Id_t kernel_heap);
+OsResult_t KMemObjectHeapSet(Id_t object_heap);
+
 
 
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* MM_DEF_H_ */
+#endif /* MEM_DEF_H_ */

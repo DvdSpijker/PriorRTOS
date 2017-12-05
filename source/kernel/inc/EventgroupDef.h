@@ -26,7 +26,7 @@ typedef struct EventGrp_t * pEventGrp_t;
 
 LinkedList_t EventGroupList;
 
-OsResult_t EventgroupInit(void);
+OsResult_t KEventgroupInit(void);
 
 
 #ifdef __cplusplus

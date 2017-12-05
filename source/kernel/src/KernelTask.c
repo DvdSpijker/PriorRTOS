@@ -48,12 +48,12 @@
 
 Id_t KernelTaskCreate(Task_t handler, Prio_t priority, U8_t add_param, U32_t stack_size, const void *p_arg, U32_t v_arg)
 {
-    Id_t task_id = INVALID_ID;
-    CoreKernelModeEnter(); /* Has to be in kernel mode in order to create CAT_OS tasks. */
+    Id_t task_id = OS_ID_INVALID;
+    KCoreKernelModeEnter(); /* Has to be in kernel mode in order to create CAT_OS tasks. */
     /* All kernel tasks are not pre-empted and instantly woken by default. */
-    task_id = TaskCreate(handler, TASK_CAT_OS, priority, (TASK_PARAM_NO_PREEM | TASK_PARAM_INSTANT_WAKE | add_param),
+    task_id = TaskCreate(handler, TASK_CAT_OS, priority, (TASK_PARAM_NO_PREEM | TASK_PARAM_START | add_param),
                          stack_size, p_arg, v_arg);
-    CoreKernelModeExit();
+    KCoreKernelModeExit();
     return task_id;
 }
 

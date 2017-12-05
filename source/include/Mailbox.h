@@ -97,29 +97,26 @@ OsResult_t MailboxDelete(Id_t *mailbox_id);
 
 
 /******************************************************************************
- * @func: OsResult_t MailboxPost(Id_t mailbox_id, U8_t base_address,
- *               MailboxBase_t *data, U8_t len)
+ * @func: OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, 
+ *                               U32_t timeout)
  *
- * @desc: Post data with given length in the mailbox starting at the
- * base-address. Data cannot be overwritten when it has not been pended by its
- * owner i.e. the pend counter is not 0.
+ * @desc: Post data  in the mailbox starting at the address. Data cannot be 
+ * overwritten when it has not been pended by its owner i.e. the pend counter is not 0.
  * Any task can post in any mailbox.
  *
  * Arguments:
  * @argin: (Id_t) mailbox_id; ID of the mailbox to post in.
- * @argin: (U8_t) base_address; Starting address where data will be posted.
- * @argin: (MailboxBase_t *) data; Pointer to the array of data to be posted.
- * @argin: (U8_t) len; Length of the data array.
+ * @argin: (U8_t) address; Address where data will be posted.
+ * @argin: (MailboxBase_t) data; Data to be posted.
  *
  * @rettype:  (OsResult_t) sys call result
  * @retval:   OS_OK; if the mailbox was deleted.
  * @retval:   OS_ERROR; if the mailbox could not be found.
  * @retval:   OS_LOCKED; if the pend counter of one of the addresses within
  *            the specified range is not 0.
- * @retval:   OS_OUT_OF_BOUNDS; if the given data array is too large for the
- *            mailbox.
+ * @retval:   OS_OUT_OF_BOUNDS; if the address is not part of the mailbox address range.
  ******************************************************************************/
-OsResult_t MailboxPost(Id_t mailbox_id, U8_t base_address, MailboxBase_t *data, U8_t len);
+OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout);
 
 
 /******************************************************************************
@@ -135,17 +132,15 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t base_address, MailboxBase_t *data, 
  * @argin: (U8_t) base_address; Starting address where data will be pended.
  * @argin: (MailboxBase_t *) data; Pointer to the array where the data will
  *           be copied to.
- * @argin: (U8_t) len; Amount of data to be pended.
  *
  * @rettype:  (OsResult_t) sys call result
  * @retval:   OS_OK; if the mailbox was deleted.
  * @retval:   OS_ERROR; if the mailbox could not be found.
  * @retval:   OS_LOCKED; if the pend counter is already 0.
  * @retval:   OS_RESTRICTED; if the pending task is not an owner.
- * @retval:   OS_OUT_OF_BOUNDS; if the requested amount of data
- *            is larger than the mailbox storage.
+ * @retval:   OS_OUT_OF_BOUNDS; if the address is not part of the mailbox address range.
  ******************************************************************************/
-OsResult_t MailboxPend(Id_t mailbox_id, U8_t base_address,  MailboxBase_t *data, U8_t len);
+OsResult_t MailboxPend(Id_t mailbox_id, U8_t address,  MailboxBase_t *data, U32_t timeout);
 
 
 /******************************************************************************

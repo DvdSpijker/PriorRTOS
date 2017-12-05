@@ -20,7 +20,7 @@
 void KernelTaskTimerUpdate(const void *p_arg, U32_t v_arg)
 {
     static U32_t sleep_time = 0;
-    static U32_t last_micros = 0;
+    static U32_t micros = 0;
 
     TASK_INIT_BEGIN() {
         /* Sleep time depends on the timer resolution.
@@ -29,21 +29,11 @@ void KernelTaskTimerUpdate(const void *p_arg, U32_t v_arg)
     }
     TASK_INIT_END();
 
-    U32_t t_accu_us = 0;
-    U32_t curr_micros = OsRuntimeMicrosGet();
-    if(curr_micros == 0) {
+    U32_t t_accu_us = OsRunTimeMicrosDeltaGet(&micros);
+    if(t_accu_us == 0) {
         goto sleep;
-    } else {
-        if(curr_micros >= last_micros) {
-            t_accu_us = curr_micros - last_micros;
-        } else {
-            t_accu_us = last_micros - curr_micros;
-        }
-        last_micros = curr_micros;
-    }
-
-    TimerUpdateAll(t_accu_us);
-    ListIdBufferFillCycle(&TimerList);
+    } 
+    KTimerUpdateAll(t_accu_us);
 
 sleep:
     TaskSleep(sleep_time);

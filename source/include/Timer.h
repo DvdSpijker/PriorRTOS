@@ -53,6 +53,9 @@ typedef enum {
     TIMER_STATE_INVALID   =0xFF,
 } TmrState_t;
 
+
+typedef void (*TimerOverflowCallback_t)(Id_t timer_id);
+
 /* Timer Parameter macros */
 #define TIMER_PARAMETER_ON 0x01
 #define TIMER_PARAMETER_PERIODIC  0x02
@@ -78,34 +81,37 @@ typedef enum {
 #endif
 
 /******************************************************************************
- * @func: Id_t TimerCreate(U32_t interval, U8_t parameter)
+ * @func: Id_t TimerCreate(U32_t interval, U8_t parameter, 
+ *                         TimerOverflowCallback_t overflow_callback)
  *
  * @desc: Creates a timer that will overflow after the specified
  * interval. If the TIMER_PARAMETER_ON flag is set, the timer will start
  * after creation. The number of iterations before auto-delete can be
  * specified through the use of the parameter.
  * Upon overflowing the timer will do the following:
- * - Always: Generate an overflow event.
- * - If TIMER_PARAMETER_ON = 1: Start the timer.
+ * - If PRTOS_CONFIG_USE_TIMER_EVENT_OVERFLOW: Emit a timer overflow event.
+ * - If overflow_callback != NULL: Call the overflow callback.
+ * - If TIMER_PARAMETER_ON = 1: Restart the timer.
  * - If TIMER_PARAMETER_AR = 1: Automatically reset.
  * - If TIMER_PARAMETER_P = 0: Decrement the number of iterations left.
  * - If iterations left = 0: Delete the timer.
  * Timer parameter macros
  * TIMER_PARAMETER_AR (auto-reset)
- * TIMER_PARAMETER_ON (on)
- * TIMER_PARAMETER_P  (periodic)
+ * TIMER_PARAMETER_ON 
+ * TIMER_PARAMETER_PERIODIC
  * TIMER_PARAMETER_ITR_SET(itr) (sets iterations for parameter)
  * TIMER_PARAMETER_ITR_GET(param) (gets iterations from parameter)
  *
  * Arguments:
  * @argin: (U32_t) interval_us; Timer interval in microseconds(us), 0xFFFFFFFF is illegal.
  * @argin: (U8_t) parameter; Timer parameter.
+ * @argin: (TimerOverflowCallback_t) overflow_callback; Called when the timer overflows.
  *
  * @rettype:  (Id_t) Timer ID
  * @retval:   INVALID_ID; if creation failed.
  * @retval:   Other; if the timer was created.
  ******************************************************************************/
-Id_t TimerCreate(U32_t interval_us, U8_t parameter);
+Id_t TimerCreate(U32_t interval_us, U8_t parameter, TimerOverflowCallback_t overflow_callback);
 
 
 /******************************************************************************

@@ -17,14 +17,14 @@
 
 LOG_FILE_NAME("Event.c");
 
-U32_t PublishedEventLifetimeUs;
+U32_t EmittedEventLifetimeUs;
 
 extern U32_t OsTickPeriodGet(void);
 
 /* TODO: Events will have to be stored in their lists in a FIFO manner.
- * This means: Newly published / subscribed events are pushed to the back.
+ * This means: Newly emitted / listened events are pushed to the back.
  * Refreshed events will be pushed to the front.
- * Subscribed events that have occurred will be at the front of the list,
+ * Listened events that have occurred will be at the front of the list,
  * not-occurred events will remain at the bottom.
  * AddSorted operations will have to be replaced. */
 
@@ -34,9 +34,9 @@ void EventLifeTimeReset(pEvent_t event);
 
 OsResult_t EventInit(void)
 {
-    ListInit(&EventList, 0, NULL, 0);
+    ListInit(&EventList, 0);
     //LOG_DEBUG_NEWLINE("EventList: %p", &EventList);
-    PublishedEventLifetimeUs = OsTickPeriodGet() * PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS;
+    EmittedEventLifetimeUs = OsTickPeriodGet() * PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS;
 
     return OS_OK;
 }
@@ -45,7 +45,7 @@ pEvent_t EventCreate(Id_t source_id, U32_t event_code, U32_t life_time_us)
 {
     pEvent_t new_event = NULL;
 
-    new_event = (pEvent_t)CoreObjectAlloc(sizeof(Event_t), 0, NULL);//malloc(sizeof(Event_t));
+    new_event = (pEvent_t)KCoreObjectAlloc(sizeof(Event_t), 0, NULL);//malloc(sizeof(Event_t));
     if(new_event == NULL) {
         return NULL;
     }
@@ -54,7 +54,7 @@ pEvent_t EventCreate(Id_t source_id, U32_t event_code, U32_t life_time_us)
     new_event->occurrence_cnt = 0;
     new_event->source_id = source_id;
     new_event->event_code = event_code;
-
+ 
     ListNodeInit(&new_event->list_node, (void*)new_event);
 
     return new_event;
@@ -72,9 +72,14 @@ OsResult_t  EventAddToList(LinkedList_t *event_list, pEvent_t event)
     return result;
 }
 
-OsResult_t EventSubscribe(LinkedList_t *task_event_list, Id_t object_id, U32_t event_code, U8_t flags, U32_t life_time_us, Id_t *out_event_id)
+OsResult_t EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t event_code, U8_t flags, U32_t life_time_us, Id_t *out_event_id)
 {
-    U16_t hash = EventToHash(object_id, event_code);
+    /* Generate a hash value from the event. 
+     * Then search for this hash value in the event list, 
+     * this search will return !NULL if the task is already
+     * listened to this event, in which case we only want 
+     * to refresh its lifetime. */
+    U16_t hash = EventToHash(object_id, event_code); 
     ListNode_t *node = ListSearch(task_event_list, hash);
     pEvent_t new_event = NULL;
     if(node != NULL) {
@@ -85,30 +90,42 @@ OsResult_t EventSubscribe(LinkedList_t *task_event_list, Id_t object_id, U32_t e
         return OS_FAIL;
     }
 
+    /* Set event flags. */
     U32_t new_event_code = event_code;
-    if(life_time_us == 0) {
-        flags |= EVENT_FLAG_NO_TIMEOUT;
+    if(life_time_us == OS_TIMEOUT_INFINITE) {
+        EVENT_FLAG_SET(new_event_code, EVENT_FLAG_NO_TIMEOUT);
     }
     EVENT_FLAG_SET(new_event_code, flags);
-
+    
+    /* If the task was not listening,
+     * create a new event. */
     new_event = EventCreate(object_id, new_event_code, life_time_us);
     if(new_event != NULL) {
-        new_event->list_node.id = hash;
+        new_event->list_node.id = hash; /* Assign new event the generated hash value as its ID. */
         OsResult_t result = ListNodeAddAtPosition(task_event_list, &new_event->list_node, LIST_POSITION_TAIL);
-        if(result == OS_OK) {
-            *out_event_id = ListNodeIdGet(&new_event->list_node);
+        
+        if(result == OS_OK) { /* Only assign the event ID if there is a pointer. */
+            if(out_event_id != NULL) {
+                *out_event_id = ListNodeIdGet(&new_event->list_node);    
+            }
         } else {
-            CoreObjectFree((void **)&new_event, NULL);
-            *out_event_id = INVALID_ID;
+            /* Free the allocated object if adding it to the list failed. 
+             * Also set the event_id pointer to invalid if !NULL. */
+            KCoreObjectFree((void **)&new_event, NULL);
+            if(out_event_id != NULL) {
+                *out_event_id = OS_ID_INVALID;    
+            }
         }
         return result;
     }
+    
+    /* This point will only be reached in case of an error. */
     LOG_ERROR_NEWLINE("Subscribing to event from object %04x failed.");
     return OS_ERROR;
 }
 
 
-OsResult_t EventPublish(Id_t source_id, U32_t event_code, U8_t flags)
+OsResult_t EventEmit(Id_t source_id, U32_t event_code, U8_t flags)
 {
     U16_t hash = EventToHash(source_id, event_code);
     ListNode_t *node = ListSearch(&EventList, hash);
@@ -119,20 +136,19 @@ OsResult_t EventPublish(Id_t source_id, U32_t event_code, U8_t flags)
 
     U32_t new_event_code = event_code;
     EVENT_FLAG_SET(new_event_code, flags);
-
-    pEvent_t new_event = EventCreate(source_id, new_event_code, PublishedEventLifetimeUs);
+    pEvent_t new_event = EventCreate(source_id, new_event_code, EmittedEventLifetimeUs);
     if(new_event != NULL) {
         new_event->list_node.id = hash;
-        /* Published events are stored in the EventList in a FIFO manner. */
+        /* Emitted events are stored in the EventList in a FIFO manner. */
         if(ListNodeAddAtPosition(&EventList, &new_event->list_node, LIST_POSITION_TAIL) == OS_OK) {
             //LOG_EVENT(new_event);
             return OS_OK;
         } else {
-            CoreObjectFree((void **)&new_event, NULL);
+            KCoreObjectFree((void **)&new_event, NULL);
         }
 
     }
-    LOG_ERROR_NEWLINE("Publishing event for source %04x failed.");
+    LOG_ERROR_NEWLINE("Emiting event for source %04x failed.");
     return OS_ERROR;
 }
 
@@ -196,7 +212,6 @@ void EventOccurrenceCountReset(pEvent_t event)
 S8_t EventLifeTimeIncrement(pEvent_t event, U32_t t_us)
 {
     S8_t status = 0;
-
     if((event->life_time_us_cnt + t_us) < event->life_time_us) {
         event->life_time_us_cnt += t_us;
     } else {
@@ -209,6 +224,16 @@ S8_t EventLifeTimeIncrement(pEvent_t event, U32_t t_us)
 void EventLifeTimeReset(pEvent_t event)
 {
     event->life_time_us_cnt = 0;
+}
+
+
+void EventHandle(pEvent_t event)
+{
+    if(event != NULL) {
+        EVENT_FLAG_CLEAR(event->event_code, (EVENT_FLAG_TIMED_OUT | EVENT_FLAG_OCCURRED));
+        event->life_time_us_cnt = 0;
+        event->occurrence_cnt = 0;
+    }        
 }
 
 pEvent_t EventHandleFromId(LinkedList_t *list, Id_t event_id)
@@ -289,7 +314,7 @@ OsResult_t EventDestroy(LinkedList_t *list, pEvent_t event)
     if(ListNodeIsInList(list, &event->list_node)) {
         ListNodeRemove(list, &event->list_node);
     }
-    CoreObjectFree((void **)&event, NULL);
+    KCoreObjectFree((void **)&event, NULL);
     //free(event);
     return OS_OK;
 }
@@ -298,6 +323,15 @@ ListSize_t EventListSizeGet(LinkedList_t *event_list)
 {
     return (event_list == NULL ? 0 : event_list->size);
 }
+
+pEvent_t EventListContainsEvent(LinkedList_t *event_list, Id_t source_id, U32_t event_code)
+{
+    U16_t hash = EventToHash(source_id, event_code);
+    pEvent_t event = ListSearch(event_list, hash);
+    return event;
+}
+
+
 
 OsResult_t  EventFlagSet(pEvent_t event, U8_t event_flag)
 {
@@ -347,7 +381,7 @@ bool EventIsEqual(pEvent_t event_x, pEvent_t event_y)
 
 bool EventIsMock(pEvent_t event)
 {
-    return(event->source_id == INVALID_ID && event->event_code == MOCK_EVENT);
+    return(event->source_id == OS_ID_INVALID && event->event_code == MOCK_EVENT);
 }
 
 bool EventHasOccurred(pEvent_t event)
@@ -402,7 +436,7 @@ void EventListPrint(LinkedList_t *list)
 
     }
 
-    ListUnlock(list, LIST_LOCK_MODE_READ);
+    ListUnlock(list);
 
 
 }

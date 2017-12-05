@@ -191,5 +191,5 @@ Id_t ConvertHexStringToId(char *hex_id_str)
         hex = ConvertCharToDec(hex_id_str[i]) & 0x0F;
     }
 
-    return INVALID_ID;
+    return OS_ID_INVALID;
 }

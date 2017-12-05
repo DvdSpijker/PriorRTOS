@@ -18,7 +18,8 @@ extern "C" {
 
 typedef struct Timer_t {
     ListNode_t       list_node;
-
+    
+    TimerOverflowCallback_t ovf_callback;
     TmrState_t          state;
     U8_t                parameter;
     U32_t               T_us;
@@ -28,8 +29,8 @@ typedef struct Timer_t {
 typedef struct Timer_t*  pTimer_t;
 LinkedList_t TimerList;
 
-OsResult_t TimerInit(void);
-void TimerUpdateAll(U32_t t_accu);
+OsResult_t KTimerInit(void);
+void KTimerUpdateAll(U32_t t_us);
 
 
 

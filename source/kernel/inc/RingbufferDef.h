@@ -35,7 +35,7 @@ typedef struct Ringbuf_t {
 
 typedef struct Ringbuf_t* pRingbuf_t;
 
-OsResult_t RingbufInit(void);
+OsResult_t KRingbufInit(void);
 
 
 

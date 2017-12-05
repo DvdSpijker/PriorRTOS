@@ -53,21 +53,28 @@
 
 LOG_FILE_NAME("Task.c");
 
-/* Free task ID buffer */
-#define TASK_ID_BUFFER_SIZE 4
-Id_t TaskIdBuffer[TASK_ID_BUFFER_SIZE];
 
 #define TASK_EVENT_SLEEP (EVENT_TYPE_STATE_CHANGE | 0x00002000)
-static OsResult_t UtilTaskSubscribe(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *out_event_id);
+static OsResult_t ITaskListen(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *event_id);
 
-extern void CoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task);
+extern U32_t OsRunTimeMicrosGet(void);
+
 extern void TaskGenericNameSet(Id_t task_id, const char* gen_name);
 
+/* -3 Event does not exist.
+ * -1 Event has not occurred.
+ * 0  Event has occurred.
+ * 1  Event has timed out */
+static S8_t ITaskEventStateGet(pEvent_t event);
 
-OsResult_t TaskInit(void)
+static S8_t ITaskEventHandle(pEvent_t event);
+
+static OsResult_t ITaskResume(Id_t task_id);
+
+OsResult_t KTaskInit(void)
 {
-    ListInit(&TcbList, (Id_t)ID_TYPE_TASK, TaskIdBuffer, TASK_ID_BUFFER_SIZE);
-    ListInit(&TcbWaitList, (Id_t)ID_TYPE_TASK, NULL, 0);
+    ListInit(&TcbList, (Id_t)ID_TYPE_TASK);
+    ListInit(&TcbWaitList, (Id_t)ID_TYPE_TASK);
 
     //LOG_INFO_NEWLINE("TcbList: %p", &TcbList);
     //LOG_INFO_NEWLINE("TcbWaitList: %p", &TcbWaitList);
@@ -87,22 +94,22 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
 #endif
 
     if (priority < 1 || priority > 5) {
-        return INVALID_ID;
+        return OS_ID_INVALID;
     }
     if (category > TASK_CAT_OS) {
-        return INVALID_ID;
+        return OS_ID_INVALID;
     }
-    if (category == TASK_CAT_OS && CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
-        return INVALID_ID;
+    if (category == TASK_CAT_OS && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
+        return OS_ID_INVALID;
     }
 
     volatile pTcb_t new_TCB;
 
     /* Use data section of ObjectAlloc for Task stack in the future. */
-    new_TCB = (pTcb_t)CoreObjectAlloc(sizeof(Tcb_t), 0, NULL);
+    new_TCB = (pTcb_t)KCoreObjectAlloc(sizeof(Tcb_t), 0, NULL);
     if (new_TCB == NULL) {
         LOG_ERROR_NEWLINE("Failed to allocate memory for a task.");
-        return INVALID_ID;
+        return OS_ID_INVALID;
     }
 
     OsResult_t result;
@@ -112,12 +119,12 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
     if(result != OS_OK) {
         LOG_ERROR_NEWLINE("A task could not be added to the list.");
         ListNodeDeinit(&TcbList, &new_TCB->list_node);
-        CoreObjectFree((void **)&new_TCB, NULL);
-        return INVALID_ID;
+        KCoreObjectFree((void **)&new_TCB, NULL);
+        return OS_ID_INVALID;
     }
-    ListInit(&new_TCB->event_list, 0, NULL, 0);
+    ListInit(&new_TCB->event_list, 0);
     new_TCB->handler = handler;
-    new_TCB->priority = UtilCalculatePriority(category, priority);
+    new_TCB->priority = KCalculatePriority(category, priority);
     new_TCB->category = category;
     new_TCB->p_arg = p_arg;
     new_TCB->v_arg = v_arg;
@@ -131,19 +138,19 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
     /* Handle task creation parameters. */
     if(param != TASK_PARAM_NONE)  {
         if(param & TASK_PARAM_ESSENTIAL) {
-            UtilTaskFlagSet(new_TCB, TASK_FLAG_ESSENTIAL);
+            KTaskFlagSet(new_TCB, TASK_FLAG_ESSENTIAL);
         }
         if(param & TASK_PARAM_NO_PREEM) {
-            UtilTaskFlagSet(new_TCB, TASK_FLAG_NO_PREEM);
+            KTaskFlagSet(new_TCB, TASK_FLAG_NO_PREEM);
         }
-        if(param & TASK_PARAM_INSTANT_WAKE) {
-            TaskWake(new_TCB->list_node.id, v_arg);
+        if(param & TASK_PARAM_START) {
+            TaskResumeWithVarg(new_TCB->list_node.id, v_arg);
         }
     }
 #ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
-    EventPublish(new_TCB->list_node.id, TASK_EVENT_CREATE, EVENT_FLAG_NONE);
+    EventEmit(new_TCB->list_node.id, TASK_EVENT_CREATE, EVENT_FLAG_NONE);
 #endif
-    LOG_INFO_NEWLINE("Task created with ID %04x", new_TCB->list_node.id);
+    LOG_INFO_NEWLINE("Task created: %04x", new_TCB->list_node.id);
     return new_TCB->list_node.id;
 }
 
@@ -159,15 +166,16 @@ OsResult_t TaskDelete(Id_t *task_id)
         if (*task_id == TcbRunning->list_node.id) {
             tcb = TcbRunning;
         } else {
-            tcb = UtilTcbFromId(*task_id);
+            tcb = KTcbFromId(*task_id);
         }
-        *task_id = INVALID_ID;
+        *task_id = OS_ID_INVALID;
     }
 
     if(tcb != NULL) {
-        UtilTaskFlagSet(tcb, TASK_FLAG_DELETE);
+        KTaskFlagSet(tcb, TASK_FLAG_DELETE);
+        
 #ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
-        EventPublish(task_id, TASK_EVENT_DELETE, EVENT_FLAG_NONE);
+        EventEmit(task_id, TASK_EVENT_DELETE, EVENT_FLAG_NONE);
 #endif
         result = OS_OK;
         LOG_INFO_NEWLINE("Deleted task %04x", tcb->list_node.id);
@@ -182,10 +190,10 @@ void TaskGenericNameSet(Id_t task_id, const char* gen_name)
     pTcb_t tcb = NULL;
     OsResult_t result = OS_ERROR;
 
-    if (task_id == INVALID_ID) {
+    if (task_id == OS_ID_INVALID) {
         tcb = TcbRunning;
     } else {
-        tcb = UtilTcbFromId(task_id);
+        tcb = KTcbFromId(task_id);
     }
 
     if(tcb != NULL) {
@@ -205,10 +213,10 @@ void TaskGenericNameSet(Id_t task_id, const char* gen_name)
 OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)
 {
     OsResult_t result = OS_ERROR;
-    if(rt_task_id == INVALID_ID) {
+    if(rt_task_id == OS_ID_INVALID) {
         return OS_INVALID_ID;
     }
-    pTcb_t tcb = UtilTcbFromId(rt_task_id);
+    pTcb_t tcb = KTcbFromId(rt_task_id);
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_OK) {
             result = OS_INVALID_ID;
@@ -216,25 +224,34 @@ OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)
                 tcb->deadline_time_us = t_ms;
                 result = OS_OK;
             }
-            ListNodeUnlock(&tcb->list_node, LIST_LOCK_MODE_WRITE);
+            ListNodeUnlock(&tcb->list_node);
         }
     }
 
     return result;
 }
 
-OsResult_t TaskWake(Id_t task_id, U32_t v_arg)
+OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg)
 {
-    if(task_id == INVALID_ID) {
+    if(task_id == OS_ID_INVALID) {
         return OS_INVALID_ID;
     }
     OsResult_t result = OS_ERROR;
-    pTcb_t tcb = UtilTcbFromId(task_id);
+    pTcb_t tcb = KTcbFromId(task_id);
     if(tcb != NULL) {
         tcb->v_arg = v_arg;
-        result = EventPublish(task_id, TASK_EVENT_ACTIVATE, (EVENT_FLAG_ADDRESSED | EVENT_FLAG_NO_HANDLER));
+        result = ITaskResume(task_id);
     }    
     return result;
+}
+
+OsResult_t TaskResume(Id_t task_id)
+{
+    if(task_id == OS_ID_INVALID) {
+        return OS_INVALID_ID;
+    }
+    OsResult_t result = ITaskResume(task_id);
+    return result;    
 }
 
 
@@ -246,30 +263,104 @@ OsResult_t TaskSuspend(Id_t task_id)
     return OS_OK;
 }
 
-void TaskResume(Id_t task_id)
-{
-
-}
-
 #endif
 
 
 
-OsResult_t TaskPoll(Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *out_event_id)
+Id_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms)
 {
-    /* Acquire correct tcb. */
     OsResult_t result = OS_ERROR;
-    result = UtilTaskSubscribe(TcbRunning, object_id, event, flags, timeout_ms, out_event_id);
+    Id_t event_id = OS_ID_INVALID;
+    result = ITaskListen(TcbRunning, object_id, event, EVENT_FLAG_PERMANENT, timeout_ms, &event_id);
+    if(result == OS_OK) {
+        return event_id;     
+    }           
+    return OS_ID_INVALID;  
+}
+
+OsResult_t TaskPollRemove(Id_t object_id, U32_t event)
+{
+    OsResult_t result = OS_ERROR;
+    pEvent_t evt = EventListContainsEvent(&TcbRunning->event_list, object_id, event);
+    if(evt != NULL) {   
+        result = EventDestroy(&TcbRunning->event_list, evt);
+    } 
+    
+    return result;    
+}
+
+
+OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll)
+{
+    OsResult_t result = OS_ERROR;
+    
+    /* Check if the task is already listened to this event. */
+    pEvent_t sub_event = EventListContainsEvent(&TcbRunning->event_list, object_id, event);
+    
+    if(sub_event == NULL) {
+        if(add_poll == true) {
+            goto new_poll;  
+        } else {
+            result = OS_FAIL;
+        }
+    } else {
+        S8_t event_state = ITaskEventStateGet(sub_event);
+        if(event_state == -1) {
+            result = OS_POLL;
+        } else if(event_state == 0) {
+            ITaskEventHandle(sub_event);
+            result = OS_EVENT;
+        } else if(event_state == 1) {
+            ITaskEventHandle(sub_event);
+            result = OS_TIMEOUT;
+        } else {
+            result = OS_ERROR;
+        }
+        if(add_poll == true) {
+            goto new_poll;
+        }
+    }
+
+/* Return without adding a new poll. */    
+    return result;
+
+
+new_poll:
+/* Add a new poll and return. */    
+    result = ITaskListen(TcbRunning, object_id, event, EVENT_FLAG_NONE, timeout_ms, NULL);
+    if(result == OS_OK) {
+        result = OS_POLL;
+    }    
+    
     return result;
 }
 
 
+OsResult_t TaskJoin(Id_t task_id, U32 timeout)
+{
+    OsResult_t result = OS_ERROR;
+    
+    #ifdef PRTOS_CONFIG_USE_SCHEDULER_PREEM
+    #ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
+        result = TaskWait(task_id, TASK_EVENT_DELETE, timeout);   
+    #endif
+    #else 
+    #ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
+         result = TaskPoll(task_id, TASK_EVENT_DELETE, timeout, true);    
+    #endif
+    #endif
+    
+    return result;    
+}
+
 OsResult_t TaskSleep(U32_t t_ms)
 {
+    /* Sleeping is achieved by waiting/polling for 
+     * an event that will never occur with a timeout.
+     * The timeout is the sleep-time. */
     OsResult_t result = OS_OK;
     if(t_ms > 0) {
-        Id_t sleep_event;
-        result = TaskPoll(INVALID_ID, TASK_EVENT_SLEEP, EVENT_FLAG_NO_HANDLER, t_ms, &sleep_event);
+        result = TaskPoll(OS_ID_INVALID, TASK_EVENT_SLEEP, t_ms, true);
     } else {
         result = OS_OUT_OF_BOUNDS;
     }
@@ -280,6 +371,7 @@ OsResult_t TaskSleep(U32_t t_ms)
 
 OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
 {
+    /* Validate priority range. */
     if (new_priority < 1 || new_priority > 5) {
         return OS_OUT_OF_BOUNDS;
     }
@@ -287,17 +379,19 @@ OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
     pTcb_t tcb = NULL;
     OsResult_t result = OS_ERROR;
 
-    if (task_id == INVALID_ID) {
+    if (task_id == OS_ID_INVALID) {
         tcb = TcbRunning;
     } else {
-        tcb = UtilTcbFromId(task_id);
+        tcb = KTcbFromId(task_id);
     }
 
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_OK) {
-            tcb->priority = UtilCalculatePriority(tcb->category, new_priority);
+            /* The priority stored in the TCB is a combined priority of the minor and category.
+             * The original minor priority can be extracted. */
+            tcb->priority = KCalculatePriority(tcb->category, new_priority);
             result = OS_OK;
-            ListNodeUnlock(&tcb->list_node, LIST_LOCK_MODE_WRITE);
+            ListNodeUnlock(&tcb->list_node);
         }
     }
 
@@ -307,16 +401,16 @@ OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
 Prio_t TaskPriorityGet(Id_t task_id)
 {
     pTcb_t tcb = NULL;
-    if (task_id == INVALID_ID) {
+    if (task_id == OS_ID_INVALID) {
         tcb = TcbRunning;
     } else {
-        tcb = UtilTcbFromId(task_id);
+        tcb = KTcbFromId(task_id);
     }
     Prio_t priority = 0;
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
             priority = tcb->priority;
-            ListNodeUnlock(&tcb->list_node, LIST_LOCK_MODE_READ);
+            ListNodeUnlock(&tcb->list_node);
         }
     }
 
@@ -326,180 +420,121 @@ Prio_t TaskPriorityGet(Id_t task_id)
 TaskState_t TaskStateGet(Id_t task_id)
 {
     pTcb_t tcb = NULL;
-    if (task_id == INVALID_ID) {
+    if (task_id == OS_ID_INVALID) {
         tcb = TcbRunning;
     } else {
-        tcb = UtilTcbFromId(task_id);
+        tcb = KTcbFromId(task_id);
     }
 
     TaskState_t state = TASK_STATE_UNDEFINED;
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
             state = tcb->state;
-            ListNodeUnlock(&tcb->list_node, LIST_LOCK_MODE_READ);
+            ListNodeUnlock(&tcb->list_node);
         }
     }
     return state;
 }
 
-OsResult_t TaskCategorySet(Id_t task_id, TaskCat_t new_cat)
-{
-    if(new_cat == TASK_CAT_OS) {
-        if(CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
-            return OS_RESTRICTED;
-        }
-    }
-    if(new_cat > TASK_CAT_LOW) {
-        return OS_OUT_OF_BOUNDS;
-    }
 
-    OsResult_t result = OS_ERROR;
-    pTcb_t tcb = NULL;
-    if(task_id == INVALID_ID) {
-        tcb = TcbRunning;
-    } else {
-        tcb = UtilTcbFromId(task_id);
-    }
-
-    if(tcb != NULL) {
-        if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_OK) {
-            tcb->priority = UtilCalculateInvPriority(tcb->priority, tcb->category);
-            tcb->category = new_cat;
-            tcb->priority = UtilCalculatePriority(new_cat, tcb->priority);
-            result = OS_OK;
-            ListNodeUnlock(&tcb->list_node, LIST_LOCK_MODE_WRITE);
-        }
-    }
-
-    return result;
-}
-
-Id_t TaskIdGet(void)
-{
-    Id_t id = INVALID_ID;
-    if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
-        id = ListNodeIdGet(&TcbRunning->list_node);
-        ListNodeUnlock(&TcbRunning->list_node, LIST_LOCK_MODE_READ);
-    }
-    return id;
-}
-
-
-
-U32_t TaskRuntimeGet(Id_t task_id)
+U32_t TaskRunTimeGet(void)
 {
     U32_t runtime_us = 0;
-    pTcb_t tcb = NULL;
-
-    if(task_id == INVALID_ID) {
-        tcb = TcbRunning;
-    } else {
-        tcb = UtilTcbFromId(task_id);
+    if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
+        runtime_us = TcbRunning->run_time_us;
+        ListNodeUnlock(&TcbRunning->list_node);
     }
-    if(tcb != NULL) {
-        if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
-            runtime_us = tcb->run_time_us;
-            ListNodeUnlock(&tcb->list_node, LIST_LOCK_MODE_READ);
-        }
-    }
+   
     return runtime_us;
 }
 
 
-S8_t TaskEventStateGet(Id_t event_id)
+static S8_t ITaskEventStateGet(pEvent_t event)
 {
+    
     S8_t result = 0;
-    pTcb_t tcb = TcbRunning;
-    static pEvent_t occ_event =  NULL;
-    static LinkedList_t *list = NULL;
-    if(tcb != NULL) {
-        list = &tcb->event_list;
-    }
-
-    if(list->size == 0) {
-        result = -2;
-    }
-
-    if(result == 0) {
-        occ_event = EventFromId(list, event_id);
-        if(occ_event != NULL) {
-            if(ListNodeLock(&occ_event->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
-                if(EventHasOccurred(occ_event)) {
+        if(event != NULL) {
+            if(ListNodeLock(&event->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
+                if(EventHasOccurred(event)) {
                     result = 0;
-                } else if (EventHasTimedOut(occ_event)) {
+                    } else if (EventHasTimedOut(event)) {
                     result = 1;
-                } else {
+                    } else {
                     result = -1;
                 }
-                ListNodeUnlock(&occ_event->list_node, LIST_LOCK_MODE_READ);
+                ListNodeUnlock(&event->list_node);
             }
         } else {
             result = -3;
         }
-    }
+   
 
     return result;
 }
 
 
-S8_t TaskEventHandle(Id_t event_id)
+
+
+static S8_t ITaskEventHandle(pEvent_t event)
 {
     S8_t result = -1;
     pTcb_t tcb = TcbRunning;
     LinkedList_t *list = NULL;
-    static pEvent_t occ_event =  NULL;
     if(tcb != NULL) {
         list = &tcb->event_list;
     }
 
-    occ_event = EventFromId(list, event_id);
-    if(occ_event != NULL) {
-        if(ListNodeLock(&occ_event->list_node, LIST_LOCK_MODE_WRITE) == OS_OK) {
-            if(EVENT_FLAG_GET(occ_event->event_code, EVENT_FLAG_PERMANENT)) {
-                EVENT_FLAG_CLEAR(occ_event->event_code, EVENT_FLAG_OCCURRED);
-                EVENT_FLAG_CLEAR(occ_event->event_code, EVENT_FLAG_TIMED_OUT);
-                EventLifeTimeReset(occ_event);
-                EventOccurrenceCountReset(occ_event);
-            } else {
-                EventHandleFromId(list, event_id);
-                EventDestroy(list, occ_event);
+    if(event != NULL) {
+        if(ListNodeLock(&event->list_node, LIST_LOCK_MODE_WRITE) == OS_OK) {
+                if(EventFlagGet(event, EVENT_FLAG_PERMANENT)) {
+                    /* If the event is permanent, handle the event (resets flags etc.). */
+                    EventHandle(event);
+                } else { /* Delete event if not permanent. */
+                    EventDestroy(list, event);
+                }
             }
             result = 0;
-            ListNodeUnlock(&occ_event->list_node, LIST_LOCK_MODE_WRITE);
+            ListNodeUnlock(&event->list_node);
         }
-    }
-
+   
     return result;
 
+}
+
+static OsResult_t ITaskResume(Id_t task_id)
+{
+    /* TODO: Check if the task is blocked by a waiting event. */
+    OsResult_t result = EventEmit(task_id, TASK_EVENT_ACTIVATE, EVENT_FLAG_ADDRESSED);
+    return result;
 }
 
 
 /********************************/
 
 
-void UtilTaskStateSet(pTcb_t tcb_pointer, TaskState_t new_state)
+void KTaskStateSet(pTcb_t tcb_pointer, TaskState_t new_state)
 {
     tcb_pointer->state = new_state;
 }
 
 
-void UtilTaskFlagSet(pTcb_t tcb, TaskFlags_t flag)
+void KTaskFlagSet(pTcb_t tcb, TaskFlags_t flag)
 {
     tcb->flags |= (U8_t)flag;
 }
 
-void UtilTaskFlagClear(pTcb_t tcb ,TaskFlags_t flag)
+void KTaskFlagClear(pTcb_t tcb ,TaskFlags_t flag)
 {
     tcb->flags &= ~((U8_t)flag);
 }
 
-U8_t UtilTaskFlagGet(pTcb_t tcb, TaskFlags_t flag)
+U8_t KTaskFlagGet(pTcb_t tcb, TaskFlags_t flag)
 {
     return (tcb->flags & ((U8_t)flag));
 }
 
 
-Prio_t UtilCalculateInvPriority(Prio_t P, TaskCat_t Mj)
+Prio_t KCalculateInvPriority(Prio_t P, TaskCat_t Mj)
 {
     if(Mj > 0) {
         return P/(Mj*5) + 1;
@@ -508,13 +543,13 @@ Prio_t UtilCalculateInvPriority(Prio_t P, TaskCat_t Mj)
     }
 }
 
-Prio_t UtilCalculatePriority(TaskCat_t Mj,Prio_t Mi)
+Prio_t KCalculatePriority(TaskCat_t Mj,Prio_t Mi)
 {
     return (Mj * 5 + Mi - 1);
 }
 
 
-LinkedList_t* UtilTcbLocationGet(pTcb_t tcb)
+LinkedList_t* KTcbLocationGet(pTcb_t tcb)
 {
     LinkedList_t *list = &TcbList;
 
@@ -536,7 +571,7 @@ LinkedList_t* UtilTcbLocationGet(pTcb_t tcb)
 }
 
 
-pTcb_t UtilTcbFromId(Id_t task_id)
+pTcb_t KTcbFromId(Id_t task_id)
 {
     ListNode_t *node = ListSearch(&TcbList, task_id);
     if(node != NULL) {
@@ -549,9 +584,14 @@ pTcb_t UtilTcbFromId(Id_t task_id)
     return NULL;
 }
 
-OsResult_t UtilTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to_list)
+pTcb_t KTaskRunningGet(void)
 {
-    if(!CoreFlagGet(CORE_FLAG_KERNEL_MODE)) {
+    return TcbRunning;
+}
+
+OsResult_t KTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to_list)
+{
+    if(!KCoreFlagGet(CORE_FLAG_KERNEL_MODE)) {
         return OS_RESTRICTED;
     }
 
@@ -561,13 +601,13 @@ OsResult_t UtilTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to
     return ListNodeMove(from_list, to_list, &to_move->list_node);
 }
 
-void UtilTcbSwap(pTcb_t x, pTcb_t y, LinkedList_t *list)
+void KTcbSwap(pTcb_t x, pTcb_t y, LinkedList_t *list)
 {
     ListNodeSwap(list, &x->list_node, &y->list_node);
 }
 
 
-void UtilTcbDestroy(pTcb_t tcb, LinkedList_t *list)
+void KTcbDestroy(pTcb_t tcb, LinkedList_t *list)
 {
     ListNode_t *node = &tcb->list_node;
     if(list == NULL) {
@@ -577,35 +617,46 @@ void UtilTcbDestroy(pTcb_t tcb, LinkedList_t *list)
     }
     EventListDestroy(&tcb->event_list);
     ListNodeDeinit(&TcbList, node);
-    CoreObjectFree((void**)&tcb, NULL);
+    KCoreObjectFree((void**)&tcb, NULL);
 }
 
 
-static OsResult_t UtilTaskSubscribe(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *out_event_id)
+static OsResult_t ITaskListen(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *event_id)
 {
     OsResult_t result = OS_ERROR;
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_OK) {
-            result = EventSubscribe(&tcb->event_list, object_id, event, flags, ConvertMsToUs(timeout_ms), out_event_id);
-            if((flags & EVENT_FLAG_PERMANENT)) {
-                UtilTaskFlagSet(tcb, TASK_FLAG_WAIT_PERMANENT);
-            } else {
-                UtilTaskFlagSet(tcb, TASK_FLAG_WAIT_ONCE);
-            }
-            result = OS_OK;
-            ListNodeUnlock(&tcb->list_node, LIST_LOCK_MODE_WRITE);
+            result = EventListen(&tcb->event_list, object_id, event, flags, ConvertMsToUs(timeout_ms), event_id);
+            ListNodeUnlock(&tcb->list_node);
         }
     }
     return result;
 }
 
 /* Adds t_us to the task's runtime.  */
-void UtilTaskRuntimeAdd(pTcb_t tcb, U32_t t_us)
-{
-    tcb->run_time_us += t_us;
+void KTaskRunTimeUpdate(void)
+{   
+    static U32_t last_micros = 0;
+    U32_t t_accu_us = 0;
+    U32_t curr_micros = OsRunTimeMicrosGet();
+    
+    if(curr_micros == 0) {
+        return;
+    }
+    
+    if(curr_micros >= last_micros) {
+        t_accu_us = curr_micros - last_micros;
+    } else {
+        t_accu_us = last_micros - curr_micros;
+    }
+    last_micros = curr_micros;  
+      
+    if(t_accu_us != 0) {
+        TcbRunning->run_time_us += t_accu_us;    
+    }  
 }
 
-void UtilTaskRuntimeReset(pTcb_t tcb)
+void KTaskRunTimeReset(pTcb_t tcb)
 {
     tcb->run_time_us = 0;
 }

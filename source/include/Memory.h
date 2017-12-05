@@ -1,5 +1,5 @@
 /******************************************************************************************************************************************
- *  File: Mm.h
+ *  File: Memory.h
  *  Description: Memory Management API.
 
  *  OS Version: V0.4
@@ -34,8 +34,8 @@
  *  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **********************************************************************************************************************************************/
 
-#ifndef MEMORY_H_
-#define MEMORY_H_
+#ifndef MM_H_
+#define MM_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -44,10 +44,10 @@ extern "C" {
 #include <Types.h>
 
 /******************************************************************************
- * @func: Id_t MmPoolCreate(U32_t size)
+ * @func: Id_t MemPoolCreate(U32_t size)
  *
  * @desc: Creates a memory pool on the OS heap if the amount of space
- * specified is available. MmPoolCreate will return an invalid ID (0xFFFF) if
+ * specified is available. MemPoolCreate will return an invalid ID (0xFFFF) if
  * the operation failed.
  *
  * Arguments:
@@ -57,11 +57,11 @@ extern "C" {
  * @retval:   INVALID_ID; if the pool was not created.
  * @retval:   Other; Valid ID if successful
  ******************************************************************************/
-Id_t MmPoolCreate(U32_t size);
+Id_t MemPoolCreate(U32_t size);
 
 
 /******************************************************************************
- * @func: void MmPoolDelete(Id_t pool_id)
+ * @func: void MemPoolDelete(Id_t pool_id)
  *
  * @desc: Formats and deletes the pool.
  *
@@ -73,11 +73,11 @@ Id_t MmPoolCreate(U32_t size);
  * @retval:   OS_INVALID_ID if the pool ID does not exist.
  * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
-OsResult_t MmPoolDelete(Id_t pool_id);
+OsResult_t MemPoolDelete(Id_t pool_id);
 
 
 /******************************************************************************
- * @func: OsResult_t MmPoolFormat(Id_t pool_id)
+ * @func: OsResult_t MemPoolFormat(Id_t pool_id)
  *
  * @desc: Formats the pool. All data will be lost.
  *
@@ -89,11 +89,11 @@ OsResult_t MmPoolDelete(Id_t pool_id);
  * @retval:   OS_INVALID_ID if the pool ID does not exist.
  * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
-OsResult_t MmPoolFormat(Id_t pool_id);
+OsResult_t MemPoolFormat(Id_t pool_id);
 
 
 /******************************************************************************
- * @func: void MmPoolDefrag(Id_t pool_id)
+ * @func: void MemPoolDefrag(Id_t pool_id)
  *
  * @desc: De-fragments the pool. This will result in a more continuous
  * pool, allowing for larger allocations.
@@ -104,12 +104,12 @@ OsResult_t MmPoolFormat(Id_t pool_id);
  *
  * @rettype:  N/A
  ******************************************************************************/
-//void MmPoolDefrag(Id_t pool_id);
+//void MemPoolDefrag(Id_t pool_id);
 
 
 
 /******************************************************************************
- * @func: OsResult_t MmPoolMove (Id_t src_pool, Id_t dst_pool)
+ * @func: OsResult_t MemPoolMove (Id_t src_pool, Id_t dst_pool)
  *
  * @desc: Moves the source pool to the destination pool. The source pool
  * will be zeroed. Returns OS_OK if operation was successful, OS_FAIL if
@@ -123,11 +123,11 @@ OsResult_t MmPoolFormat(Id_t pool_id);
  * @retval:   OS_OK if move was successful.
  * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
-//OsResult_t MmPoolMove(Id_t src_pool_id, Id_t dst_pool_id);
+//OsResult_t MemPoolMove(Id_t src_pool_id, Id_t dst_pool_id);
 
 
 /******************************************************************************
- * @func: U32_t MmPoolFreeSpaceGet(Id_t pool_id)
+ * @func: U32_t MemPoolFreeSpaceGet(Id_t pool_id)
  *
  * @desc: Returns the amount of space (in bytes) available in the pool.
  *
@@ -136,28 +136,28 @@ OsResult_t MmPoolFormat(Id_t pool_id);
  *
  * @rettype:  (U32_t) Free pool space.
  ******************************************************************************/
-U32_t MmPoolFreeSpaceGet(Id_t pool_id);
+U32_t MemPoolFreeSpaceGet(Id_t pool_id);
 
-U32_t MmPoolUsedSpaceGet(Id_t pool_id);
+U32_t MemPoolUsedSpaceGet(Id_t pool_id);
 
 
 /******************************************************************************
- * @func: U32_t MmOsHeapFreeSpaceGet(void)
+ * @func: U32_t MemOsHeapFreeSpaceGet(void)
  *
  * @desc: Returns the amount of space (in bytes) available on the
  * OS Heap.
  *
  * @rettype:  (U32_t) Free OS heap space.
  ******************************************************************************/
-U32_t MmOsHeapFreeSpaceGet(void);
+U32_t MemOsHeapFreeSpaceGet(void);
 
 
 /******************************************************************************
- * @func: void* MmAlloc (Id_t pool_id, U32_t size)
+ * @func: void* MemAlloc (Id_t pool_id, U32_t size)
  *
  * @desc: Dynamically allocates memory in given pool with specified size.
  * Allocated memory may be freed or reallocated.
- * If allocation fails, MmAllocDynamic will return NULL.
+ * If allocation fails, MemAllocDynamic will return NULL.
  *
  * Arguments:
  * @argin: (Id_t) pool_id; ID of the pool where the memory will be allocated.
@@ -167,16 +167,16 @@ U32_t MmOsHeapFreeSpaceGet(void);
  * @retval:   NULL; if allocation failed.
  * @retval:   Other; Valid pointer if successful
  ******************************************************************************/
-void *MmAlloc(Id_t pool_id, U32_t size);
+void *MemAlloc(Id_t pool_id, U32_t size);
 
 
 /******************************************************************************
- * @func: OsResult_t MmReAlloc (Id_t pool_id, void **ptr, U32_t size)
+ * @func: OsResult_t MemReAlloc (Id_t pool_id, void **ptr, U32_t size)
  *
  * @desc: Re-Allocates memory in given
  * pool with specified size. The allocation may be
  * moved by passing a different pool ID. If allocation
- * fails, MmReAlloc returns OS_FAIL. In this case the memory will
+ * fails, MemReAlloc returns OS_FAIL. In this case the memory will
  * still remain allocated in the current pool.
  *
  * Arguments:
@@ -196,12 +196,12 @@ void *MmAlloc(Id_t pool_id, U32_t size);
  *            the pool memory space.
  * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
-OsResult_t MmReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void** ptr, U32_t new_size);
+OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void** ptr, U32_t new_size);
 
 
 
 /******************************************************************************
- * @func: OsResult_t MmFree (Id_t pool_id, void **ptr)
+ * @func: OsResult_t MemFree (Id_t pool_id, void **ptr)
  *
  * @desc: Frees the specified piece of allocated memory,returning it to
  * the pool. Freed memory will be set to 0. The pointer to the freed memory
@@ -218,11 +218,11 @@ OsResult_t MmReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void** ptr, U32_t new_s
  *            the pool memory space.
  * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
-OsResult_t MmFree(void **ptr);
+OsResult_t MemFree(void **ptr);
 
 
 /******************************************************************************
- * @func: U32_t MmAllocSizeGet(void *ptr)
+ * @func: U32_t MemAllocSizeGet(void *ptr)
  *
  * @desc: Returns the size of the allocated piece of memory.
  *
@@ -233,10 +233,10 @@ OsResult_t MmFree(void **ptr);
  * @retval:   0; if the operation failed.
  * @retval:   Other; Valid allocation size.
  ******************************************************************************/
-U32_t MmAllocSizeGet(void *ptr);
+U32_t MemAllocSizeGet(void *ptr);
 
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* MEMORY_H_ */
+#endif /* MM_H_ */

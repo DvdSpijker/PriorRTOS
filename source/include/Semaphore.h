@@ -31,23 +31,20 @@ extern "C" {
 #endif
 
 /******************************************************************************
- * @func: Id_t SemaphoreCreate(U8_t sem_type, void *resource,
- *              U8_t max_count)
+ * @func: Id_t SemaphoreCreate(U8_t sem_type, U8_t max_count)
  *
  * @desc: Creates a semaphore of the specified type. If this type is not
- * SEM_TYPE_MUTEX_BINARY the maximum count will be set to max_count. A resource
- * can be attached to the semaphore.
+ * SEM_TYPE_MUTEX_BINARY the maximum count will be set to max_count.
  *
  * Arguments:
  * @argin: (U8_t) sem_type; Semaphore type. Currently only SEM_TYPE_MUTEX_BINARY.
- * @argin: (void *) resource; Resource to protect.
  * @argin: (U8_t) max_count; Maximum allowed recursive acquires.
  *
  * @rettype:  (Id_t) Semaphore ID.
  * @retval:   INVALID_ID; if the creation failed.
  * @retval:   Other; valid ID if the semaphore was created.
  ******************************************************************************/
-Id_t       SemaphoreCreate(U8_t sem_type, void *resource, U8_t max_count);
+Id_t       SemaphoreCreate(U8_t sem_type, U8_t max_count);
 
 
 /******************************************************************************
@@ -80,24 +77,7 @@ OsResult_t SemaphoreDelete(Id_t *sem_id);
  *            users.
  * @retval:   OS_ERROR; if the semaphore was not found.
  ******************************************************************************/
-OsResult_t SemaphoreAcquire(Id_t sem_id);
-
-/******************************************************************************
- * @func: OsResult_t SemaphoreAcquireResource(Id_t sem_id)
- *
- * @desc: Attempts to acquire the semaphore. If successful it return the
- * coupled resource.
- *
- * Arguments:
- * @argin: (Id_t ) sem_id; Semaphore ID.
- *
- * @rettype:  (void *) resource
- * @retval:   NULL; the semaphore is still acquired by one or multiple
- *            users or the semaphore could not be found.
- * @retval:   !NULL; pointer to the resource coupled to this semaphore.
- ******************************************************************************/
-void       *SemaphoreAcquireResource(Id_t sem_id);
-
+OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout);
 
 /******************************************************************************
  * @func: OsResult_t SemaphoreRelease(Id_t sem_id)

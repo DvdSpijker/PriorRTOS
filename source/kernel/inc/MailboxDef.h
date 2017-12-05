@@ -29,8 +29,8 @@ typedef struct Mailbox_t {
 
 typedef struct Mailbox_t* pMailbox_t;
 
-OsResult_t MailboxInit(void);
-pMailbox_t UtilMailboxFromId(Id_t mailbox_ID);
+OsResult_t KMailboxInit(void);
+pMailbox_t KMailboxFromId(Id_t mailbox_ID);
 
 #ifdef __cplusplus
 }

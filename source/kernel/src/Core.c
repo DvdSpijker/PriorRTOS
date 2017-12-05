@@ -50,7 +50,7 @@
 
 #include <CoreDef.h>
 #include <TaskDef.h>
-#include <MmDef.h>
+#include <MemoryDef.h>
 
 /* Kernel Tasks. */
 #include <KernelTaskIdle.h>
@@ -105,7 +105,7 @@ LOG_FILE_NAME("Core.c");
 
 #if PRTOS_CONFIG_ENABLE_SHELL==1
 #include <Shell.h>
-OsResult_t ShellInit(void);
+OsResult_t KShellInit(void);
 #endif
 
 
@@ -114,30 +114,40 @@ OsResult_t ShellInit(void);
 #define KERNEL_HEAP_MAGICWORD (MemBase_t)0xAB
 
 void CoreTick(void);
-static void CoreTickInvoke(U32_t tc);
+static void ICoreTickInvoke(U32_t tc);
 
-static void CoreSchedulerInit(void);
-static void CoreSchedulerCycle(void);
-static void CoreEventBrokerCycle(LinkedList_t *activated_task_list);
-static void CoreTaskListCompare(LinkedList_t *activated_task_list, LinkedList_t *task_list, pEvent_t compare_event, bool last_event);
-static void CoreTaskEventsCompare(LinkedList_t *activated_task_list, LinkedList_t *task_list, pTcb_t task,
-LinkedList_t *task_event_list,  pEvent_t compare_event, bool last_event);
+static void ICoreSchedulerInit(void);
+static void ICoreSchedulerCycle(void);
 
-void CoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task);
+struct EventBrokerArgs {
+    LinkedList_t *activated_task_list;
+    LinkedList_t *task_list;
+    pTcb_t task;
+    pEvent_t compare_event;
+    bool last_event;
+    U32_t delta_us;
+};
 
-static void CoreSwitchTask(void);
-static OsResult_t CoreLoadNewTask(pTcb_t tcb);
-static U16_t  CoreCalculatePrescaler(U16_t f_os);
-static void CoreRunTimeUpdate(U32_t t_us);
+static void ICoreEventBrokerCycle(LinkedList_t *activated_task_list);
+static void ICoreTaskListCompare(struct EventBrokerArgs *args);
+static void ICoreTaskEventsCompare(struct EventBrokerArgs *args);
+void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task);
 
-static void CoreOsIntDisable(void);
-static void CoreOsIntEnable(void);
+static void ICoreSwitchTask(void);
+static OsResult_t ICoreLoadNewTask(pTcb_t tcb);
+static U16_t  ICoreCalculatePrescaler(U16_t f_os);
+
+static void ICoreRunTimeUpdate(void);
+static void ICoreRunTimeAccumulate(U32_t t_us);
+
+static void ICoreOsIntDisable(void);
+static void ICoreOsIntEnable(void);
 
 #if PRTOS_CONFIG_ENABLE_WDT==1
-static void CoreWdtInit(void);
-static void CoreWdtKick();
-static void CoreWdtEnable(U8_t wdt_expire_opt);
-static void CoreWdtDisable();
+static void ICoreWdtInit(void);
+static void ICoreWdtKick();
+static void ICoreWdtEnable(U8_t wdt_expire_opt);
+static void ICoreWdtDisable();
 #endif
 
 /* Kernel Register */
@@ -152,7 +162,6 @@ typedef struct Reg_t {
     U16_t               ovf;
     U32_t               tick_period_us;
 
-    U8_t                ostick_cnt;
     volatile U8_t       isr_nest_counter;
     volatile U8_t       crit_sect_nest_counter;
     volatile U8_t       kernel_mode_nest_counter;
@@ -164,8 +173,7 @@ typedef struct Reg_t {
 
     volatile U32_t      micros;
     volatile U32_t      hours;
-    volatile U32_t      t_accu;  /* Accumulated time since last TimerUpdateAll. */
-    volatile U8_t       n_ticks; /* Number of ticks occurred since last TimerUpdateAll. */
+    volatile U32_t      t_accu;  /* Accumulated time since last RunTime update. */
 
     Id_t                kernel_heap;
     Id_t                object_heap; /* Holds all objects created by kernel modules. */
@@ -173,33 +181,26 @@ typedef struct Reg_t {
     MemBase_t*          heap_mgw0;
 
 
-    #if PRTOS_CONFIG_ENABLE_CPULOAD_CALC>0
+#if PRTOS_CONFIG_ENABLE_CPULOAD_CALC>0
     volatile U8_t           cpu_load;
-    #endif
+#endif
 
 } Reg_t;
 
 static Reg_t KernelReg;
 
 #define KERNEL_REG_LOCK()       \
-if(KernelReg.lock < 255) {      \
-    if(KernelReg.lock == 0) {   \
-        PortGlobalIntDisable(); \
-    }                           \
+if(KernelReg.lock < 0xFF) {     \
     KernelReg.lock++;           \
 
-    #define KERNEL_REG_UNLOCK()     \
+#define KERNEL_REG_UNLOCK()     \
+  KernelReg.lock--;             \
 }                               \
-if(KernelReg.lock > 0) {        \
-    if(KernelReg.lock == 1) {   \
-        PortGlobalIntEnable();  \
-    }                           \
-    KernelReg.lock--;            \
-}                               \
+else { while (1); }             \
 
 OsResult_t OsInit(OsResult_t *status_optional)
 {
-
+    OsCritSectBegin();
     OsResult_t status_kernel   = OS_OK; //status tracker for essential kernel modules
     *status_optional = OS_OK; //status tracker for optional modules
     KernelReg.lock = 0;
@@ -211,21 +212,19 @@ OsResult_t OsInit(OsResult_t *status_optional)
         KernelReg.micros = 0;
         KernelReg.hours = 0;
         KernelReg.t_accu = 0;
-        KernelReg.n_ticks = 0;
-        KernelReg.ostick_cnt = 0;
         KernelReg.scheduler_lock = 0;
-        KernelReg.kernel_heap = INVALID_ID;
-        KernelReg.object_heap = INVALID_ID;
+        KernelReg.kernel_heap = OS_ID_INVALID;
+        KernelReg.object_heap = OS_ID_INVALID;
         KernelReg.object_count = 0;
     }
     KERNEL_REG_UNLOCK();
 
-    CoreFlagClear(CORE_FLAG_ALL);//clear all flags
-    CoreKernelModeEnter(); //Enable kernel mode
+    KCoreFlagClear(CORE_FLAG_ALL);//clear all flags
+    KCoreKernelModeEnter(); //Enable kernel mode
 
-    #if( PRTOS_CONFIG_ENABLE_LOG_DEBUG == 1 || PRTOS_CONFIG_ENABLE_LOG_ERROR == 1 || PRTOS_CONFIG_ENABLE_LOG_INFO == 1 )
+#if ( PRTOS_CONFIG_ENABLE_LOG_DEBUG == 1 || PRTOS_CONFIG_ENABLE_LOG_ERROR == 1 || PRTOS_CONFIG_ENABLE_LOG_INFO == 1 || PRTOS_CONFIG_ENABLE_LOG_EVENT == 1 )
     LogInit();
-    #endif
+#endif
 
     char os_version_buf[CONVERT_BUFFER_SIZE_OSVERSION_TO_STRING];
     ConvertOsVersionToString(OS_VERSION, os_version_buf);
@@ -234,20 +233,19 @@ OsResult_t OsInit(OsResult_t *status_optional)
     /*Initiate essential modules*/
     LOG_INFO_NEWLINE("Initializing kernel...");
 
-    #if PRTOS_CONFIG_ENABLE_WDT==1
-    CoreWdtInit();
-    CoreWdtEnable(PORT_WDT_EXPIRE_8_S);
-    #endif
+#if PRTOS_CONFIG_ENABLE_WDT==1
+    ICoreWdtInit();
+    ICoreWdtEnable(PORT_WDT_EXPIRE_8_S);
+#endif
 
     LOG_INFO_NEWLINE("Initializing OS Timer and Tick interrupt...");
-    U16_t os_timer_ovf = CoreCalculatePrescaler(PRTOS_CONFIG_F_OS_HZ);
-    PortGlobalIntDisable();
+    U16_t os_timer_ovf = ICoreCalculatePrescaler(PRTOS_CONFIG_F_OS_HZ);
     PortOsTimerInit(KernelReg.prescaler, os_timer_ovf);
     PortOsTickInit(PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY);
     LOG_INFO_APPEND("ok");
 
     LOG_INFO_NEWLINE("Initializing module:Memory Management...");
-    status_kernel = MmInit(); //Initiate memory management
+    status_kernel = KMemInit(); //Initiate memory management
     if(status_kernel == OS_OUT_OF_BOUNDS) {
         LOG_ERROR_NEWLINE("No pools defined by user...");
     }
@@ -255,18 +253,18 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     LOG_INFO_NEWLINE("Creating Kernel heap...");
 
-    KernelReg.kernel_heap = MmPoolCreate(KERNEL_HEAP_SIZE); //Create pool for kernel heap
-    if(KernelReg.kernel_heap == INVALID_ID) {
+    KernelReg.kernel_heap = MemPoolCreate(KERNEL_HEAP_SIZE); //Create pool for kernel heap
+    if(KernelReg.kernel_heap == OS_ID_INVALID) {
         status_kernel = OS_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid pool ID returned");
         return status_kernel;
-        } else {
-        MmKernelHeapSet(KernelReg.kernel_heap);
-        KernelReg.heap_mgw0 = (MemBase_t*)MmAlloc(KernelReg.kernel_heap,sizeof(MemBase_t));
+    } else {
+        KMemKernelHeapSet(KernelReg.kernel_heap);
+        KernelReg.heap_mgw0 = (MemBase_t*)MemAlloc(KernelReg.kernel_heap,sizeof(MemBase_t));
         if(KernelReg.heap_mgw0 == NULL) {
             status_kernel = OS_CRIT_ERROR;
             LOG_ERROR_NEWLINE("Allocation of magic-words in the Kernel heap returned null");
-            } else {
+        } else {
             *(KernelReg.heap_mgw0) = (MemBase_t)KERNEL_HEAP_MAGICWORD;
             LOG_INFO_APPEND("ok");
         }
@@ -274,17 +272,17 @@ OsResult_t OsInit(OsResult_t *status_optional)
     }
 
     LOG_INFO_NEWLINE("Creating Object heap...");
-    KernelReg.object_heap = MmPoolCreate((OBJECT_HEAP_SIZE - 10)); //Create pool for object heap. /* TODO: Fix PoolCreate. */
-    if(KernelReg.object_heap == INVALID_ID) {
+    KernelReg.object_heap = MemPoolCreate((OBJECT_HEAP_SIZE - 10)); //Create pool for object heap. /* TODO: Fix PoolCreate. */
+    if(KernelReg.object_heap == OS_ID_INVALID) {
         status_kernel = OS_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid pool ID returned");
         return status_kernel;
-        } else {
+    } else {
         LOG_INFO_APPEND("ok");
     }
 
     LOG_INFO_NEWLINE("Initializing module:Task...");
-    status_kernel = TaskInit(); //Initiate task management
+    status_kernel = KTaskInit(); //Initiate task management
     if(status_kernel == OS_CRIT_ERROR) {
         LOG_ERROR_NEWLINE("No task ID buffer defined");
         return status_kernel;
@@ -302,71 +300,71 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     /*Core initiations*/
     LOG_INFO_NEWLINE("Initializing Scheduler...");
-    CoreSchedulerInit(); //Initiate Prior Scheduler
+    ICoreSchedulerInit(); //Initiate Prior Scheduler
     LOG_INFO_APPEND("ok");
 
 
 
-    #if PRTOS_CONFIG_ENABLE_SOFTWARE_TIMERS==1
+#if PRTOS_CONFIG_ENABLE_SOFTWARE_TIMERS==1
     LOG_INFO_NEWLINE("Initializing module:Timer...");
-    status_kernel = TimerInit();
+    status_kernel = KTimerInit();
     if(status_kernel == OS_CRIT_ERROR) {
         LOG_ERROR_NEWLINE("No timer ID buffer defined");
         return status_kernel;
     }
     LOG_INFO_APPEND("ok");
-    #endif
+#endif
 
 
-    #if PRTOS_CONFIG_ENABLE_EVENTGROUPS==1
+#if PRTOS_CONFIG_ENABLE_EVENTGROUPS==1
     LOG_INFO_NEWLINE("Initializing module:Eventgroup...");
-    EventgroupInit();
+    KEventgroupInit();
     LOG_INFO_APPEND("ok");
-    #endif
+#endif
 
-    #if PRTOS_CONFIG_ENABLE_MAILBOXES==1
+#if PRTOS_CONFIG_ENABLE_MAILBOXES==1
     LOG_INFO_NEWLINE("Initializing module:Mailbox...");
-    MailboxInit();
+    KMailboxInit();
     LOG_INFO_APPEND("ok");
-    #endif
+#endif
 
-    #if PRTOS_CONFIG_ENABLE_SIGNALS==1
+#if PRTOS_CONFIG_ENABLE_SIGNALS==1
     LOG_INFO_NEWLINE("Initializing module:Signal...");
-    sig_Init();
+    KSigInit();
     LOG_INFO_APPEND("ok");
-    #endif
+#endif
 
-    #if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
     LOG_INFO_NEWLINE("Initializing module:Ringbuffer...");
-    RingbufInit();
+    KRingbufInit();
     LOG_INFO_APPEND("ok");
 
-    #if PRTOS_CONFIG_ENABLE_SHELL==1
+#if PRTOS_CONFIG_ENABLE_SHELL==1
     LOG_INFO_NEWLINE("Initializing module:Shell...");
-    ShellInit();
+    KShellInit();
     LOG_INFO_APPEND("ok");
-    #endif
+#endif
 
-    #endif
+#endif
 
-    #if PRTOS_CONFIG_ENABLE_PIPES==1
+#if PRTOS_CONFIG_ENABLE_PIPES==1
     LOG_INFO_NEWLINE("Initializing module:Pipe...");
-    PipeInit();
+    KPipeInit();
     LOG_INFO_APPEND("ok");
-    #endif
+#endif
 
-    #if PRTOS_CONFIG_ENABLE_SEMAPHORES==1
+#if PRTOS_CONFIG_ENABLE_SEMAPHORES==1
     LOG_INFO_NEWLINE("Initializing module:Semaphore...");
-    SemaphoreInit();
+    KSemaphoreInit();
     LOG_INFO_APPEND("ok");
-    #endif
+#endif
 
 
-    #if PRTOS_CONFIG_ENABLE_PERPHERALS==1
+#if PRTOS_CONFIG_ENABLE_PERPHERALS==1
     LOG_INFO_NEWLINE("Initializing module:Peripheral...");
     //HalInit(); //Initiate Peripherals
     LOG_INFO_APPEND("ok");
-    #endif
+#endif
 
 
     LOG_INFO_NEWLINE("Creating Kernel tasks and services...");
@@ -376,12 +374,12 @@ OsResult_t OsInit(OsResult_t *status_optional)
     /* Idle task is not created using KernelTask create since it is not an OS category task, it should be on the
     * lowest possible priority. However, the Idle task is essential and cannot be deleted. */
     KernelTaskIdIdle = TaskCreate(KernelTaskIdle, TASK_CAT_LOW, 1, TASK_PARAM_ESSENTIAL, 0, NULL, 0);
-    if(KernelTaskIdIdle == INVALID_ID) { //Create Idle task, check if successful
+    if(KernelTaskIdIdle == OS_ID_INVALID) { //Create Idle task, check if successful
         status_kernel = OS_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid ID returned while creating KernelTaskIdle");
         return status_kernel;
-        } else {
-        TcbIdle = UtilTcbFromId(KernelTaskIdIdle); //Assign pointer to Idle TCB to TCB_idle
+    } else {
+        TcbIdle = KTcbFromId(KernelTaskIdIdle); //Assign pointer to Idle TCB to TCB_idle
         if(TcbIdle == NULL) {
             status_kernel = OS_CRIT_ERROR;
             LOG_ERROR_NEWLINE("KernelTaskIdle could not be found in the task list.");
@@ -391,15 +389,15 @@ OsResult_t OsInit(OsResult_t *status_optional)
     }
 
     //Set generic task names if enables
-    #if PRTOS_CONFIG_ENABLE_TASKNAMES==1
+#if PRTOS_CONFIG_ENABLE_TASKNAMES==1
     TaskGenericNameSet(KernelTaskIdle,"KernelTaskIdle");
-    #endif
+#endif
 
-    CoreKernelModeExit(); //Clear kernel mode flag
+    KCoreKernelModeExit(); //Clear kernel mode flag
 
-    #if PRTOS_CONFIG_ENABLE_WDT==1
-    CoreWdtDisable();
-    #endif
+#if PRTOS_CONFIG_ENABLE_WDT==1
+    ICoreWdtDisable();
+#endif
 
     LOG_INFO_NEWLINE("Kernel successfully initialized");
 
@@ -409,71 +407,76 @@ OsResult_t OsInit(OsResult_t *status_optional)
 void OsStart(Id_t start_task_id)
 {
 
-    #if PRTOS_CONFIG_ENABLE_WDT==1
-    CoreWdtEnable(PORT_WDT_EXPIRE_120MS);
-    #endif
+#if PRTOS_CONFIG_ENABLE_WDT==1
+    ICoreWdtEnable(PORT_WDT_EXPIRE_120MS);
+#endif
 
-    CoreKernelModeEnter(); //Disable kernel mode
+    KCoreKernelModeEnter(); //Disable kernel mode
 
     LOG_INFO_NEWLINE("Preparing first task for execution...");
-    if (start_task_id != INVALID_ID) { //if Prior should not start with Idle task
-        TcbRunning = UtilTcbFromId(start_task_id); //Search for TCB
+    if (start_task_id != OS_ID_INVALID) { //if Prior should not start with Idle task
+        TcbRunning = KTcbFromId(start_task_id); //Search for TCB
         if (TcbRunning == NULL) {
             LOG_ERROR_NEWLINE("Specified task not found! Starting with Idle instead.");
             TcbRunning = TcbIdle; //No valid TCB found
         }
 
-        } else {
+    } else {
         TcbRunning = TcbIdle; //Prior should start with Idle task
     }
 
     ListNodeRemove(&TcbList, &TcbRunning->list_node);
-    CoreLoadNewTask(TcbRunning);
+    ICoreLoadNewTask(TcbRunning);
 
-    CoreKernelModeExit(); //Disable kernel mode
+    KCoreKernelModeExit(); //Disable kernel mode
 
     LOG_INFO_APPEND("ok");
 
 
     LOG_INFO_NEWLINE("Starting Prior RTOS tick at %u Hz...", KernelReg.f_os);
     OsSchedulerUnlock();
-    CoreOsIntEnable();
-    PortGlobalIntEnable();
+    ICoreOsIntEnable();
     PortOsTimerTicksReset();
+
+    OsCritSectEnd();
+
     PortOsTimerStart();
     LOG_INFO_APPEND("running");
 
-    #if PRTOS_CONFIG_ENABLE_WDT==1
-    CoreWdtDisable();
-    CoreWdtEnable(PORT_WDT_EXPIRE_8_S);
-    #endif
+#if PRTOS_CONFIG_ENABLE_WDT==1
+    ICoreWdtDisable();
+    ICoreWdtEnable(PORT_WDT_EXPIRE_8_S);
+#endif
 
     /* Embedded infinite run-loop. */
     U8_t *running = &KernelReg.os_running;
     while (*running) {
 
-        #if PRTOS_CONFIG_ENABLE_WDT==1
-        CoreWdtKick();
-        #endif
+#if PRTOS_CONFIG_ENABLE_WDT==1
+        ICoreWdtKick();
+#endif
         if(TcbRunning->handler != NULL) {
 
-            #ifdef PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
-            EventPublish(TcbRunning->list_node.id, TASK_EVENT_EXECUTE, EVENT_FLAG_NONE);
-            #endif
+#ifdef PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
+            EventEmit(TcbRunning->list_node.id, TASK_EVENT_EXECUTE, EVENT_FLAG_NONE);
+#endif
+
             (TcbRunning->handler)(TcbRunning->p_arg, TcbRunning->v_arg);
 
-            #ifdef PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
-            EventPublish(TcbRunning->list_node.id, TASK_EVENT_EXIT, EVENT_FLAG_NONE);
-            #endif
-            } else {
+#ifdef PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
+            EventEmit(TcbRunning->list_node.id, TASK_EVENT_EXIT, EVENT_FLAG_NONE);
+#endif
+
+        } else {
             LOG_ERROR_NEWLINE("Current task handler is null!");
+            while(1);
         }
-        CoreTickInvoke(PortOsTimerTicksGet());
+        ICoreTickInvoke(PortOsTimerTicksGet());
     }
 
-    #if PRTOS_CONFIG_ENABLE_WDT==1
-    CoreWdtDisable();
-    #endif
+#if PRTOS_CONFIG_ENABLE_WDT==1
+    ICoreWdtDisable();
+#endif
 }
 
 void OsStop(void)
@@ -496,8 +499,7 @@ OsResult_t OsFrequencySet(U16_t OS_frequency)
     OsCritSectBegin();//Disable interrupts
 
     PortOsTimerStop(); //Stop OS timer
-    U16_t sysTimerovf = CoreCalculatePrescaler(OS_frequency); //Calculate new prescaler with new frequency
-    PortGlobalIntDisable();
+    U16_t sysTimerovf = ICoreCalculatePrescaler(OS_frequency); //Calculate new prescaler with new frequency
     PortOsTimerInit(KernelReg.prescaler, sysTimerovf);  //Initialize timer with new ovf
     PortOsTimerStart();
     OsCritSectEnd(); //Enable interrupts
@@ -514,7 +516,22 @@ OsVer_t OsVersionGet(void)
     return ((OsVer_t)OS_VERSION);
 }
 
-OsResult_t OsRuntimeGet(U32_t* target)
+U32_t OsRunTimeMicrosDeltaGet(U32_t *us)
+{
+    U32_t delta_us = 0;
+    U32_t curr_us = OsRunTimeMicrosGet();
+    if(curr_us != 0) {
+        if(curr_us >= *us) {
+            delta_us = curr_us - *us;
+        } else {
+            delta_us = *us - curr_us;
+        }
+        *us = curr_us;
+    }
+    return delta_us;
+}
+
+OsResult_t OsRunTimeGet(U32_t* target)
 {
     //Input check
     if(target[0] != 0x00000000 || target[1] != 0x00000000) {
@@ -531,7 +548,7 @@ OsResult_t OsRuntimeGet(U32_t* target)
     return result;
 }
 
-U32_t OsRuntimeMicrosGet(void)
+U32_t OsRunTimeMicrosGet(void)
 {
     U32_t micros = 0;
     KERNEL_REG_LOCK() {
@@ -572,41 +589,55 @@ U32_t OsEventsTotalGet(void)
 
 bool OsTaskExists(Id_t task_id)
 {
-    if((task_id & ID_MASK_TYPE) != (U16_t)ID_TYPE_TASK) {
+    if((task_id & OS_ID_MASK_TYPE) != (U16_t)ID_TYPE_TASK) {
         return false;
     }
-    pTcb_t tcb = UtilTcbFromId(task_id);
+    pTcb_t tcb = KTcbFromId(task_id);
     if(tcb == NULL) {
         return false;
-        } else {
+    } else {
         return true;
     }
 }
 
+Id_t OsCurrentTaskGet(void)
+{
+    Id_t id = OS_ID_INVALID;
+    if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
+        id = ListNodeIdGet(&TcbRunning->list_node);
+        ListNodeUnlock(&TcbRunning->list_node);
+    }
+    return id;
+}
+
 void OsCritSectBegin(void)
 {
+    HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_1_PIN, PIN_STATE_HIGH);
     KERNEL_REG_LOCK() {
-        if(KernelReg.crit_sect_nest_counter < 255) {
+        if(KernelReg.crit_sect_nest_counter < 0xFF) {
             KernelReg.crit_sect_nest_counter++;
         }
+
         if(KernelReg.crit_sect_nest_counter == 1) {
             PortGlobalIntDisable();
-            CoreFlagClear(CORE_FLAG_OS_IRQ_EN);
         }
     }
     KERNEL_REG_UNLOCK();
+
+
 }
 
 
 void OsCritSectEnd()
 {
+    HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_1_PIN, PIN_STATE_LOW);
     KERNEL_REG_LOCK() {
         if(KernelReg.crit_sect_nest_counter > 0) {
             KernelReg.crit_sect_nest_counter--;
         }
+
         if(KernelReg.crit_sect_nest_counter == 0) {
             PortGlobalIntEnable();
-            CoreFlagSet(CORE_FLAG_OS_IRQ_EN);
         }
     }
     KERNEL_REG_UNLOCK();
@@ -686,16 +717,22 @@ U32_t OsTickPeriodGet(void)
 
 /*********OS Runtime****************/
 
-static void CoreRunTimeUpdate(U32_t t_us)
+static void ICoreRunTimeAccumulate(U32_t t_us)
+{
+
+    KERNEL_REG_LOCK() {
+        KernelReg.t_accu += t_us;
+    }
+    KERNEL_REG_UNLOCK();
+}
+
+static void ICoreRunTimeUpdate(void)
 {
     /* Accumulated time in us. Only cleared when
     * the Kernel Reg lock is successful. */
-    static U32_t t_accu_us = 0;
-    t_accu_us += t_us;
-
     KERNEL_REG_LOCK() {
-        KernelReg.micros += t_accu_us;
-        t_accu_us = 0;
+        KernelReg.micros += KernelReg.t_accu;
+        KernelReg.t_accu = 0;
         if(KernelReg.micros >= 0xD693A400) { //3600.000.000 us i.e. 1 hour.
             KernelReg.micros = 0;
             KernelReg.hours++;
@@ -713,74 +750,65 @@ static void CoreRunTimeUpdate(U32_t t_us)
 void CoreTick(void)
 {
     OsIsrBegin();
-    CoreOsIntDisable();//Disable OS timer interrupt to make sure OS ticks don't nest
-    CoreKernelModeEnter();
+    PortGlobalIntDisable();//Disable OS timer interrupt to make sure OS ticks don't nest
+    KCoreKernelModeEnter();
 
-    if(!CoreFlagGet(CORE_FLAG_TICK)) {
+    HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_0_PIN, PIN_STATE_TOGGLE);
 
-        CoreFlagSet(CORE_FLAG_TICK);
+    if(!KCoreFlagGet(CORE_FLAG_TICK)) {
+        KCoreFlagSet(CORE_FLAG_TICK);
 
-        CoreRunTimeUpdate(KernelReg.tick_period_us); //Update run time
+        if(!KCoreFlagGet(CORE_FLAG_DISPATCH)) {
+            ICoreRunTimeAccumulate(KernelReg.tick_period_us);
+        }
+        /* Update OS run-time */
+        ICoreRunTimeUpdate();
 
-        /* Update runtime of currently running task. */
-        UtilTaskRuntimeAdd(TcbRunning, KernelReg.tick_period_us);
+        /* Update run-time of current task. */
+        KTaskRunTimeUpdate();
 
         /* Only switch tasks if dispatch flag is set and if the ISR nesting level is singular.
         * This way all other interrupts will finish avoiding problems arising when a task
         * switch would occur during a user interrupt.
         * The task executing at the beginning of any user interrupt is then identical to
         * the one executing at the end. */
-        if(CoreFlagGet(CORE_FLAG_DISPATCH) && (KernelReg.isr_nest_counter == 1)) {
-            CoreSwitchTask();
-            CoreFlagClear(CORE_FLAG_DISPATCH);
+        if(KCoreFlagGet(CORE_FLAG_DISPATCH) && (KernelReg.isr_nest_counter == 1)) {
+            ICoreSwitchTask();
+            KCoreFlagClear(CORE_FLAG_DISPATCH);
         }
-
-
-
-
-        #if PRTOS_CONFIG_ENABLE_SOFTWARE_TIMERS==1
-        /* Check if the TimerList is not locked and the number of ticks has been reached, then
-        * update all timers and reset accumulated time and ticks. */
-        //if(!ListIsLocked(&TimerList) && KernelReg.n_ticks >= CONFIG_TIMER_UPDATE_PRESCALER_TICKS) {
-        //TimerUpdateAll(KernelReg.t_accu);//Update all timers if list is not locked
-        //KernelReg.t_accu = 0;
-        //KernelReg.n_ticks = 0;
-        //} else {
-        //KernelReg.t_accu += OsTickPeriodGet();
-        //KernelReg.n_ticks++;
-        //}
-        #endif
 
         /* Scheduler will only run if all needed lists and the scheduler itself are unlocked. */
         if(!KernelReg.scheduler_lock && !ListIsLocked(&TcbWaitList) && !ListIsLocked(&TcbList) && !ListIsLocked(&EventList)) {
-            CoreSchedulerCycle();
+            HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_2_PIN, PIN_STATE_HIGH);
+            ICoreSchedulerCycle();
+            HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_2_PIN, PIN_STATE_LOW);
         }
 
         if(ListSizeGet(&ExecutionQueue) > 0) {
-            CoreFlagClear(CORE_FLAG_IDLE);
+            KCoreFlagClear(CORE_FLAG_IDLE);
         }
-        CoreFlagClear(CORE_FLAG_TICK);
+        KCoreFlagClear(CORE_FLAG_TICK);
     }
 
-    CoreKernelModeExit();
-    PortOsIntEnable();
+    KCoreKernelModeExit();
+    PortGlobalIntEnable();
     OsIsrEnd();
+
 
     PortOsIntFlagClear();
 }
 
-static void CoreTickInvoke(U32_t tc)
+static void ICoreTickInvoke(U32_t tc)
 {
     /* Calculate time passed since last Tick interrupt and update t_accu. */
-    U32_t t_us = CORE_OS_TIMER_TICKS_TO_US(tc);
-    KernelReg.t_accu += t_us;
+    ICoreRunTimeAccumulate(CORE_OS_TIMER_TICKS_TO_US(tc));
 
-    CoreFlagSet(CORE_FLAG_DISPATCH); /* Set dispatch flag so Tick interrupt will switch tasks. */
+    KCoreFlagSet(CORE_FLAG_DISPATCH); /* Set dispatch flag so Tick interrupt will switch tasks. */
     PortOsTimerTicksSet(KernelReg.ovf); /* Invoke Tick interrupt by setting the timer-counter to its compare value. */
-    #if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WDT==1
     PortWdtKick();
-    #endif
-    while(CoreFlagGet(CORE_FLAG_DISPATCH)); /* Wait until Tick interrupt handles the task switch and clears the dispatch flag. */
+#endif
+    while(KCoreFlagGet(CORE_FLAG_DISPATCH)); /* Wait until Tick interrupt handles the task switch and clears the dispatch flag. */
 }
 
 /********************************/
@@ -788,44 +816,44 @@ static void CoreTickInvoke(U32_t tc)
 
 /*********  Scheduler functions *********/
 
-static void CoreSchedulerInit(void)
+static void ICoreSchedulerInit(void)
 {
-    ListInit(&ExecutionQueue, (Id_t)ID_TYPE_TASK, NULL, 0);
+    ListInit(&ExecutionQueue, (Id_t)ID_TYPE_TASK);
     //LOG_INFO_NEWLINE("ExecutionQueue: %p", &ExecutionQueue);
     /* Add a mock event to the EventList.
     * This ensures that this list will never
     * be empty. An empty list has to be avoided
     * to keep the EventHandle cycle running, since
-    * it also needs to update subscribed event
+    * it also needs to update listened event
     * lifetimes. */
-    if(EventPublish(INVALID_ID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_OK) {
+    if(EventEmit(OS_ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_OK) {
         LOG_ERROR_NEWLINE("Failed to publish the mock event!");
         while(1); /* Trap. Wdt will overflow if enabled. */
     }
 }
 
-static void CoreSchedulerCycle(void)
+static void ICoreSchedulerCycle(void)
 {
 
     /* TODO: Check scheduler cycle for correct behavior. */
 
-    CoreFlagSet(CORE_FLAG_SCHEDULER);
+    KCoreFlagSet(CORE_FLAG_SCHEDULER);
 
     ListSize_t list_size;
-    CoreEventBrokerCycle(&ExecutionQueue);
+    ICoreEventBrokerCycle(&ExecutionQueue);
     list_size = ListSizeGet(&ExecutionQueue);
     if(list_size == 0) {
         goto clear_scheduler_flag;
     }
 
-    clear_scheduler_flag:
-    CoreFlagClear(CORE_FLAG_SCHEDULER);
+clear_scheduler_flag:
+    KCoreFlagClear(CORE_FLAG_SCHEDULER);
 }
 
 /* Compares all tasks with all occurred events. All lifetimes are updated, expired events
 * will be deleted.
 * All activated tasks will be placed in the activated task list. */
-static void CoreEventBrokerCycle(LinkedList_t *activated_task_list)
+static void ICoreEventBrokerCycle(LinkedList_t *activated_task_list)
 {
     if(EventListSizeGet(&EventList) == 0) {
         LOG_ERROR_NEWLINE("EventList is empty. A Mock event should always be present.");
@@ -837,7 +865,13 @@ static void CoreEventBrokerCycle(LinkedList_t *activated_task_list)
     /* Loop through occurred event list and compare all activated tasks and
     * all waiting tasks with every occurred event. */
     bool last_event = false;
-    
+    struct EventBrokerArgs args;
+    args.activated_task_list = activated_task_list;
+
+    static U32_t micros = 0;
+    U32_t delta_us = OsRunTimeMicrosDeltaGet(&micros);
+    args.delta_us = delta_us;
+
     LIST_ITERATOR_BEGIN(&it, &EventList, LIST_ITERATOR_DIRECTION_FORWARD);
     {
         if(it.current_node != NULL) {
@@ -849,15 +883,15 @@ static void CoreEventBrokerCycle(LinkedList_t *activated_task_list)
                 last_event = true;
             }
 
-            /* Handle addressed events (not necessarily subscribed). */
+            /* Handle addressed events (not necessarily listened). */
             if(EventFlagGet(occurred_event, EVENT_FLAG_ADDRESSED)) {
                 /* For addressed events, the source_id field describes the DESTINATION ID instead of the SOURCE ID. */
-                pTcb_t tcb = UtilTcbFromId(occurred_event->source_id);
+                pTcb_t tcb = KTcbFromId(occurred_event->source_id);
                 if(tcb != NULL) {
-                    LinkedList_t *list = UtilTcbLocationGet(tcb);
+                    LinkedList_t *list = KTcbLocationGet(tcb);
                     if(list != NULL && list != &ExecutionQueue) {
-                        UtilTaskStateSet(tcb, TASK_STATE_ACTIVE);
-                        CoreTaskAddDescendingPriority(list, activated_task_list, tcb);
+                        KTaskStateSet(tcb, TASK_STATE_ACTIVE);
+                        ICoreTaskAddDescendingPriority(list, activated_task_list, tcb);
                     }
                 }
                 if(!last_event) {
@@ -865,20 +899,26 @@ static void CoreEventBrokerCycle(LinkedList_t *activated_task_list)
                 }
             }
 
-            CoreTaskListCompare(activated_task_list, &TcbWaitList, occurred_event, last_event);
-            CoreTaskListCompare(activated_task_list, activated_task_list, occurred_event, last_event);
-            
-            event_cleanup:
+            args.compare_event = occurred_event;
+            args.last_event = last_event;
+
+            args.task_list = &TcbWaitList;
+            ICoreTaskListCompare(&args);
+
+            args.task_list = activated_task_list;
+            ICoreTaskListCompare(&args);
+
+event_cleanup:
             /* Increment the occurred event's lifetime and if it has time left. If this is
             * not the case the event is destroyed. EventDestroy automatically removes the
             * event from its list before deleting it. */
             if(!EventIsMock(occurred_event)) {
-                if( (EventLifeTimeIncrement(occurred_event, KernelReg.tick_period_us) == -1) ) {
+                if( (EventLifeTimeIncrement(occurred_event, delta_us) == -1) ) {
                     //LOG_DEBUG_NEWLINE("Destroying occurred event %p.", occurred_event);
                     EventDestroy(NULL, occurred_event);
                 }
             }
-            } else {
+        } else {
             LOG_ERROR_NEWLINE("EventList size (%u) is not consistent with the number of reachable nodes", EventListSizeGet(&EventList));
             break;
         }
@@ -888,24 +928,26 @@ static void CoreEventBrokerCycle(LinkedList_t *activated_task_list)
     return;
 }
 
-/* Compares all tasks and their subscribed events in the Task List with the compare event. All activated tasks
+
+
+/* Compares all tasks and their listened events in the Task List with the compare event. All activated tasks
 * will be moved to the activated task list. */
-static void CoreTaskListCompare(LinkedList_t *activated_task_list, LinkedList_t *task_list, pEvent_t compare_event, bool last_event)
+static void ICoreTaskListCompare(struct EventBrokerArgs *args)
 {
-    LinkedList_t *task_event_list = NULL;
+
     pTcb_t task = NULL;
     struct ListIterator it;
 
-    /* Loop through the Task List and compare the occurred event with all subscribed events for
+    /* Loop through the Task List and compare the occurred event with all listened events for
     * every task. */
-    LIST_ITERATOR_BEGIN(&it, task_list, LIST_ITERATOR_DIRECTION_FORWARD);
+    LIST_ITERATOR_BEGIN(&it, args->task_list, LIST_ITERATOR_DIRECTION_FORWARD);
     {
         if(it.current_node != NULL) {
             task = (pTcb_t)ListNodeChildGet(it.current_node);
             //LOG_DEBUG_APPEND("\n\tEvent list of task %04x", it.current_node->id);
-            task_event_list = &task->event_list;
-            CoreTaskEventsCompare(activated_task_list, task_list, task, task_event_list, compare_event, last_event);
-            } else {
+            args->task = task;
+            ICoreTaskEventsCompare(args);
+        } else {
             break;
         }
     }
@@ -915,32 +957,37 @@ static void CoreTaskListCompare(LinkedList_t *activated_task_list, LinkedList_t 
 
 /* Compares the Task Event List with the compare event, if the compared event appears in the list the
 * task is moved to the activated task list. */
-static void CoreTaskEventsCompare(LinkedList_t *activated_task_list, LinkedList_t *task_list, pTcb_t task,
-LinkedList_t *task_event_list, pEvent_t compare_event, bool last_event)
+static void ICoreTaskEventsCompare(struct EventBrokerArgs *args)
 {
+    LinkedList_t *activated_task_list = args->activated_task_list;
+    LinkedList_t *task_list = args->task_list;
+    pTcb_t task = args->task;
+    pEvent_t compare_event = args->compare_event;
+    bool last_event = args->last_event;
+    LinkedList_t *task_event_list = &task->event_list;
+
     pEvent_t task_event = NULL;
     struct ListIterator it;
 
     /* Loop through Task Event List and compare. */
-    LIST_ITERATOR_BEGIN(&it, task_event_list, LIST_ITERATOR_DIRECTION_FORWARD);
-    {
+    LIST_ITERATOR_BEGIN(&it, task_event_list, LIST_ITERATOR_DIRECTION_FORWARD) {
         if(it.current_node != NULL) {
             task_event = (pEvent_t)ListNodeChildGet(it.current_node);
             //LOG_DEBUG_APPEND("\n\t\tComparing task event %04x.", it.current_node->id);
-            /* If the occurred event matches the subscribed event,
+            /* If the occurred event matches the listened event,
             * set occurred flag and make task active. Then increment
             * its occurrence counter and reset its lifetime. */
-            if (EventIsEqual(compare_event, task_event)) { /* Handle subscribed events. */
+            if (EventIsEqual(compare_event, task_event)) { /* Handle listened events. */
                 EventFlagSet(task_event, EVENT_FLAG_OCCURRED);
                 EventFlagClear(task_event, EVENT_FLAG_TIMED_OUT); /* Clear timed-out flag in case it was set during a previous cycle. */
                 EventLifeTimeReset(task_event);
                 EventOccurrenceCountIncrement(task_event);
-                } else if(last_event) { /* If the subscribed event does not match the occurred event. */
+            } else if(last_event) { /* If the listened event does not match the occurred event. */
                 /* Check if the event has a specified time-out, if this is true
                 * increment its lifetime. If the event is timed-out, set timed-out flag. */
                 if((!EventFlagGet(task_event, EVENT_FLAG_NO_TIMEOUT)) && (!EventFlagGet(task_event, EVENT_FLAG_TIMED_OUT))) {
                     /// LOG_DEBUG_NEWLINE("Updating lifetime of event %04x of task %04x", task_event->list_node.id, task->list_node.id);
-                    if(EventLifeTimeIncrement(task_event, KernelReg.tick_period_us) == -1) {
+                    if(EventLifeTimeIncrement(task_event, args->delta_us) == -1) {
                         EventFlagSet(task_event, EVENT_FLAG_TIMED_OUT);
                         //LOG_DEBUG_NEWLINE("Event (%04x) of task %04x timed out", task_event->list_node.id, task->list_node.id);
                     }
@@ -948,32 +995,21 @@ LinkedList_t *task_event_list, pEvent_t compare_event, bool last_event)
             }
 
             if( EventFlagGet(task_event, EVENT_FLAG_OCCURRED) || EventFlagGet(task_event, EVENT_FLAG_TIMED_OUT) ) {
-                UtilTaskStateSet(task, TASK_STATE_ACTIVE);
-                if(EventFlagGet(task_event, EVENT_FLAG_NO_HANDLER)) {
-                    //LOG_DEBUG_NEWLINE("Subscribed event %p has no handler.", task_event);
-                    if(!EventFlagGet(task_event, EVENT_FLAG_PERMANENT)) {
-                        EventDestroy(task_event_list, task_event);
-                        } else {
-                        EVENT_FLAG_CLEAR(task_event->event_code, EVENT_FLAG_OCCURRED);
-                        EventLifeTimeReset(task_event);
-                        EventOccurrenceCountReset(task_event);
-                    }
-                }
+                KTaskStateSet(task, TASK_STATE_ACTIVE);
             }
-            } else {
+        } else {
             break;
         }
     }
     LIST_ITERATOR_END(&it);
 
     if((task_list != activated_task_list) && (task->state == TASK_STATE_ACTIVE)) {
-        CoreTaskAddDescendingPriority(task_list, activated_task_list, task);
+        ICoreTaskAddDescendingPriority(task_list, activated_task_list, task);
     }
-
 }
 
 
-void CoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task)
+void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task)
 {
     /* TODO: Insert at ExecutionQueueSeparator tail if task category is real-time. */
 
@@ -992,7 +1028,7 @@ void CoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_lis
         if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_HEAD) != OS_OK) {
             LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, from_list);
         }
-        } else {
+    } else {
         LIST_ITERATOR_BEGIN(&it, to_list, LIST_ITERATOR_DIRECTION_FORWARD);
         {
             /* If the current node exists, compare priorities,
@@ -1010,7 +1046,7 @@ void CoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_lis
                     }
                     return;
                 }
-                } else {
+            } else {
                 //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at tail.", task->list_node.id);
                 if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_TAIL) != OS_OK) {
                     LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, from_list);
@@ -1029,47 +1065,46 @@ void CoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_lis
 
 }
 
-static void CoreSwitchTask(void)
+static void ICoreSwitchTask(void)
 {
-    if(CoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
+    if(KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         return;
     }
-    CoreFlagSet(CORE_FLAG_DISPATCH);
+    KCoreFlagSet(CORE_FLAG_DISPATCH);
 
-    #if PRTOS_CONFIG_ENABLE_TASKTRACE>0
+#if PRTOS_CONFIG_ENABLE_TASKTRACE==1
     TtUpdate();
-    #endif
+#endif
 
     //EventListPrint(&TcbRunning->event_list);
 
-    if (UtilTaskFlagGet(TcbRunning, TASK_FLAG_WAIT_ONCE) || UtilTaskFlagGet(TcbRunning, TASK_FLAG_WAIT_PERMANENT)) { /* If task is waiting for an event. */
+    KTaskRunTimeReset(TcbRunning); /* Reset the tasks run time. */
+    if (ListSizeGet(&TcbRunning->event_list) != 0) { /* If task is waiting for an event. */
         /* Set task state to dormant and insert into TcbWaitList. */
-        UtilTaskStateSet(TcbRunning,TASK_STATE_WAITING);
-        UtilTaskFlagClear(TcbRunning, TASK_FLAG_WAIT_ONCE);
-        TcbRunning->run_time_us = TcbRunning->run_time_us / 2;
+        KTaskStateSet(TcbRunning,TASK_STATE_WAITING);
         ListNodeAddSorted(&TcbWaitList, &TcbRunning->list_node);
-        } else if(!UtilTaskFlagGet(TcbRunning, TASK_FLAG_DELETE)) {  /* If task is not waiting for an event and will not be deleted. */
+    } else if(!KTaskFlagGet(TcbRunning, TASK_FLAG_DELETE)) {  /* If task is not waiting for an event and will not be deleted. */
         /* Set task state to idle and insert into TcbList. */
-        UtilTaskStateSet(TcbRunning,TASK_STATE_IDLE);
-        TcbRunning->run_time_us = TcbRunning->run_time_us / 2;
+        KTaskStateSet(TcbRunning,TASK_STATE_IDLE);
         ListNodeAddSorted(&TcbList, &TcbRunning->list_node);
-        } else if (UtilTaskFlagGet(TcbRunning, TASK_FLAG_DELETE)) {  /* If task has to be deleted. */
+    } else {  /* If task has to be deleted. */
         if(TcbRunning->category != TASK_CAT_OS || TcbRunning != TcbIdle) {
-            UtilTcbDestroy(TcbRunning, NULL);
-            } else {
+            KTcbDestroy(TcbRunning, NULL);
+        } else {
             /* Idle or other OS task cannot be deleted.
             * Move back to TcbList. */
             /* TODO: Throw exception for violation. */
-            UtilTaskStateSet(TcbRunning,TASK_STATE_IDLE);
-            UtilTaskFlagClear(TcbRunning, TASK_FLAG_DELETE);
+            KTaskStateSet(TcbRunning,TASK_STATE_IDLE);
+            KTaskFlagClear(TcbRunning, TASK_FLAG_DELETE);
             ListNodeAddSorted(&TcbList, &TcbRunning->list_node);
         }
     }
-    TcbRunning = NULL;
-    CoreLoadNewTask(NULL);
 
-    CoreFlagClear(CORE_FLAG_DISPATCH);
-    CoreFlagClear(CORE_FLAG_IDLE);
+    TcbRunning = NULL;
+    ICoreLoadNewTask(NULL);
+
+    KCoreFlagClear(CORE_FLAG_DISPATCH);
+    KCoreFlagClear(CORE_FLAG_IDLE);
 }
 
 /* Loads a TCB as new running task. TCB has to be
@@ -1077,22 +1112,22 @@ static void CoreSwitchTask(void)
 * If TCB = NULL, the first task in the ExecutionQueue
 * will be loaded. If no task is present in the queue,
 * the Idle task is loaded instead. */
-static OsResult_t CoreLoadNewTask(pTcb_t tcb)
+static OsResult_t ICoreLoadNewTask(pTcb_t tcb)
 {
     OsResult_t result = OS_OK;
 
     if(tcb == NULL) {
-        if (ListSizeGet(&ExecutionQueue) > 0) {
+        if (ListSizeGet(&ExecutionQueue) != 0) {
             TcbRunning = (pTcb_t)ListNodeChildGet(ListNodeRemoveFromHead(&ExecutionQueue));
-            } else {
+        } else {
             TcbRunning = TcbIdle;
             ListNodeRemove(&TcbList, &TcbIdle->list_node);
         }
-        } else {
+    } else {
         TcbRunning = tcb;
     }
 
-    UtilTaskStateSet(TcbRunning, TASK_STATE_RUNNING);
+    KTaskStateSet(TcbRunning, TASK_STATE_RUNNING);
 
     return result;
 }
@@ -1103,7 +1138,7 @@ static OsResult_t CoreLoadNewTask(pTcb_t tcb)
 
 /************* Core flag API *************/
 
-void CoreFlagSet(CoreFlags_t flag)
+void KCoreFlagSet(CoreFlags_t flag)
 {
     KERNEL_REG_LOCK() {
         (KernelReg.sreg) |= ((U16_t)flag);
@@ -1111,7 +1146,7 @@ void CoreFlagSet(CoreFlags_t flag)
     KERNEL_REG_UNLOCK();
 }
 
-void CoreFlagClear(CoreFlags_t flag)
+void KCoreFlagClear(CoreFlags_t flag)
 {
     KERNEL_REG_LOCK() {
         (KernelReg.sreg) &= ~((U16_t)flag);
@@ -1119,7 +1154,7 @@ void CoreFlagClear(CoreFlags_t flag)
     KERNEL_REG_UNLOCK();
 }
 
-U16_t CoreFlagGet(CoreFlags_t flag)
+U16_t KCoreFlagGet(CoreFlags_t flag)
 {
     /* Not locking the Kernel Register to guarantee that
     * this functions always returns a set of flags instead of
@@ -1135,12 +1170,11 @@ U16_t CoreFlagGet(CoreFlags_t flag)
 
 /*************** Kernel Mode API ***************/
 
-U8_t CoreKernelModeEnter(void)
+U8_t KCoreKernelModeEnter(void)
 {
-    OsCritSectBegin();
     if(KernelReg.kernel_mode_nest_counter == 0) {
         PortSuperVisorModeEnable(); /* Enable SV mode if available. */
-        CoreFlagSet(CORE_FLAG_KERNEL_MODE);
+        KCoreFlagSet(CORE_FLAG_KERNEL_MODE);
     }
     if(KernelReg.kernel_mode_nest_counter < 255) {
         KernelReg.kernel_mode_nest_counter++;
@@ -1151,12 +1185,11 @@ U8_t CoreKernelModeEnter(void)
 }
 
 
-U8_t CoreKernelModeExit(void)
+U8_t KCoreKernelModeExit(void)
 {
-    OsCritSectEnd();
     if(KernelReg.kernel_mode_nest_counter == 1) {
         PortSuperVisorModeDisable(); /* Disable SV mode if available. */
-        CoreFlagClear(CORE_FLAG_KERNEL_MODE);
+        KCoreFlagClear(CORE_FLAG_KERNEL_MODE);
     }
     if(KernelReg.kernel_mode_nest_counter> 0) {
         KernelReg.kernel_mode_nest_counter--;
@@ -1170,17 +1203,17 @@ U8_t CoreKernelModeExit(void)
 
 /************* OS Interrupt API *************/
 
-static void CoreOsIntEnable(void)
+static void ICoreOsIntEnable(void)
 {
     PortOsIntEnable();
-    CoreFlagSet(CORE_FLAG_OS_IRQ_EN);
+    KCoreFlagSet(CORE_FLAG_OS_IRQ_EN);
 }
 
 
-static void CoreOsIntDisable(void)
+static void ICoreOsIntDisable(void)
 {
     PortOsIntDisable();
-    CoreFlagClear(CORE_FLAG_OS_IRQ_EN);
+    KCoreFlagClear(CORE_FLAG_OS_IRQ_EN);
 }
 
 /*********************************************/
@@ -1188,60 +1221,60 @@ static void CoreOsIntDisable(void)
 
 /************* Object allocation API *************/
 
-void *CoreObjectAlloc(U32_t obj_size, U32_t obj_data_size, void **obj_data)
+void *KCoreObjectAlloc(U32_t obj_size, U32_t obj_data_size, void **obj_data)
 {
-    CoreKernelModeEnter(); /* Enter Kernel Mode to access the object heap. */
+    KCoreKernelModeEnter(); /* Enter Kernel Mode to access the object heap. */
     /* Check if there is memory available and the object count has not reached its max. value. */
-    if( (KernelReg.object_count == 0xFFFF) || (MmPoolFreeSpaceGet(KernelReg.object_heap) < (obj_size + obj_data_size)) ) {
+    if( (KernelReg.object_count == 0xFFFF) || (MemPoolFreeSpaceGet(KernelReg.object_heap) < (obj_size + obj_data_size)) ) {
         goto error;
     }
 
     /* Allocate the memory for the object and check its validity. */
-    void *obj = MmAlloc(KernelReg.object_heap, obj_size);
+    void *obj = MemAlloc(KernelReg.object_heap, obj_size);
     if(obj != NULL) {
         if(obj_data_size != 0) {
             if(obj_data == NULL) {
-                MmFree(&obj);
+                MemFree(&obj);
                 goto error;
             }
-            *obj_data = MmAlloc(KernelReg.object_heap, obj_data_size);
+            *obj_data = MemAlloc(KernelReg.object_heap, obj_data_size);
             if(*obj_data != NULL) {
                 KernelReg.object_count++;
                 goto valid;
-                } else { /* Object data allocation failed => Free the object. */
-                MmFree(&obj);
+            } else { /* Object data allocation failed => Free the object. */
+                MemFree(&obj);
                 goto error;
             }
-            } else { /* No object data has to be allocated. */
+        } else { /* No object data has to be allocated. */
             KernelReg.object_count++;
             goto valid;
         }
     }
 
 
-    error:
-    CoreKernelModeExit();
+error:
+    KCoreKernelModeExit();
     while(1);
     /* TODO: Throw exception. */
     return NULL;
 
-    valid:
-    CoreKernelModeExit();
+valid:
+    KCoreKernelModeExit();
     return obj;
 }
 
-OsResult_t CoreObjectFree(void **obj, void **obj_data)
+OsResult_t KCoreObjectFree(void **obj, void **obj_data)
 {
     OsResult_t result = OS_ERROR;
-    result = MmFree(obj_data);
-    result = MmFree(obj);
+    result = MemFree(obj_data);
+    result = MemFree(obj);
     KernelReg.object_count--;
     return result;
 }
 
 /************************************************/
 
-static U16_t CoreCalculatePrescaler(U16_t f_os)
+static U16_t ICoreCalculatePrescaler(U16_t f_os)
 {
 
     volatile U8_t presc_cnt = 1;
@@ -1258,16 +1291,16 @@ static U16_t CoreCalculatePrescaler(U16_t f_os)
         if (presc_cnt == 1) {
             prescaling_fact = 1;
             KernelReg.prescaler = 1;
-            } else if (presc_cnt == 2) {
+        } else if (presc_cnt == 2) {
             prescaling_fact = 8;
             KernelReg.prescaler =8;
-            } else if (presc_cnt == 3) {
+        } else if (presc_cnt == 3) {
             prescaling_fact = 64;
             KernelReg.prescaler = 65;
-            } else if (presc_cnt == 4) {
+        } else if (presc_cnt == 4) {
             prescaling_fact = 256;
             KernelReg.prescaler = 256;
-            } else if (presc_cnt == 5) {
+        } else if (presc_cnt == 5) {
             prescaling_fact = 1024;
             KernelReg.prescaler = 1024;
         }
@@ -1277,7 +1310,7 @@ static U16_t CoreCalculatePrescaler(U16_t f_os)
 
         if(tmp_ovf > 0xFFFF) {
             presc_cnt++;
-            } else {
+        } else {
             break;
         }
     }
@@ -1292,22 +1325,22 @@ static U16_t CoreCalculatePrescaler(U16_t f_os)
 
 #if PRTOS_CONFIG_ENABLE_WDT==1
 
-static void CoreWdtInit(void)
+static void ICoreWdtInit(void)
 {
     PortWdtInit(0, 5);
 }
 
-static void CoreWdtEnable(U8_t wdt_expire_opt)
+static void ICoreWdtEnable(U8_t wdt_expire_opt)
 {
     PortWdtEnable(wdt_expire_opt);
 }
 
-static void CoreWdtDisable(void)
+static void ICoreWdtDisable(void)
 {
     PortWdtDisable();
 }
 
-static void CoreWdtKick(void)
+static void ICoreWdtKick(void)
 {
     PortWdtKick();
 }
@@ -1316,11 +1349,11 @@ void CoreWdtIsr(void)
 {
     OsIsrBegin();
     OsCritSectBegin();
-    CoreWdtDisable();
+    ICoreWdtDisable();
     LOG_ERROR_NEWLINE("WatchdogTimer overflow.");
     while(1);
     //CoreFlagSet(dispatch_flag);
-    CoreWdtKick();
+    ICoreWdtKick();
 
     OsCritSectEnd();
     OsIsrEnd();

@@ -45,7 +45,6 @@ extern "C" {
 #include <stdbool.h>
 #include <Types.h>
 #include <CoreDef.h>
-#include <Logger.h>
 
 #define LIST_ITERATOR_DIRECTION_FORWARD 0x00
 #define LIST_ITERATOR_DIRECTION_REVERSE 0x01
@@ -108,11 +107,8 @@ typedef struct LinkedList_t {
 
     /* ID related fields. */
     IdType_t                id_type;        /* ID Type of the list. */
-    Id_t                    *id_buf;        /* ID buffer, holds available IDs. */
-    U8_t                    id_buf_size;
-    Id_t                    last_id;        /* Last ID placed in the ID buffer. */
-    U8_t                    n_id_avail;
-    bool                    id_cap_reached;
+    Id_t                    free_id;        /* Free ID. Calculated at creation of the previous node. */
+    bool                    id_rollover; 
 } LinkedList_t;
 
 struct ListIterator {
@@ -129,8 +125,8 @@ struct ListIterator {
 
 /**** List API. ****/
 
-/* V T Initializes the list with specified ID type and ID buffer. V */
-void ListInit(LinkedList_t *list, IdType_t id_type, Id_t *id_buffer, U8_t id_buffer_size);
+/* V T Initializes the list with specified ID type. V */
+void ListInit(LinkedList_t *list, IdType_t id_type);
 
 /* V Destroys the specified list and all its nodes. */
 OsResult_t ListDestroy(LinkedList_t *list);
@@ -140,7 +136,7 @@ OsResult_t ListDestroy(LinkedList_t *list);
 OsResult_t ListLock(LinkedList_t *list, U8_t mode);
 
 /* V T Unlocks the list. */
-OsResult_t ListUnlock(LinkedList_t *list, U8_t mode);
+OsResult_t ListUnlock(LinkedList_t *list);
 
 /* V T Return true if locked, false if not locked. */
 bool ListIsLocked(LinkedList_t *list);
@@ -194,14 +190,6 @@ S8_t ListIntegrityVerify(LinkedList_t *list);
 OsResult_t ListIntegrityRestore(LinkedList_t *list, S8_t list_verify_result); /* TODO: Implement ListIntegrityRestore. */
 
 
-/* V T Adds 1 free ID to the list's ID buffer for every cycle.
- * Returns:
- * OS_FAIL if the ID buffer is filled.
- * OS_OK if 1 free ID has been added.
- * OS_ERROR if the buffer integrity has been compromised.
- */
-OsResult_t ListIdBufferFillCycle(LinkedList_t *list);
-
 /* Allocates a format buffer and inserts the following list characteristics
  * in the allocated buffer in the specified order.
  * - size
@@ -228,7 +216,7 @@ OsResult_t ListNodeLock(ListNode_t *node, U8_t mode);
 
 /* V T Unlocks the node from either read or write mode.
  * Read locks are recursive. Write lock exclusive. */
-OsResult_t ListNodeUnlock(ListNode_t *node, U8_t mode);
+OsResult_t ListNodeUnlock(ListNode_t *node);
 
 /* V T Adds an initialized node to the list at the specified position.
  * position options: LIST_POSITION_HEAD or LIST_POSITION_TAIL. */
@@ -312,15 +300,11 @@ if(node != NULL) {                                               \
     if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_OK) {   \
 
 
-/* Indicates the end of a Access block. */
-#define LIST_NODE_ACCESS_READ_END()              \
- ListNodeUnlock(node, LIST_LOCK_MODE_READ);   \
- }}                                                 \
 
-/* Indicates the end of a Access block. */
-#define LIST_NODE_ACCESS_WRITE_END()             \
- ListNodeUnlock(node, LIST_LOCK_MODE_WRITE);  \
- }}                                                 \
+/* Indicates the end of an Access block. */
+#define LIST_NODE_ACCESS_END()              \
+ ListNodeUnlock(node);                      \
+ }}                                         \
 
 
 

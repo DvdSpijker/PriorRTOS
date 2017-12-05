@@ -120,7 +120,7 @@ OsResult_t RingbufDelete(Id_t *ringbuf_id);
  * @retval:   OS_LOCKED; if the ringbuffer is already locked for writing.
  * @retval:   OS_ERROR; if the ringbuffer could not be found.
  ******************************************************************************/
-OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length);
+OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32_t timeout);
 
 
 /******************************************************************************
@@ -136,8 +136,8 @@ OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length);
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  * @argin: (RingbufBase_t) target; Target data array.
  *                        Pre-condition: target[0] = 0xFE, target[amount-1] = 0xEF
- * @argin: (U32_t *) amount; Amount of data to read in nodes.
- * @argout: (U32_t *) amount; Actual amount of data read.
+ * @argin: (U32_t *) amount; Amount of data to read.
+ * @argout:(U32_t *) amount; Actual amount of data read.
  *
  *
  * @rettype:  (OsResult_t) sys call result
@@ -147,7 +147,7 @@ OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length);
  * @retval:   OS_OUT_OF_BOUNDS; if the target array was not compliant.
  * @retval:   OS_ERROR; if the ringbuffer could not be found.
  ******************************************************************************/
-OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount);
+OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U32_t timeout);
 
 
 /******************************************************************************

@@ -43,20 +43,21 @@
 #include <MailboxDef.h>
 #include <CoreDef.h>
 #include <TaskDef.h>
-#include <Mm.h>
+#include <Memory.h>
+#include <SystemCall.h>
 
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdbool.h>
 
-static bool UtilTaskIsOwner(pMailbox_t mailbox, pTcb_t tcb);
-Id_t MailboxIdBuffer[2];
+static bool ITaskIsOwner(pMailbox_t mailbox, pTcb_t tcb);
+
 LinkedList_t MailboxList;
 
-OsResult_t MailboxInit(void)
+OsResult_t KMailboxInit(void)
 {
-    ListInit(&MailboxList, ID_TYPE_MAILBOX, MailboxIdBuffer, 2);
+    ListInit(&MailboxList, ID_TYPE_MAILBOX);
 
     return OS_OK;
 }
@@ -66,27 +67,27 @@ Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners)
 
     //Check input boundaries
     if(n_owners > MAILBOX_CONFIG_MAX_OWNERS) {
-        return INVALID_ID;
+        return OS_ID_INVALID;
     }
 
     void *buffer = NULL;
-    pMailbox_t new_mailbox = (pMailbox_t)CoreObjectAlloc(sizeof(Mailbox_t), mailbox_size, &buffer); //Allocate memory for mailbox struct
+    pMailbox_t new_mailbox = (pMailbox_t)KCoreObjectAlloc(sizeof(Mailbox_t), mailbox_size, &buffer); //Allocate memory for mailbox struct
     if(new_mailbox == NULL) {
-        return INVALID_ID;    //Allocation error
+        return OS_ID_INVALID;    //Allocation error
     }
 
     new_mailbox->buffer = (MailboxBase_t *)buffer;
-    new_mailbox->pend_counters = (U8_t*)CoreObjectAlloc(sizeof(U8_t) * mailbox_size, 0, NULL); //Allocate memory for mailbox data
+    new_mailbox->pend_counters = (U8_t*)KCoreObjectAlloc(sizeof(U8_t) * mailbox_size, 0, NULL); //Allocate memory for mailbox data
     if(new_mailbox->pend_counters == NULL) {
-        CoreObjectFree((void **)&new_mailbox, &buffer);
-        return INVALID_ID;
+        KCoreObjectFree((void **)&new_mailbox, &buffer);
+        return OS_ID_INVALID;
     }
 
     ListNodeInit(&new_mailbox->list_node, (void*)new_mailbox);
     if(ListNodeAddSorted(&MailboxList, &new_mailbox->list_node) != OS_OK) {
-        CoreObjectFree((void **)&new_mailbox->pend_counters, NULL);
-        CoreObjectFree((void **)&new_mailbox, &buffer);
-        return INVALID_ID;
+        KCoreObjectFree((void **)&new_mailbox->pend_counters, NULL);
+        KCoreObjectFree((void **)&new_mailbox, &buffer);
+        return OS_ID_INVALID;
     }
 
     new_mailbox->size = mailbox_size;
@@ -100,23 +101,36 @@ Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners)
 
 OsResult_t MailboxDelete(Id_t *mailbox_id)
 {
-    pMailbox_t mailbox = UtilMailboxFromId(*mailbox_id);
+    pMailbox_t mailbox = KMailboxFromId(*mailbox_id);
     if (mailbox != NULL) {
         ListNodeDeinit(&MailboxList, &mailbox->list_node);
-        CoreObjectFree((void **)&mailbox->pend_counters, NULL);
-        CoreObjectFree((void **)&mailbox, (void **)&mailbox->buffer);
-        *mailbox_id = INVALID_ID;
+        KCoreObjectFree((void **)&mailbox->pend_counters, NULL);
+        KCoreObjectFree((void **)&mailbox, (void **)&mailbox->buffer);
+        *mailbox_id = OS_ID_INVALID;
         return OS_OK;
     }
     return OS_ERROR;
 }
 
-OsResult_t MailboxPost(Id_t mailbox_id, U8_t base_address, MailboxBase_t* data, U8_t len)
+OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout)
 {
-    if(len == 0) {
-        return OS_OUT_OF_BOUNDS;    //len has to at least 1
-    }
+    
     OsResult_t result = OS_LOCKED;
+    
+#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+    SYSTEM_CALL_WAIT_HANDLE_EVENT;
+    
+    SYSTEM_CALL_POLL_HANDLE_EVENT(mailbox_id, MAILBOX_EVENT_PEND(address), &result) {
+        /* Do nothing. Normal execution flow. */
+    }
+    SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
+        return result;
+    }
+    SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
+        return result;
+    }    
+#endif
+
     LIST_NODE_ACCESS_WRITE_BEGIN(&MailboxList, mailbox_id) {
         result = OS_OK;
         pMailbox_t mailbox = ListNodeChildGet(node);
@@ -124,68 +138,103 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t base_address, MailboxBase_t* data, 
             result = OS_ERROR;    //Search error
         }
 
-        if((len > mailbox->size) || ((base_address + len) > mailbox->size)) {
-            result = OS_OUT_OF_BOUNDS;    //base address and length > mailbox size
-        }
-
-        if(mailbox->pend_counters[base_address] != 0) {
-            result = OS_LOCKED;
-        }
         if(result == OS_OK) {
-            for (U8_t i = base_address; i < (len + base_address); i++) {
-                mailbox->buffer[i] = data[(i - base_address)];
-                mailbox->pend_counters[i] = mailbox->n_owners;
+            
+            /* Validate address range. */
+            if(address > (mailbox->size - 1)) {
+                result = OS_OUT_OF_BOUNDS;
             }
-
-
-#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
-            EventPublish(mailbox_id, MAILBOX_EVENT_POST(base_address), 0);
-#endif
+            
+            /* Check pend counter, if this is !0 then posting at this address is not allowed.
+             * wait/poll for a pend event. */            
+            if(result == OS_OK) {
+                if(mailbox->pend_counters[address] != 0) {
+                    #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+                    SYSTEM_CALL_POLL_WAIT_EVENT(node, mailbox_id, MAILBOX_EVENT_PEND(address), &result, timeout);
+                    #else
+                    result = OS_LOCKED;
+                    #endif
+                }
+                
+                /* If the pend counter is 0 the address can be accessed. 
+                 * After posting a post event is emitted. */                
+                if(result == OS_OK) {
+                    mailbox->buffer[address] = data;
+                    mailbox->pend_counters[address] = mailbox->n_owners;
+                    #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+                    EventEmit(mailbox_id, MAILBOX_EVENT_POST(address), EVENT_FLAG_NONE);
+                    #endif
+                }      
+            }                
         }
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
     return result;
 }
 
-OsResult_t MailboxPend(Id_t mailbox_id,  U8_t base_address, MailboxBase_t* data, U8_t len)
+OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t timeout)
 {
-    pTcb_t task = TcbRunning;
-    if(len == 0) {
-        return OS_OUT_OF_BOUNDS;    //len has to at least 1
-    }
 
+    pTcb_t task = TcbRunning;
     OsResult_t result = OS_LOCKED;
+    
+    
+#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+    SYSTEM_CALL_WAIT_HANDLE_EVENT;
+
+    SYSTEM_CALL_POLL_HANDLE_EVENT(mailbox_id, MAILBOX_EVENT_PEND(address), &result) {
+        /* Do nothing. Normal execution flow. */
+    }
+    SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
+        return result;
+    }
+    SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
+        return result;
+    }
+#endif
+
+
     /* Lock in write because the pend counters are modified. */
     LIST_NODE_ACCESS_WRITE_BEGIN(&MailboxList, mailbox_id) {
         result = OS_OK;
         pMailbox_t mailbox = ListNodeChildGet(node);
-
-        if(UtilTaskIsOwner(mailbox, task) == false) {
+        
+        /* Validate ownership of this mailbox. */
+        if(ITaskIsOwner(mailbox, task) == false) {
             result = OS_RESTRICTED;
         }
-
-        if((len > mailbox->size) || ((base_address + len) > mailbox->size)) {
-            result = OS_OUT_OF_BOUNDS;
-        }
-
+        
         if(result == OS_OK) {
-            for (U8_t i = base_address; i < (len + base_address); i++) {
-                data[(i-base_address)] = mailbox->buffer[i];
-                if(mailbox->pend_counters[i] > 0) {
-                    mailbox->pend_counters[i]--;
-                } else {
-                    result = OS_LOCKED;
-                }
+            
+            /* Validate address range. */
+            if(address > (mailbox->size - 1)) {
+                result = OS_OUT_OF_BOUNDS;
             }
-
-#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+            
             if(result == OS_OK) {
-                EventPublish(mailbox_id, MAILBOX_EVENT_PEND(base_address), 0);
-            }
-#endif
+                
+                /* Check pend counter, if this is 0 there is nothing to pend and we can
+                 * wait/poll for a post event. */
+                if(mailbox->pend_counters[address] == 0) {
+                    #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+                    SYSTEM_CALL_POLL_WAIT_EVENT(node, mailbox_id, MAILBOX_EVENT_POST(address), &result, timeout);
+                    #else
+                    result = OS_LOCKED;
+                    #endif
+                }
+                
+                /* If the pend counter != 0 the address can be accessed. 
+                 * After pending a pend event is emitted. */
+                if(result == OS_OK) {
+                    *data = mailbox->buffer[address];
+                    #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+                    EventEmit(mailbox_id, MAILBOX_EVENT_PEND(address), EVENT_FLAG_NONE);
+                    #endif
+                }
+            }            
         }
     }
-    LIST_NODE_ACCESS_WRITE_END();
+    LIST_NODE_ACCESS_END();
     return result;
 }
 
@@ -196,11 +245,11 @@ U8_t MailboxPendCounterGet(Id_t mailbox_id, U8_t address)
         pMailbox_t mailbox = ListNodeChildGet(node);
         pend_counter = mailbox->pend_counters[address];
     }
-    LIST_NODE_ACCESS_READ_END();
+    LIST_NODE_ACCESS_END();
     return pend_counter;
 }
 
-pMailbox_t UtilMailboxFromId(Id_t mailbox_id)
+pMailbox_t KMailboxFromId(Id_t mailbox_id)
 {
     ListNode_t *node = ListSearch(&MailboxList, mailbox_id);
     if(node != NULL) {
@@ -210,7 +259,7 @@ pMailbox_t UtilMailboxFromId(Id_t mailbox_id)
     }
 }
 
-static bool UtilTaskIsOwner(pMailbox_t mailbox, pTcb_t tcb)
+static bool ITaskIsOwner(pMailbox_t mailbox, pTcb_t tcb)
 {
     bool is_owner = false;
     for (U8_t i = 0; i < mailbox->n_owners; i++) {
