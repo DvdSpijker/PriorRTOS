@@ -7,16 +7,12 @@
 
 #include <RecursiveLock.h>
 
-#define LOCK_MASK_CHECKED          0b01000000
 #define LOCK_MASK_MODE             0b10000000
-#define LOCK_MASK_COUNT            0b00111111
-#define LOCK_COUNT_MAX_VALUE       63
+#define LOCK_MASK_COUNT            0b01111111
+#define LOCK_COUNT_MAX_VALUE       127
 
 #define LOCK_MODE_SET_WRITE(lock) (lock |= LOCK_MASK_MODE)
 #define LOCK_MODE_SET_READ(lock) (lock &= ~(LOCK_MASK_MODE))
-#define LOCK_CHECKED_BIT_SET(lock) (lock |= LOCK_MASK_CHECKED)
-#define LOCK_CHECKED_BIT_GET(lock) ((lock & LOCK_MASK_CHECKED) ? true : false)
-#define LOCK_CHECKED_BIT_CLEAR(lock) (lock &= ~(LOCK_MASK_CHECKED))
 #define LOCK_COUNT_INC(lock) if((lock & LOCK_MASK_COUNT) < LOCK_COUNT_MAX_VALUE)++lock
 #define LOCK_COUNT_DEC(lock) if((lock & LOCK_MASK_COUNT) > 0)--lock
 #define LOCK_COUNT_GET(lock)(lock & LOCK_MASK_COUNT)
@@ -32,10 +28,10 @@ void RecursiveLockInit(RecursiveLock_t *lock, Id_t object_id)
 {
     lock->lock = 0;
     lock->object = object_id;
-    lock->owner = OS_ID_INVALID;
+    lock->owner = RECURSIVE_LOCK_OWNER_NONE;
 }
 
-OsResult_t RecursiveLockLock(RecursiveLock_t *lock, LockMode_t mode, Id_t task_id)
+OsResult_t RecursiveLockLock(RecursiveLock_t *lock, LockMode_t mode, Id_t owner_id)
 {
     OsCritSectBegin();
     OsResult_t result = OS_ERROR;
@@ -48,7 +44,7 @@ OsResult_t RecursiveLockLock(RecursiveLock_t *lock, LockMode_t mode, Id_t task_i
         if(LOCK_COUNT_GET(lock->lock) == LOCK_COUNT_MAX_VALUE) {
             result = OS_LOCKED;
             goto exit;
-        } else {
+        } else if( ((LOCK_MODE_IS_WRITE(lock->lock)) && lock->owner == owner_id) || ) {
             LOCK_COUNT_INC(lock->lock);
             result = OS_OK;
             goto exit;
