@@ -29,12 +29,13 @@ extern "C" {
 
 #define N_POOLS (PRTOS_CONFIG_N_USER_POOLS + 2) /* User pools + kernel pool + object pool. */
 
+#define KERNEL_POOL_SIZE_BYTES 20
 
 /* Pool Management Block definition. */
 typedef struct Pmb_t {
 
-    MemBase_t* start_addr;
-    MemBase_t* end_addr;
+    U32_t start_index;
+    U32_t end_index;
 
     U32_t pool_size;
     U32_t mem_left;
@@ -52,7 +53,8 @@ typedef struct Pmb_t *  pPmb_t;
 
 
 OsResult_t KMemInit(void);
-OsResult_t KMemKernelHeapSet(Id_t kernel_heap);
+void *KMemAlloc(U32_t size);
+
 OsResult_t KMemObjectHeapSet(Id_t object_heap);
 
 
