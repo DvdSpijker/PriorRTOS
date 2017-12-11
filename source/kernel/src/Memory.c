@@ -141,7 +141,7 @@ Id_t MemPoolCreate(U32_t pool_size)
     }
 
     pmb = &(PoolTable[pool_id]);
-    mem_req =  (pool_size % BLOCK_SIZE_BYTES) ? (pool_size / BLOCK_SIZE_BYTES) + 1 : (pool_size / BLOCK_SIZE_BYTES) );
+    mem_req =  ( (pool_size % BLOCK_SIZE_BYTES) ? (pool_size / BLOCK_SIZE_BYTES) + 1 : (pool_size / BLOCK_SIZE_BYTES) );
 
     while(mem_found < mem_req && (index + index_offset) < HeadIndexEnd) {
         tmp_pool_id = IPoolIdFromIndex(index + index_offset);
@@ -423,7 +423,6 @@ U32_t MemAllocSizeGet(void *ptr)
         return 0;
     }
 
-    U32_t size = 0;
     MemBase_t* tmp_ptr = (MemBase_t*)(ptr);
 
     /*Test if the pointer is in a pool address space.
