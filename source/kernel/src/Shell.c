@@ -161,10 +161,10 @@ U16_t ShellPutRaw(char *message, ...)
         }
         vsnprintf(msg_buffer, act_size, message, args);
     }
-    va_end(args);
     RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_TIMEOUT_INFINITE);
 
 cleanup:
+	va_end(args);
     free(msg_buffer);
     return act_size;
 }
@@ -186,11 +186,11 @@ U16_t ShellPutRawNewline(char *message, ...)
         vsnprintf(msg_buffer, act_size, message, args);
         vsnprintf(&msg_buffer[1], (act_size-1), message, args);
     }
-    va_end(args);
     act_size+=1;
     RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_TIMEOUT_INFINITE);
 
 cleanup:
+	va_end(args);
     free(msg_buffer);
     return act_size;
 }
@@ -214,11 +214,11 @@ U16_t ShellPut(char *message, ...)
         }
         vsnprintf(&msg_buffer[offset], (act_size-offset), message, args);
     }
-    va_end(args);
     act_size += offset;
     RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_TIMEOUT_INFINITE);
 
 cleanup:
+    va_end(args);
     free(msg_buffer);
     return act_size;
 }
