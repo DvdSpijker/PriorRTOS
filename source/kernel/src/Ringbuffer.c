@@ -40,7 +40,7 @@
 
 #include <Ringbuffer.h>
 #include <Types.h>
-#include <Memory.h>
+#include <MemoryDef.h>
 #include <List.h>
 #include <Event.h>
 #include <RingbufferDef.h>
@@ -74,7 +74,7 @@ Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size)
     pRingbuf_t new_ringbuf = NULL;
     void *int_buffer = NULL;
     if(buffer == NULL) {
-        new_ringbuf = (pRingbuf_t)KCoreObjectAlloc(sizeof(Ringbuf_t), (size*sizeof(RingbufBase_t)), &int_buffer);
+        new_ringbuf = (pRingbuf_t)KMemAllocObject(sizeof(Ringbuf_t), (size*sizeof(RingbufBase_t)), &int_buffer);
         if(new_ringbuf != NULL) {
             new_ringbuf->buffer = (RingbufBase_t *)int_buffer;
             new_ringbuf->ext_buffer = false;
@@ -82,7 +82,7 @@ Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size)
             return OS_ID_INVALID;
         }
     } else {
-        new_ringbuf = (pRingbuf_t)KCoreObjectAlloc(sizeof(Ringbuf_t), 0, NULL);
+        new_ringbuf = (pRingbuf_t)KMemAllocObject(sizeof(Ringbuf_t), 0, NULL);
         if(new_ringbuf != NULL) {
             new_ringbuf->buffer = buffer;
             new_ringbuf->ext_buffer = true;
@@ -93,7 +93,7 @@ Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size)
 
     ListNodeInit(&new_ringbuf->list_node, (void*)new_ringbuf);
     if(ListNodeAddSorted(&RingbufList, &new_ringbuf->list_node) != OS_OK) {
-        KCoreObjectFree((void **)&new_ringbuf, &int_buffer);
+        KMemFreeObject((void **)&new_ringbuf, &int_buffer);
         return OS_ID_INVALID;
     }
 
@@ -120,7 +120,7 @@ OsResult_t RingbufDelete(Id_t *ringbuf_id)
         buffer = (void **)&ringbuf->buffer;
     }
     ListNodeDeinit(&RingbufList, &ringbuf->list_node);
-    KCoreObjectFree((void **)&ringbuf, buffer);
+    KMemFreeObject((void **)&ringbuf, buffer);
     *ringbuf_id = OS_ID_INVALID;
 
     return result;

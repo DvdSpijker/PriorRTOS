@@ -45,6 +45,7 @@
 #include <Task.h>
 #include <Event.h>
 #include <TaskDef.h>
+#include <MemoryDef.h>
 
 #include <stdlib.h>
 #include <inttypes.h>
@@ -106,7 +107,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
     volatile pTcb_t new_TCB;
 
     /* Use data section of ObjectAlloc for Task stack in the future. */
-    new_TCB = (pTcb_t)KCoreObjectAlloc(sizeof(Tcb_t), 0, NULL);
+    new_TCB = (pTcb_t)KMemAllocObject(sizeof(Tcb_t), 0, NULL);
     if (new_TCB == NULL) {
         LOG_ERROR_NEWLINE("Failed to allocate memory for a task.");
         return OS_ID_INVALID;
@@ -119,7 +120,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
     if(result != OS_OK) {
         LOG_ERROR_NEWLINE("A task could not be added to the list.");
         ListNodeDeinit(&TcbList, &new_TCB->list_node);
-        KCoreObjectFree((void **)&new_TCB, NULL);
+        KMemFreeObject((void **)&new_TCB, NULL);
         return OS_ID_INVALID;
     }
     ListInit(&new_TCB->event_list, 0);
@@ -173,7 +174,7 @@ OsResult_t TaskDelete(Id_t *task_id)
 
     if(tcb != NULL) {
         KTaskFlagSet(tcb, TASK_FLAG_DELETE);
-        
+
 #ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
         EventEmit(task_id, TASK_EVENT_DELETE, EVENT_FLAG_NONE);
 #endif
@@ -241,7 +242,7 @@ OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg)
     if(tcb != NULL) {
         tcb->v_arg = v_arg;
         result = ITaskResume(task_id);
-    }    
+    }
     return result;
 }
 
@@ -251,7 +252,7 @@ OsResult_t TaskResume(Id_t task_id)
         return OS_INVALID_ID;
     }
     OsResult_t result = ITaskResume(task_id);
-    return result;    
+    return result;
 }
 
 
@@ -273,33 +274,33 @@ Id_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms)
     Id_t event_id = OS_ID_INVALID;
     result = ITaskListen(TcbRunning, object_id, event, EVENT_FLAG_PERMANENT, timeout_ms, &event_id);
     if(result == OS_OK) {
-        return event_id;     
-    }           
-    return OS_ID_INVALID;  
+        return event_id;
+    }
+    return OS_ID_INVALID;
 }
 
 OsResult_t TaskPollRemove(Id_t object_id, U32_t event)
 {
     OsResult_t result = OS_ERROR;
     pEvent_t evt = EventListContainsEvent(&TcbRunning->event_list, object_id, event);
-    if(evt != NULL) {   
+    if(evt != NULL) {
         result = EventDestroy(&TcbRunning->event_list, evt);
-    } 
-    
-    return result;    
+    }
+
+    return result;
 }
 
 
 OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll)
 {
     OsResult_t result = OS_ERROR;
-    
+
     /* Check if the task is already listened to this event. */
     pEvent_t sub_event = EventListContainsEvent(&TcbRunning->event_list, object_id, event);
-    
+
     if(sub_event == NULL) {
         if(add_poll == true) {
-            goto new_poll;  
+            goto new_poll;
         } else {
             result = OS_FAIL;
         }
@@ -321,17 +322,17 @@ OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll
         }
     }
 
-/* Return without adding a new poll. */    
+    /* Return without adding a new poll. */
     return result;
 
 
 new_poll:
-/* Add a new poll and return. */    
+    /* Add a new poll and return. */
     result = ITaskListen(TcbRunning, object_id, event, EVENT_FLAG_NONE, timeout_ms, NULL);
     if(result == OS_OK) {
         result = OS_POLL;
-    }    
-    
+    }
+
     return result;
 }
 
@@ -339,23 +340,23 @@ new_poll:
 OsResult_t TaskJoin(Id_t task_id, U32 timeout)
 {
     OsResult_t result = OS_ERROR;
-    
-    #ifdef PRTOS_CONFIG_USE_SCHEDULER_PREEM
-    #ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
-        result = TaskWait(task_id, TASK_EVENT_DELETE, timeout);   
-    #endif
-    #else 
-    #ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
-         result = TaskPoll(task_id, TASK_EVENT_DELETE, timeout, true);    
-    #endif
-    #endif
-    
-    return result;    
+
+#ifdef PRTOS_CONFIG_USE_SCHEDULER_PREEM
+#ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
+    result = TaskWait(task_id, TASK_EVENT_DELETE, timeout);
+#endif
+#else
+#ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
+    result = TaskPoll(task_id, TASK_EVENT_DELETE, timeout, true);
+#endif
+#endif
+
+    return result;
 }
 
 OsResult_t TaskSleep(U32_t t_ms)
 {
-    /* Sleeping is achieved by waiting/polling for 
+    /* Sleeping is achieved by waiting/polling for
      * an event that will never occur with a timeout.
      * The timeout is the sleep-time. */
     OsResult_t result = OS_OK;
@@ -444,30 +445,30 @@ U32_t TaskRunTimeGet(void)
         runtime_us = TcbRunning->run_time_us;
         ListNodeUnlock(&TcbRunning->list_node);
     }
-   
+
     return runtime_us;
 }
 
 
 static S8_t ITaskEventStateGet(pEvent_t event)
 {
-    
+
     S8_t result = 0;
-        if(event != NULL) {
-            if(ListNodeLock(&event->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
-                if(EventHasOccurred(event)) {
-                    result = 0;
-                    } else if (EventHasTimedOut(event)) {
-                    result = 1;
-                    } else {
-                    result = -1;
-                }
-                ListNodeUnlock(&event->list_node);
+    if(event != NULL) {
+        if(ListNodeLock(&event->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
+            if(EventHasOccurred(event)) {
+                result = 0;
+            } else if (EventHasTimedOut(event)) {
+                result = 1;
+            } else {
+                result = -1;
             }
-        } else {
-            result = -3;
+            ListNodeUnlock(&event->list_node);
         }
-   
+    } else {
+        result = -3;
+    }
+
 
     return result;
 }
@@ -486,17 +487,17 @@ static S8_t ITaskEventHandle(pEvent_t event)
 
     if(event != NULL) {
         if(ListNodeLock(&event->list_node, LIST_LOCK_MODE_WRITE) == OS_OK) {
-                if(EventFlagGet(event, EVENT_FLAG_PERMANENT)) {
-                    /* If the event is permanent, handle the event (resets flags etc.). */
-                    EventHandle(event);
-                } else { /* Delete event if not permanent. */
-                    EventDestroy(list, event);
-                }
+            if(EventFlagGet(event, EVENT_FLAG_PERMANENT)) {
+                /* If the event is permanent, handle the event (resets flags etc.). */
+                EventHandle(event);
+            } else { /* Delete event if not permanent. */
+                EventDestroy(list, event);
             }
-            result = 0;
-            ListNodeUnlock(&event->list_node);
         }
-   
+        result = 0;
+        ListNodeUnlock(&event->list_node);
+    }
+
     return result;
 
 }
@@ -617,7 +618,7 @@ void KTcbDestroy(pTcb_t tcb, LinkedList_t *list)
     }
     EventListDestroy(&tcb->event_list);
     ListNodeDeinit(&TcbList, node);
-    KCoreObjectFree((void**)&tcb, NULL);
+    KMemFreeObject((void**)&tcb, NULL);
 }
 
 
@@ -635,25 +636,25 @@ static OsResult_t ITaskListen(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flag
 
 /* Adds t_us to the task's runtime.  */
 void KTaskRunTimeUpdate(void)
-{   
+{
     static U32_t last_micros = 0;
     U32_t t_accu_us = 0;
     U32_t curr_micros = OsRunTimeMicrosGet();
-    
+
     if(curr_micros == 0) {
         return;
     }
-    
+
     if(curr_micros >= last_micros) {
         t_accu_us = curr_micros - last_micros;
     } else {
         t_accu_us = last_micros - curr_micros;
     }
-    last_micros = curr_micros;  
-      
+    last_micros = curr_micros;
+
     if(t_accu_us != 0) {
-        TcbRunning->run_time_us += t_accu_us;    
-    }  
+        TcbRunning->run_time_us += t_accu_us;
+    }
 }
 
 void KTaskRunTimeReset(pTcb_t tcb)

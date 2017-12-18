@@ -53,7 +53,7 @@
 #include <MemoryDef.h>
 
 /* Kernel Tasks. */
-#include <KernelTaskIdle.h>
+#include <../inc/ktask/KernelTaskIdle.h>
 
 
 /*Include standard libraries*/
@@ -246,45 +246,16 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     LOG_INFO_NEWLINE("Initializing module:Memory Management...");
     status_kernel = KMemInit(); //Initiate memory management
-    if(status_kernel == OS_OUT_OF_BOUNDS) {
-        LOG_ERROR_NEWLINE("No pools defined by user...");
+    if(status_kernel == OS_CRIT_ERROR) {
+        LOG_ERROR_NEWLINE("critical error");
+        return status_kernel;
     }
     LOG_INFO_APPEND("ok");
-
-    LOG_INFO_NEWLINE("Creating Kernel heap...");
-
-    KernelReg.kernel_heap = MemPoolCreate(KERNEL_HEAP_SIZE); //Create pool for kernel heap
-    if(KernelReg.kernel_heap == OS_ID_INVALID) {
-        status_kernel = OS_CRIT_ERROR;
-        LOG_ERROR_NEWLINE("Invalid pool ID returned");
-        return status_kernel;
-    } else {
-        KMemKernelHeapSet(KernelReg.kernel_heap);
-        KernelReg.heap_mgw0 = (MemBase_t*)MemAlloc(KernelReg.kernel_heap,sizeof(MemBase_t));
-        if(KernelReg.heap_mgw0 == NULL) {
-            status_kernel = OS_CRIT_ERROR;
-            LOG_ERROR_NEWLINE("Allocation of magic-words in the Kernel heap returned null");
-        } else {
-            *(KernelReg.heap_mgw0) = (MemBase_t)KERNEL_HEAP_MAGICWORD;
-            LOG_INFO_APPEND("ok");
-        }
-
-    }
-
-    LOG_INFO_NEWLINE("Creating Object heap...");
-    KernelReg.object_heap = MemPoolCreate((OBJECT_HEAP_SIZE - 10)); //Create pool for object heap. /* TODO: Fix PoolCreate. */
-    if(KernelReg.object_heap == OS_ID_INVALID) {
-        status_kernel = OS_CRIT_ERROR;
-        LOG_ERROR_NEWLINE("Invalid pool ID returned");
-        return status_kernel;
-    } else {
-        LOG_INFO_APPEND("ok");
-    }
 
     LOG_INFO_NEWLINE("Initializing module:Task...");
     status_kernel = KTaskInit(); //Initiate task management
     if(status_kernel == OS_CRIT_ERROR) {
-        LOG_ERROR_NEWLINE("No task ID buffer defined");
+        LOG_ERROR_NEWLINE("critical error");
         return status_kernel;
     }
     LOG_INFO_APPEND("ok");
@@ -1218,59 +1189,6 @@ static void ICoreOsIntDisable(void)
 
 /*********************************************/
 
-
-/************* Object allocation API *************/
-
-void *KCoreObjectAlloc(U32_t obj_size, U32_t obj_data_size, void **obj_data)
-{
-    KCoreKernelModeEnter(); /* Enter Kernel Mode to access the object heap. */
-    /* Check if there is memory available and the object count has not reached its max. value. */
-    if( (KernelReg.object_count == 0xFFFF) || (MemPoolFreeSpaceGet(KernelReg.object_heap) < (obj_size + obj_data_size)) ) {
-        goto error;
-    }
-
-    /* Allocate the memory for the object and check its validity. */
-    void *obj = MemAlloc(KernelReg.object_heap, obj_size);
-    if(obj != NULL) {
-        if(obj_data_size != 0) {
-            if(obj_data == NULL) {
-                MemFree(&obj);
-                goto error;
-            }
-            *obj_data = MemAlloc(KernelReg.object_heap, obj_data_size);
-            if(*obj_data != NULL) {
-                KernelReg.object_count++;
-                goto valid;
-            } else { /* Object data allocation failed => Free the object. */
-                MemFree(&obj);
-                goto error;
-            }
-        } else { /* No object data has to be allocated. */
-            KernelReg.object_count++;
-            goto valid;
-        }
-    }
-
-
-error:
-    KCoreKernelModeExit();
-    while(1);
-    /* TODO: Throw exception. */
-    return NULL;
-
-valid:
-    KCoreKernelModeExit();
-    return obj;
-}
-
-OsResult_t KCoreObjectFree(void **obj, void **obj_data)
-{
-    OsResult_t result = OS_ERROR;
-    result = MemFree(obj_data);
-    result = MemFree(obj);
-    KernelReg.object_count--;
-    return result;
-}
 
 /************************************************/
 

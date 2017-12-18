@@ -54,11 +54,8 @@ typedef struct Pmb_t *  pPmb_t;
 
 OsResult_t KMemInit(void);
 void *KMemAlloc(U32_t size);
-
-OsResult_t KMemObjectHeapSet(Id_t object_heap);
-
-
-
+void *KMemAllocObject(U32_t obj_size, U32_t obj_data_size, void **obj_data);
+OsResult_t KMemFreeObject(void **obj, void **obj_data);
 
 #ifdef __cplusplus
 }

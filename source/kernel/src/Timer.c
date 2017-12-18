@@ -48,7 +48,9 @@
 #include <Event.h>
 #include <TimerDef.h>
 #include <KernelTask.h>
-#include <KernelTaskTimerUpdate.h>
+#include <MemoryDef.h>
+
+#include "../inc/ktask/KernelTaskTimerUpdate.h"
 
 
 #include <stdlib.h>
@@ -100,7 +102,7 @@ void KTimerUpdateAll(U32_t t_us)
                         if(timer->ovf_callback != NULL) {
                             timer->ovf_callback(ListNodeIdGet(&timer->list_node));
                         }
-                        
+
                         if(!(timer->parameter & TIMER_PARAMETER_PERIODIC)) { /* If timer is not Periodic. */
                             U8_t iter = TIMER_PARAMETER_ITR_GET(timer->parameter); /* Acquire iterations */
                             iter--;
@@ -174,7 +176,7 @@ OsResult_t TimerDelete(Id_t *timer_id)
     pTimer_t rm_timer = ITimerFromId(*timer_id);
     if(rm_timer != NULL) {
         ListNodeDeinit(&TimerList, &rm_timer->list_node);
-        KCoreObjectFree((void **)&rm_timer, NULL);
+        KMemFreeObject((void **)&rm_timer, NULL);
         LOG_INFO_NEWLINE("Deleted timer %04x", *timer_id);
         *timer_id = OS_ID_INVALID;
         return OS_OK;
@@ -375,7 +377,7 @@ pTimer_t ITimerCreate(void)
 {
 
     pTimer_t new_timer;
-    new_timer = (pTimer_t)KCoreObjectAlloc(sizeof(Timer_t), 0, NULL); //malloc(sizeof(Timer_t));
+    new_timer = (pTimer_t)KMemAllocObject(sizeof(Timer_t), 0, NULL); //malloc(sizeof(Timer_t));
     if(new_timer == NULL) {
         return NULL;
     }
@@ -385,7 +387,7 @@ pTimer_t ITimerCreate(void)
     OsResult_t result = ListNodeAddSorted(&TimerList, &new_timer->list_node);
     if(result != OS_OK) {
         ListNodeDeinit(&TimerList, &new_timer->list_node);
-        KCoreObjectFree((void **)&new_timer, NULL);
+        KMemFreeObject((void **)&new_timer, NULL);
         return NULL;
     }
     new_timer->T_us = 0;

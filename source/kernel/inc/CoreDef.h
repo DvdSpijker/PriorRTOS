@@ -30,11 +30,6 @@ U16_t KCoreFlagGet(CoreFlags_t flag);
 U8_t KCoreKernelModeEnter(void);
 U8_t KCoreKernelModeExit(void);
 
-
-/* Wraps MemAllocDynamic to allocate objects. */
-void *KCoreObjectAlloc(U32_t obj_size, U32_t obj_data_size, void **obj_data);
-OsResult_t KCoreObjectFree(void **obj, void **obj_data);
-
 #ifdef __cplusplus
 }
 #endif

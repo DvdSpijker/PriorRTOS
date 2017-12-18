@@ -11,6 +11,7 @@
 #include <Types.h>
 #include <Event.h>
 #include <Fletcher.h>
+#include <MemoryDef.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -45,7 +46,7 @@ pEvent_t EventCreate(Id_t source_id, U32_t event_code, U32_t life_time_us)
 {
     pEvent_t new_event = NULL;
 
-    new_event = (pEvent_t)KCoreObjectAlloc(sizeof(Event_t), 0, NULL);//malloc(sizeof(Event_t));
+    new_event = (pEvent_t)KMemAllocObject(sizeof(Event_t), 0, NULL);//malloc(sizeof(Event_t));
     if(new_event == NULL) {
         return NULL;
     }
@@ -54,7 +55,7 @@ pEvent_t EventCreate(Id_t source_id, U32_t event_code, U32_t life_time_us)
     new_event->occurrence_cnt = 0;
     new_event->source_id = source_id;
     new_event->event_code = event_code;
- 
+
     ListNodeInit(&new_event->list_node, (void*)new_event);
 
     return new_event;
@@ -74,12 +75,12 @@ OsResult_t  EventAddToList(LinkedList_t *event_list, pEvent_t event)
 
 OsResult_t EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t event_code, U8_t flags, U32_t life_time_us, Id_t *out_event_id)
 {
-    /* Generate a hash value from the event. 
-     * Then search for this hash value in the event list, 
+    /* Generate a hash value from the event.
+     * Then search for this hash value in the event list,
      * this search will return !NULL if the task is already
-     * listened to this event, in which case we only want 
+     * listened to this event, in which case we only want
      * to refresh its lifetime. */
-    U16_t hash = EventToHash(object_id, event_code); 
+    U16_t hash = EventToHash(object_id, event_code);
     ListNode_t *node = ListSearch(task_event_list, hash);
     pEvent_t new_event = NULL;
     if(node != NULL) {
@@ -96,29 +97,29 @@ OsResult_t EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t even
         EVENT_FLAG_SET(new_event_code, EVENT_FLAG_NO_TIMEOUT);
     }
     EVENT_FLAG_SET(new_event_code, flags);
-    
+
     /* If the task was not listening,
      * create a new event. */
     new_event = EventCreate(object_id, new_event_code, life_time_us);
     if(new_event != NULL) {
         new_event->list_node.id = hash; /* Assign new event the generated hash value as its ID. */
         OsResult_t result = ListNodeAddAtPosition(task_event_list, &new_event->list_node, LIST_POSITION_TAIL);
-        
+
         if(result == OS_OK) { /* Only assign the event ID if there is a pointer. */
             if(out_event_id != NULL) {
-                *out_event_id = ListNodeIdGet(&new_event->list_node);    
+                *out_event_id = ListNodeIdGet(&new_event->list_node);
             }
         } else {
-            /* Free the allocated object if adding it to the list failed. 
+            /* Free the allocated object if adding it to the list failed.
              * Also set the event_id pointer to invalid if !NULL. */
-            KCoreObjectFree((void **)&new_event, NULL);
+            KMemFreeObject((void **)&new_event, NULL);
             if(out_event_id != NULL) {
-                *out_event_id = OS_ID_INVALID;    
+                *out_event_id = OS_ID_INVALID;
             }
         }
         return result;
     }
-    
+
     /* This point will only be reached in case of an error. */
     LOG_ERROR_NEWLINE("Subscribing to event from object %04x failed.");
     return OS_ERROR;
@@ -144,7 +145,7 @@ OsResult_t EventEmit(Id_t source_id, U32_t event_code, U8_t flags)
             //LOG_EVENT(new_event);
             return OS_OK;
         } else {
-            KCoreObjectFree((void **)&new_event, NULL);
+            KMemFreeObject((void **)&new_event, NULL);
         }
 
     }
@@ -233,7 +234,7 @@ void EventHandle(pEvent_t event)
         EVENT_FLAG_CLEAR(event->event_code, (EVENT_FLAG_TIMED_OUT | EVENT_FLAG_OCCURRED));
         event->life_time_us_cnt = 0;
         event->occurrence_cnt = 0;
-    }        
+    }
 }
 
 pEvent_t EventHandleFromId(LinkedList_t *list, Id_t event_id)
@@ -314,7 +315,7 @@ OsResult_t EventDestroy(LinkedList_t *list, pEvent_t event)
     if(ListNodeIsInList(list, &event->list_node)) {
         ListNodeRemove(list, &event->list_node);
     }
-    KCoreObjectFree((void **)&event, NULL);
+    KMemFreeObject((void **)&event, NULL);
     //free(event);
     return OS_OK;
 }

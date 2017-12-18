@@ -44,14 +44,14 @@ OsResult_t RecursiveLockLock(RecursiveLock_t *lock, LockMode_t mode, Id_t owner_
         if(LOCK_COUNT_GET(lock->lock) == LOCK_COUNT_MAX_VALUE) {
             result = OS_LOCKED;
             goto exit;
-        } else if( ((LOCK_MODE_IS_WRITE(lock->lock)) && lock->owner == owner_id) || ) {
+        } else if( ((LOCK_MODE_IS_WRITE(lock->lock)) && lock->owner == owner_id)) {
             LOCK_COUNT_INC(lock->lock);
             result = OS_OK;
             goto exit;
         }
     } else if(mode == LOCK_MODE_WRITE) {
 
-        if(LOCK_CHECKED_BIT_GET(lock->lock)) {
+        if(1) { //LOCK_CHECKED_BIT_GET(lock->lock)
             if(LOCK_COUNT_GET(lock->lock) == LOCK_COUNT_MAX_VALUE) {
                 result = OS_LOCKED;
                 goto exit;
@@ -74,7 +74,6 @@ OsResult_t RecursiveLockLock(RecursiveLock_t *lock, LockMode_t mode, Id_t owner_
                     goto exit;
                 }
                 LOCK_MODE_SET_WRITE(lock->lock);
-                LOCK_CHECKED_BIT_SET(lock->lock);
                 LOCK_COUNT_INC(lock->lock);
                 OsCritSectBegin();
                 result = OS_OK;
@@ -84,12 +83,12 @@ OsResult_t RecursiveLockLock(RecursiveLock_t *lock, LockMode_t mode, Id_t owner_
     } else { /* Invalid mode. */
         result = OS_ERROR;
     }
-    
-    exit:
-    
-    //if(result == OS_OK) {
-        //EventEmit(task_id, RECURSIVE_LOCK_EVENT_LOCK, EVENT_FLAG_NO_HANDLER);   
-    //}
+
+exit:
+
+//if(result == OS_OK) {
+//EventEmit(task_id, RECURSIVE_LOCK_EVENT_LOCK, EVENT_FLAG_NO_HANDLER);
+//}
     OsCritSectEnd();
     return result;
 }
@@ -98,13 +97,12 @@ OsResult_t RecursiveLockUnlock(RecursiveLock_t *lock)
 {
     OsCritSectBegin();
     OsResult_t result = OS_ERROR;
-    
+
     LOCK_COUNT_DEC(lock->lock);
     if(LOCK_COUNT_GET(lock->lock) == 0) {
         if(LOCK_MODE_IS_WRITE(lock->lock)) {
-            OsCritSectEnd();    
+            OsCritSectEnd();
         }
-        LOCK_CHECKED_BIT_CLEAR(lock->lock);
         LOCK_MODE_SET_READ(lock->lock);
     }
     result = OS_OK;

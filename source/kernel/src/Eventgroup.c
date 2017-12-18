@@ -40,6 +40,7 @@
 #include <Eventgroup.h>
 #include <EventgroupDef.h>
 #include <CoreDef.h>
+#include <MemoryDef.h>
 #include <Event.h>
 #include <List.h>
 #include <Task.h>
@@ -61,7 +62,7 @@ OsResult_t KEventgroupInit (void)
 Id_t EventgroupCreate(void)
 {
     //pEventGrp_t new_eventgrp = (pEventGrp_t)malloc(sizeof(EventGrp_t));
-    pEventGrp_t new_eventgrp = (pEventGrp_t)KCoreObjectAlloc(sizeof(EventGrp_t), 0, NULL);
+    pEventGrp_t new_eventgrp = (pEventGrp_t)KMemAllocObject(sizeof(EventGrp_t), 0, NULL);
 
     if(new_eventgrp == NULL) {
         return OS_ID_INVALID;
@@ -69,7 +70,7 @@ Id_t EventgroupCreate(void)
 
     ListNodeInit(&new_eventgrp->list_node, (void*)new_eventgrp);
     if(ListNodeAddSorted(&EventGroupList, &new_eventgrp->list_node) != OS_OK) {
-        KCoreObjectFree((void **)&new_eventgrp, NULL);
+        KMemFreeObject((void **)&new_eventgrp, NULL);
         return OS_ID_INVALID;
     }
 
@@ -95,7 +96,7 @@ OsResult_t EventgroupDelete(Id_t *eventgroup_id)
     ListNode_t *node = ListSearch(&EventGroupList, *eventgroup_id);
     void *eventgroup = ListNodeChildGet(node);
     ListNodeDeinit(&EventGroupList, node);
-    KCoreObjectFree((void **)&eventgroup, NULL);
+    KMemFreeObject((void **)&eventgroup, NULL);
 
     *eventgroup_id = OS_ID_INVALID;
 
@@ -171,7 +172,7 @@ OsResult_t EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t ti
 #ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_CLEAR
 
     SYSTEM_CALL_WAIT_HANDLE_EVENT;
-    
+
     SYSTEM_CALL_POLL_HANDLE_EVENT(eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), &result) {
         /* Do nothing. Normal execution flow. */
     }
@@ -181,42 +182,42 @@ OsResult_t EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t ti
     SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
         return result;
     }
- 
-    LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) { 
+
+    LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
         U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
         if((flags & mask) != ~mask) { /* Not all flags have been cleared. */
             SYSTEM_CALL_POLL_WAIT_EVENT(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), &result, timeout);
         } else {
             result = OS_OK;
         }
-    }    
+    }
     LIST_NODE_ACCESS_END();
- #endif  
- 
-    
- 
+#endif
+
+
+
     return result;
 }
 
 OsResult_t EventgroupFlagsRequireSet(Id_t eventgroup_id, U8_t mask, U32_t timeout)
 {
     OsResult_t result = OS_ERROR;
-    
+
 #ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_CLEAR
 
     SYSTEM_CALL_WAIT_HANDLE_EVENT;
-    
+
     SYSTEM_CALL_POLL_HANDLE_EVENT(eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result) {
-        /* Do nothing. Normal execution flow. */            
-    } 
+        /* Do nothing. Normal execution flow. */
+    }
     SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
-         return result;    
+        return result;
     }
     SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
-         return result;    
+        return result;
     }
-    
-    LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {     
+
+    LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
         U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
         if((flags & mask) != mask) { /* Not all flags have been set. */
             SYSTEM_CALL_POLL_WAIT_EVENT(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result, timeout);
@@ -225,7 +226,7 @@ OsResult_t EventgroupFlagsRequireSet(Id_t eventgroup_id, U8_t mask, U32_t timeou
         }
     }
     LIST_NODE_ACCESS_END();
-    
- #endif
+
+#endif
     return result;
 }

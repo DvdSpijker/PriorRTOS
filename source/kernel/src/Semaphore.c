@@ -3,6 +3,7 @@
 #include <SemaphoreDef.h>
 #include <TaskDef.h>
 #include <CoreDef.h>
+#include <MemoryDef.h>
 #include <SystemCall.h>
 
 #include <stdlib.h>
@@ -26,7 +27,7 @@ Id_t SemaphoreCreate(U8_t sem_type, U8_t max_count)
     Id_t sem_id = OS_ID_INVALID;
 
     void *new_sem_data = NULL;
-    new_sem = (pSem_t)KCoreObjectAlloc(sizeof(Sem_t), (sizeof(Id_t) * max_count), &new_sem_data); //malloc(sizeof(Sem_t));
+    new_sem = (pSem_t)KMemAllocObject(sizeof(Sem_t), (sizeof(Id_t) * max_count), &new_sem_data); //malloc(sizeof(Sem_t));
     if(new_sem != NULL) {
         if(ListNodeInit(&new_sem->list_node, new_sem) == OS_OK) {
             if(ListNodeAddSorted(&SemList, &new_sem->list_node) == OS_OK) {
@@ -40,7 +41,7 @@ Id_t SemaphoreCreate(U8_t sem_type, U8_t max_count)
                 new_sem->owner_task_ids = (Id_t *)new_sem_data;
                 sem_id = new_sem->list_node.id;
             } else {
-                KCoreObjectFree((void **)&new_sem, (void **)&new_sem_data);
+                KMemFreeObject((void **)&new_sem, (void **)&new_sem_data);
             }
         }
     }
@@ -55,9 +56,9 @@ OsResult_t SemaphoreDelete(Id_t *sem_id);
 OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout)
 {
     OsResult_t result = OS_LOCKED;
-    
-    #ifdef PRTOS_CONFIG_USE_EVENT_SEM_ACQUIRE_RELEASE
-    
+
+#ifdef PRTOS_CONFIG_USE_EVENT_SEM_ACQUIRE_RELEASE
+
     SYSTEM_CALL_WAIT_HANDLE_EVENT;
 
     SYSTEM_CALL_POLL_HANDLE_EVENT(sem_id, SEM_EVENT_RELEASE, &result) {
@@ -69,9 +70,9 @@ OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout)
     SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
         return result;
     }
-    
-    #endif
-    
+
+#endif
+
     LIST_NODE_ACCESS_WRITE_BEGIN(&SemList, sem_id) {
         pSem_t sem = (pSem_t)ListNodeChildGet(node);
         if(sem != NULL) {
@@ -81,11 +82,11 @@ OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout)
                     *(sem->owner_task_ids) = TcbRunning->list_node.id;
                     result = OS_OK;
                 } else {
-                    #ifdef PRTOS_CONFIG_USE_EVENT_SEM_ACQUIRE_RELEASE
-                        SYSTEM_CALL_POLL_WAIT_EVENT(node, sem_id, SEM_EVENT_RELEASE, &result, timeout);
-                    #else
-                        result = OS_LOCKED;
-                    #endif
+#ifdef PRTOS_CONFIG_USE_EVENT_SEM_ACQUIRE_RELEASE
+                    SYSTEM_CALL_POLL_WAIT_EVENT(node, sem_id, SEM_EVENT_RELEASE, &result, timeout);
+#else
+                    result = OS_LOCKED;
+#endif
                 }
             }
         } else {
@@ -100,32 +101,32 @@ OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout)
 OsResult_t SemaphoreRelease(Id_t sem_id)
 {
     OsResult_t result = OS_LOCKED;
-            
+
     LIST_NODE_ACCESS_WRITE_BEGIN(&SemList, sem_id) {
         pSem_t sem = (pSem_t)ListNodeChildGet(node);
         if(sem != NULL) {
             switch(sem->type) {
-                case SEMAPHORE_TYPE_MUTEX_BINARY: {
-                    if(sem->aq_cnt == 1) {
-                        sem->aq_cnt--;
-                        sem->owner_task_ids = NULL;
-                        result = OS_OK;
-                        } else {
-                        result = OS_LOCKED;
-                    } 
-                    break;                 
+            case SEMAPHORE_TYPE_MUTEX_BINARY: {
+                if(sem->aq_cnt == 1) {
+                    sem->aq_cnt--;
+                    sem->owner_task_ids = NULL;
+                    result = OS_OK;
+                } else {
+                    result = OS_LOCKED;
                 }
-                
-                case SEMAPHORE_TYPE_MUTEX_RECURSIVE: {
-                     result = OS_ERROR;
-                     break;
-                }
-                
-                case SEMAPHORE_TYPE_COUNTING: {
-                    result = OS_ERROR;
-                    break;                        
-                }
-                
+                break;
+            }
+
+            case SEMAPHORE_TYPE_MUTEX_RECURSIVE: {
+                result = OS_ERROR;
+                break;
+            }
+
+            case SEMAPHORE_TYPE_COUNTING: {
+                result = OS_ERROR;
+                break;
+            }
+
             }
         } else {
             result = OS_ERROR;
