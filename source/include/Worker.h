@@ -56,18 +56,22 @@ typedef enum {
 
 #define JOB_FLAG_LOCK_SCHEDULER 0x01    /* The job may not be pre-empted. */
 #define JOB_FLAG_CRIT_SECTION   0x02    /* The job has to be executed in a critical section i.e. no interrupts. */
-#define JOB_FLAG_COPY           0x04    /* The job is copied upon to the worker queue i.e. WorkerJob struct does not have to be persistent. */
+#define JOB_FLAG_COPY           0x04    /* The job is copied upon to the worker queue i.e. WorkerJob struct can be deleted after adding it. */
 #define JOB_FLAG_NO_RETURN      0x08    /* The job has no return value and will automatically removed after processing. */
 
-struct WorkerJob {
-    ListNode_t       node;
+struct WorkerJobPrivate_t;
 
+struct WorkerJob {
     WorkerJobFunction   entry;
-    void                *arg0;
-    void                *arg1;
-    U32_t               arg2;
-    U32_t               arg3;
-    U32_t               return_value;
+    void                *p_arg;
+    U32_t               v_arg;
+
+    /****** Read-only fields ******/
+    void                *p_arg_ret;
+    U32_t               v_arg_ret;
+    /*****************************/
+
+    WorkerJobPrivate_t   *private;
 };
 
 /* Worker API. */
