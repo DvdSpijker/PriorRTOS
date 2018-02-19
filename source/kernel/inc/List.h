@@ -120,6 +120,16 @@ struct ListIterator {
     ListNode_t   *next_node;
 };
 
+/* List Results, returned by List* API calls.
+ * ListResult_t can be casted to OsResult_t. */
+typedef enum {
+    LIST_RESULT_OK      = 0,
+    LIST_RESULT_FAIL    = 1,
+    LIST_RESULT_ERROR   = 2,
+    LIST_RESULT_NULL_POINTER = 5,
+    LIST_RESULT_LOCKED  = 9
+} ListResult_t;
+
 /* V = Implemented.
  * T = Tested. */
 
