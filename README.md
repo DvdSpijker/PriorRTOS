@@ -1,3 +1,4 @@
+![Optional Text](../master/logos/prior_logo_small2.png)
 # README #
 
 Summary:
