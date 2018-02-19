@@ -9,7 +9,7 @@
  *  D. van de Spijker
  *  -----------------
  *
- *  Copyright© 2017    D. van de Spijker
+ *  CopyrightÂ© 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -40,6 +40,7 @@
 extern "C" {
 #endif
 
+#define PRIOR_RTOS
 #define OS_VERSION 0x0041
 
 #include <stdlib.h>
