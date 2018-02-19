@@ -9,7 +9,7 @@
  *  D. van de Spijker
  *  -----------------
  *
- *  Copyright© 2017    D. van de Spijker
+ *  CopyrightÂ© 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -324,15 +324,17 @@ bool ListIteratorEnd(struct ListIterator *list_it);
 if(ListIteratorInit(p_it, p_list, it_direction) == OS_OK) {     \
 do {                                                            \
 
-
 #define LIST_ITERATOR_BREAK_ON_CONDITION(cond)  \
-if(cond)                                        \
-break;                                          \
+if(cond) break;                                 \
 
-#define LIST_ITERATOR_GOTO_NEXT()   \
-goto list_it_jump_next;             \
+#define LIST_ITERATOR_GOTO_NEXT(p_it)   \
+goto p_it##_next;                       \
+
+#define LIST_ITERATOR_GOTO_NEXT_ON_CONDITION(p_it, cond)    \
+if(cond) goto p_it##_next;                                  \
 
 #define LIST_ITERATOR_END(p_it)     \
+p_it##_next:                        \
 if(ListIteratorNext(p_it) == NULL)  \
 break;                              \
 } while (!ListIteratorEnd(p_it)); } \
