@@ -39,141 +39,124 @@
 
 #include <Peripheral.h>
 
-/************OS Peripherals***********/
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+#include <RingBuffer.h>
+#endif
 
-
-void HalInit(void)
+OsResult_t PeripheralInit(struct PeripheralDescriptor *periph_desc)
 {
-
+	if(periph_desc == NULL) {
+		return OS_RES_NULL_POINTER;
+	}
+	if(periph_desc->init == NULL) {
+		return OS_RES_FAIL;
+	}
+	return periph_desc->init(periph_desc->hal_instance);
 }
 
-//void adc_Init()
-//{
-//ADMUX = (1<<REFS0); // AREF = AVcc
-//ADCSRA = (1<<ADEN)|(1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0); //ADC Enable and prescaler 128
-//
-////ID ADCResult_table = CreateMemPartition(2,mem_volatile);
-//
-//} //end InitADC
-//
-//
-//
-//#if ENABLE_SPI>0
-//void hspi_Init(void)
-//{
-//DDRB |= (1 << PINB7) | (1 << PINB6);
-//DDRB &= ~(1 << PINB5);
-//SPCR0 |= (1 << SPE0) | (1 << MSTR0);
-//}
-//
-//#endif
-//
-//void periph_Init (void)
-//{
-//
-//}
-//
-//
-///*Peripherals user API*/
-//
-////Analog-to-Digital Converter
-//#if ENABLE_ADC>0
-//
-//U16_t ADCResult_table[8];
-//
-//void adc_ReadChannel(U8_t adc_channel)
-//{
-//// select the corresponding channel 0~7
-//adc_channel &= 0b00000111;  // AND operation with 7
-//ADMUX = (ADMUX & 0xF8)|adc_channel; //Select the channel with a safety mask
-//ADCSRA |= (1<<ADSC); //Start single conversion, ADSC => 1
-//while (ADCSRA & (1<<ADSC));
-//ADCResult_table[adc_channel] = ADC;
-//}
-//
-//U16_t adc_ResultGet(U8_t adc_channel)
-//{
-//return ADCResult_table[adc_channel];
-//}
-//
-//#endif
-//
-//
-////UART
-//#if ENABLE_UART>0
-//pRingbuf_t hUartRXBuf;
-////pRingbuf_t hUartTXBuf;
-//
-//void hUartInit(unsigned int baud_rate)
-//{
-//UART_event =EventgroupCreate();
-//hUartRXBuf = RingbufCreate(20);
-//
-//int UBBR_VALUE = (F_CPU/16/baud_rate - 1);
-//UBRR0H = (U8_t)(UBBR_VALUE>>8);
-//UBRR0L = (U8_t)UBBR_VALUE;
-//UCSR0B = (1 << RXEN0) | (1 << TXEN0);
-//UCSR0C = (1<<USBS0)|(3<<UCSZ00); //8 data bits, 2 stop bits
-//UCSR0B |= (1 << RXCIE0); // Enable the USART Receive Complete interrupt (USART_RXC)
-//}
-//
-//void hUartByteSend(U8_t u8Data)
-//{
-////wait while previous byte is completed
-//while(!(UCSR0A&(1<<UDRE0)));
-//// Transmit data
-//UDR0 = u8Data;
-//}
-//
-//void hUartStringSend(char* string)
-//{
-//int i = 0;
-////wait while previous byte is completed
-//while(string[i] != '\0') {
-//hUartByteSend(string[i]);
-//i++;
-//}
-//}
-//
-//unsigned char hUartByteReceive()
-//{
-//unsigned char byte;
-//// Return received data
-//if(!EventgroupFlagsGet(UART_event,0x01)) {
-//return 0x00;
-//} else {
-//U16_t z = RingbufRead(hUartRXBuf,&byte,1);
-//if(z) {
-//EventgroupFlagsClear(UART_event,0x01);
-//}
-//}
-//return byte;
-//}
-//
-//ISR(USART0_RX_vect)
-//{
-//U16_t z = RingbufWrite(hUartRXBuf,&UDR0,1);
-//if(!z) {
-//EventgroupFlagsSet(UART_event,0x01);
-//} else {
-//EventgroupFlagsSet(UART_event,0x02);
-//}
-//}
-//#endif
-//
-////SPI
-//#if ENABLE_SPI >0
-//U8_t hspi_ByteWrite(U8_t data_byte)
-//{
-//SPDR0 = data_byte;
-//while(!(SPSR0 & (1 <<SPIF0)));
-//return SPDR0;
-//}
-//#endif
-//
-//
-////I2C
-//
-////TODO
+OsResult_t PeripheralOpen(struct PeripheralDescriptor *periph_desc)
+{
+	if(periph_desc == NULL) {
+		return OS_RES_NULL_POINTER;
+	}
+	if(periph_desc->open == NULL) {
+		return OS_RES_FAIL;
+	}
+	return periph_desc->open(periph_desc->hal_instance);	
+}
 
-/*******************************/
+OsResult_t PeripheralClose(struct PeripheralDescriptor *periph_desc)
+{
+	if(periph_desc == NULL) {
+		return OS_RES_NULL_POINTER;
+	}
+	if(periph_desc->close == NULL) {
+		return OS_RES_FAIL;
+	}
+	return periph_desc->close(periph_desc->hal_instance);	
+}
+
+OsResult_t PeripheralWriteSingle(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *data)
+{
+	if(periph_desc == NULL || data == NULL) {
+		return OS_RES_NULL_POINTER;
+	}
+	if(periph_desc->write_single == NULL) {
+		return OS_RES_FAIL;
+	}
+	if(periph_desc->write_buffer == OS_ID_INVALID) {
+		return periph_desc->write_single(periph_desc->hal_instance, data);	
+	} else {
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+		U32_t length = 1;
+		return RingBufferWrite(periph_desc->write_buffer, data, &length, OS_TIMEOUT_INFINITE);
+#else	
+		return OS_RES_ERROR;
+#endif
+	}
+}
+
+OsResult_t PeripheralWriteBlock(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *data, U32_t *size)
+{
+	if(periph_desc == NULL || data == NULL || size == NULL) {
+		return OS_RES_NULL_POINTER;
+	}
+	if(periph_desc->write_block == NULL) {
+		return OS_RES_FAIL;
+	}
+	if(*size == 0) {
+		return OS_RES_INVALID_VALUE;
+	}
+	if(periph_desc->write_buffer == OS_ID_INVALID) {
+		return periph_desc->write_block(periph_desc->hal_instance, data, size);	
+	} else {
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+		return RingBufferWrite(periph_desc->write_buffer, data, size, OS_TIMEOUT_INFINITE);
+#else
+		return OS_RES_ERROR;
+#endif
+	}
+	
+}
+
+OsResult_t PeripheralReadSingle(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *target)
+{
+	if(periph_desc == NULL || target == NULL) {
+		return OS_RES_NULL_POINTER;
+	}
+	if(periph_desc->read_single == NULL) {
+		return OS_RES_FAIL;
+	}
+	if(periph_desc->read_buffer == OS_ID_INVALID) {
+		return periph_desc->read_single(periph_desc->hal_instance, target);
+	} else {
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+		U32_t length = 1;
+		return RingBufferRead(periph_desc->read_buffer, target, &length, OS_TIMEOUT_INFINITE);
+#else
+		return OS_RES_ERROR;
+#endif
+	}
+}
+
+OsResult_t PeripheralReadBlock(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *target, U32_t *size)
+{
+	if(periph_desc == NULL || target == NULL || size == NULL) {
+		return OS_RES_NULL_POINTER;
+	}
+	if(periph_desc->read_block == NULL) {
+		return OS_RES_FAIL;
+	}
+	if(*size == 0) {
+		return OS_RES_INVALID_VALUE;
+	}
+	if(periph_desc->read_buffer == OS_ID_INVALID) {
+		return periph_desc->read_block(periph_desc->hal_instance, target, size);
+	} else {
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+		return RingBufferRead(periph_desc->read_buffer, target, size, OS_TIMEOUT_INFINITE);
+#else
+		return OS_RES_ERROR;
+#endif
+	}	
+}

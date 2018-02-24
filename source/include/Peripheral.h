@@ -15,52 +15,29 @@ extern "C" {
 
 #include <Types.h>
 
-#include <PriorRTOSConfig.h>
-
-#if PRTOS_CONFIG_ENABLE_PERPHERALS==1
-
-#if PRTOS_CONFIG_ENABLE_GPIO==1
-#include "../hal/gpio/HalGpio.h"
-#endif
-
-#if PRTOS_CONFIG_ENABLE_UART==1
-#include "../hal/uart/HalUart.h"
-#endif
-
-#if PRTOS_CONFIG_ENABLE_HARDWARE_TIMERS==1
-#include "../hal/timer/HalTimer.h"
-#endif
-
-#if PRTOS_CONFIG_ENABLE_ADC==1
-#include "../hal/adc/HalAdc.h"
-#endif
-
-#endif
-
-
 typedef U8_t PeripheralBase_t;
 
 typedef OsResult_t (*PeripheralCallbackStandard)(void *hal_instance);
 typedef OsResult_t (*PeripheralCallbackRwSingle)(void *hal_instance, PeripheralBase_t *data);
-typedef OsResult_t (*PeripheralCallbackRwBlock)(void *hal_instance, PeripheralBase_t *data, U32_t length);
+typedef OsResult_t (*PeripheralCallbackRwBlock)(void *hal_instance, PeripheralBase_t *data, U32_t *size);
 
 struct PeripheralDescriptor {
+	
+	/* In V0.4.0 buffer linking is only supported for RingBuffers. */
+    Id_t write_buffer;	/* Must be set to OS_RES_ID_INVALID if no buffer is used. */
+    Id_t read_buffer;	/* Must be set to OS_RES_ID_INVALID if no buffer is used. */
 
+    void *hal_instance; /* Link to a HAL instance object, set NULL if unused. */
 
-    Id_t write_buffer;
-    Id_t read_buffer;
+    PeripheralCallbackStandard init;	/* Init Callback, set NULL if unused. */
+    PeripheralCallbackStandard open;	/* Open Callback, set NULL if unused. */
+    PeripheralCallbackStandard close;	/* Close Callback, set NULL if unused. */
 
-    void *hal_instance;
+    PeripheralCallbackRwSingle write_single;	/* Write Single Callback, set NULL if unused. */
+    PeripheralCallbackRwBlock  write_block;		/* Write Block Callback, set NULL if unused. */
 
-    PeripheralCallbackStandard init;
-    PeripheralCallbackStandard open;
-    PeripheralCallbackStandard close;
-
-    PeripheralCallbackRwSingle write_single;
-    PeripheralCallbackRwBlock  write_packet;
-
-    PeripheralCallbackRwSingle read_single;
-    PeripheralCallbackRwBlock  read_packet;
+    PeripheralCallbackRwSingle read_single;		/* Read Single Callback, set NULL if unused. */
+    PeripheralCallbackRwBlock  read_block;		/* Read Block Callback, set NULL if unused. */
 
 };
 
@@ -70,16 +47,18 @@ OsResult_t PeripheralOpen(struct PeripheralDescriptor *periph_desc);
 
 OsResult_t PeripheralClose(struct PeripheralDescriptor *periph_desc);
 
-OsResult_t PeripheralWriteSingle(struct PeripheralDescriptor *periph_desc, PeripheralBase_t data);
+/* Write single data to the peripheral. Calls the peripheral's write_single callback directly if no write_buffer is not used.
+ * If a buffer is used the data is written to the buffer. */
+OsResult_t PeripheralWriteSingle(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *data);
 
-OsResult_t PeripheralWriteBlock(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *data, U32_t length);
+/* Write a block of data of a given size to the peripheral. Calls the peripheral's write_block callback directly if no write_buffer is not used.
+ * If a buffer is used the data is written to the buffer.
+ * *size must contain the block size before the call. It will contain the size actually written after the call. */
+OsResult_t PeripheralWriteBlock(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *data, U32_t *size);
 
 OsResult_t PeripheralReadSingle(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *target);
 
-OsResult_t PeripheralReadBlock(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *target, U32_t length);
-
-/* Initializes all peripherals. */
-void HalInit (void);
+OsResult_t PeripheralReadBlock(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *target, U32_t *size);
 
 
 #ifdef __cplusplus
