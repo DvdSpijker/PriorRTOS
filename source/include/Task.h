@@ -153,8 +153,8 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
  * @argin: (Id_t *) task_id; Task ID. NULL for current task.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if operation was successful.
- * @retval:   OS_ERROR; if the task handler was not found in any of the lists.
+ * @retval:   OS_RES_OK; if operation was successful.
+ * @retval:   OS_RES_ERROR; if the task handler was not found in any of the lists.
  ******************************************************************************/
 OsResult_t TaskDelete(Id_t *task_id);
 
@@ -171,10 +171,10 @@ OsResult_t TaskDelete(Id_t *task_id);
  * @argin: (U32_t) t_ms; Deadline in ms.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if operation was successful.
- * @retval:   OS_INVALID_ID; if the given task was not a Real-Time task or if
+ * @retval:   OS_RES_OK; if operation was successful.
+ * @retval:   OS_RES_ID_INVALID; if the given task was not a Real-Time task or if
  *            the task ID was an invalid ID (INVALID_ID).
- * @retval:   OS_ERROR; if the task handler was not found in any of the lists.
+ * @retval:   OS_RES_ERROR; if the task handler was not found in any of the lists.
  ******************************************************************************/
 OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms);
 
@@ -189,9 +189,9 @@ OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms);
  * @argin: (Prio_t) priority; New task priority: 1-5 (5 is highest).
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if operation was successful.
- * @retval:   OS_OUT_OF_BOUNDS; if the new priority was not within bounds (1-5).
- * @retval:   OS_ERROR; if the task handler was not found in any of the lists.
+ * @retval:   OS_RES_OK; if operation was successful.
+ * @retval:   OS_RES_OUT_OF_BOUNDS; if the new priority was not within bounds (1-5).
+ * @retval:   OS_RES_ERROR; if the task handler was not found in any of the lists.
  ******************************************************************************/
 OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority);
 
@@ -252,8 +252,8 @@ U32_t TaskRunTimeGet(void);
  * @argin: (U32_t) v_arg; Task Value argument.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the task was resumed.
- * @retval:   OS_ERROR; if the task could not be found.
+ * @retval:   OS_RES_OK; if the task was resumed.
+ * @retval:   OS_RES_ERROR; if the task could not be found.
  ******************************************************************************/
 OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg);
 
@@ -269,8 +269,8 @@ OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg);
  * @argin: (Id_t) task_id; Task ID.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the task was resumed.
- * @retval:   OS_ERROR; if the task could not be found.
+ * @retval:   OS_RES_OK; if the task was resumed.
+ * @retval:   OS_RES_ERROR; if the task could not be found.
  ******************************************************************************/
 OsResult_t TaskResume(Id_t task_id);
 
@@ -307,8 +307,8 @@ return;                     \
  * @argin: (U32_t) t_ms; Sleep time in milliseconds.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the sleep timer was created.
- * @retval:   OS_ERROR; if the task could not be found.
+ * @retval:   OS_RES_OK; if the sleep timer was created.
+ * @retval:   OS_RES_ERROR; if the task could not be found.
  ******************************************************************************/
 OsResult_t TaskSleep(U32_t t_ms);
 
@@ -329,15 +329,15 @@ OsResult_t TaskPollRemove(Id_t object_id, U32_t event);
  * @argin: (Id_t) object_id; ID of the event generating object. If INVALID_ID
  *                            the task will be listened to all.
  * @argin: (U32_t) event; Event to listen to.
- * @argin: (U32_t) timeout_ms; Event timeout in milliseconds. If OS_TIMEOUT_INFINITE
+ * @argin: (U32_t) timeout_ms; Event timeout in milliseconds. If OS_RES_TIMEOUT_INFINITE
  *                              is passed, the task will wait indefinitely.                            
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_POLL; if the event is being polled.
- * @retval:   OS_EVENT; if the polled event has occurred.
- * @retval:   OS_TIMEOUT; if the timeout expired.
- * @retval:   OS_FAIL; if the task is not polling the event (and !add_poll).
- * @retval:   OS_ERROR; if an error occurred.
+ * @retval:   OS_RES_POLL; if the event is being polled.
+ * @retval:   OS_RES_EVENT; if the polled event has occurred.
+ * @retval:   OS_RES_TIMEOUT; if the timeout expired.
+ * @retval:   OS_RES_FAIL; if the task is not polling the event (and !add_poll).
+ * @retval:   OS_RES_ERROR; if an error occurred.
  ******************************************************************************/
 OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll);
 
@@ -359,9 +359,9 @@ OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll
  *                              the task will wait indefinitely.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_EVENT; if the event has occurred.
- * @retval:   OS_TIMEOUT; if the timeout expired.
- * @retval:   OS_ERROR; if an error occurred.
+ * @retval:   OS_RES_EVENT; if the event has occurred.
+ * @retval:   OS_RES_TIMEOUT; if the timeout expired.
+ * @retval:   OS_RES_ERROR; if an error occurred.
  ******************************************************************************/
 OsResult_t TaskWait(Id_t object_id, U32_t event, U32_t timeout_ms);
 
@@ -376,9 +376,9 @@ OsResult_t TaskWait(Id_t object_id, U32_t event, U32_t timeout_ms);
  * @argin: (U32_t) timeout; Amount of time to wait/poll.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_EVENT; if the event has occurred.
- * @retval:   OS_TIMEOUT; if the timeout expired.
- * @retval:   OS_ERROR; if the task could not be found.
+ * @retval:   OS_RES_EVENT; if the event has occurred.
+ * @retval:   OS_RES_TIMEOUT; if the timeout expired.
+ * @retval:   OS_RES_ERROR; if the task could not be found.
  ******************************************************************************/
 OsResult_t TaskJoin(Id_t task_id, U32_t timeout);
 

@@ -69,9 +69,9 @@ Id_t MemPoolCreate(U32_t size);
  * @argin: (Id_t) pool_id; Pool to delete.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK if the pool was deleted.
- * @retval:   OS_INVALID_ID if the pool ID does not exist.
- * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
+ * @retval:   OS_RES_OK if the pool was deleted.
+ * @retval:   OS_RES_ID_INVALID if the pool ID does not exist.
+ * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
 OsResult_t MemPoolDelete(Id_t pool_id);
 
@@ -85,9 +85,9 @@ OsResult_t MemPoolDelete(Id_t pool_id);
  * @argin: (Id_t) pool_id; Pool to format.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK if the pool was formatted.
- * @retval:   OS_INVALID_ID if the pool ID does not exist.
- * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
+ * @retval:   OS_RES_OK if the pool was formatted.
+ * @retval:   OS_RES_ID_INVALID if the pool ID does not exist.
+ * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
 OsResult_t MemPoolFormat(Id_t pool_id);
 
@@ -112,7 +112,7 @@ OsResult_t MemPoolFormat(Id_t pool_id);
  * @func: OsResult_t MemPoolMove (Id_t src_pool, Id_t dst_pool)
  *
  * @desc: Moves the source pool to the destination pool. The source pool
- * will be zeroed. Returns OS_OK if operation was successful, OS_FAIL if
+ * will be zeroed. Returns OS_RES_OK if operation was successful, OS_RES_FAIL if
  * the destination pool is too small.
  *
  * Arguments:
@@ -120,8 +120,8 @@ OsResult_t MemPoolFormat(Id_t pool_id);
  * @argin: (Id_t) dst_pool; Destination pool ID
  *
  * @rettype:  (OsResult_t) sys call status:
- * @retval:   OS_OK if move was successful.
- * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
+ * @retval:   OS_RES_OK if move was successful.
+ * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
 //OsResult_t MemPoolMove(Id_t src_pool_id, Id_t dst_pool_id);
 
@@ -176,7 +176,7 @@ void *MemAlloc(Id_t pool_id, U32_t size);
  * @desc: Re-Allocates memory in given
  * pool with specified size. The allocation may be
  * moved by passing a different pool ID. If allocation
- * fails, MemReAlloc returns OS_FAIL. In this case the memory will
+ * fails, MemReAlloc returns OS_RES_FAIL. In this case the memory will
  * still remain allocated in the current pool.
  *
  * Arguments:
@@ -190,11 +190,11 @@ void *MemAlloc(Id_t pool_id, U32_t size);
  * pass INVALID_ID as new_pool_id.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if re-allocation was successful.
- * @retval:   OS_FAIL; if the requested block was too large.
- * @retval:   OS_OUT_OF_BOUNDS; if the pool ID is not part of
+ * @retval:   OS_RES_OK; if re-allocation was successful.
+ * @retval:   OS_RES_FAIL; if the requested block was too large.
+ * @retval:   OS_RES_OUT_OF_BOUNDS; if the pool ID is not part of
  *            the pool memory space.
- * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
+ * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
 OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void** ptr, U32_t new_size);
 
@@ -212,11 +212,11 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void** ptr, U32_t new_
  * INOUT:   (void**) ptr; Pointer to the allocation pointer
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if freeing was successful.
- * @retval:   OS_NULL_POINTER; if the memory pointer equals NULL
- * @retval:   OS_OUT_OF_BOUNDS; if the pool ID is not part of
+ * @retval:   OS_RES_OK; if freeing was successful.
+ * @retval:   OS_RES_NULL_POINTER; if the memory pointer equals NULL
+ * @retval:   OS_RES_OUT_OF_BOUNDS; if the pool ID is not part of
  *            the pool memory space.
- * @retval:   OS_RESTRICTED if a pool was accessed without the right privileges.
+ * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
  ******************************************************************************/
 OsResult_t MemFree(void **ptr);
 

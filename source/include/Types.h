@@ -73,58 +73,58 @@ typedef     U16_t               OsVer_t;
 
 typedef enum {
     /* The system call was successful. */
-    OS_OK               = 0,
+    OS_RES_OK               = 0,
 
     /* The system call failed. The reason is
      * further specified in the API description of
      * the caller. */
-    OS_FAIL             = 1,
+    OS_RES_FAIL             = 1,
 
     /* The system call has caused an error. The reason is
      * further specified in the API description of
      * the caller. */
-    OS_ERROR            = 2,
+    OS_RES_ERROR            = 2,
 
     /* The system call has caused a critical error. The reason is
      * further specified in the API description of
      * the caller. */
-    OS_CRIT_ERROR       = 3,
+    OS_RES_CRIT_ERROR       = 3,
 
     /* One or or more arguments passed to the system call were
      * out of bounds. */
-    OS_OUT_OF_BOUNDS    = 4,
+    OS_RES_OUT_OF_BOUNDS    = 4,
 
     /* One or more argument passed to the system call were
      * forbidden null pointers. */
-    OS_NULL_POINTER     = 5,
+    OS_RES_NULL_POINTER     = 5,
 
     /* One or more arguments passed to the system call had invalid
      * values. */
-    OS_INVALID_VALUE    = 6,
+    OS_RES_INVALID_VALUE    = 6,
 
     /* The system call violated access rights. */
-    OS_RESTRICTED       = 7,
+    OS_RES_RESTRICTED       = 7,
 
     /* One or more IDs passed to the system call were invalid.
      * This could either be a non-existing object or the wrong
      * ID type. */
-    OS_INVALID_ID       = 8,
+    OS_RES_ID_INVALID       = 8,
 
     /* The system call attempted to access a resource that appears
      * to be locked. */
-    OS_LOCKED           = 9,
+    OS_RES_LOCKED           = 9,
 
     /* The system call's calling task is now polling for a event.  */
-    OS_POLL             = 10,
+    OS_RES_POLL             = 10,
     
     /* The calling task has NOT received the specified event
      * within the set time span. */
-    OS_TIMEOUT          = 11,
+    OS_RES_TIMEOUT          = 11,
     
     
     /* TaskPoll or TaskWait will return this value if the
      * event has occurred.  */
-    OS_EVENT            = 12,
+    OS_RES_EVENT            = 12,
 
 } OsResult_t;
 

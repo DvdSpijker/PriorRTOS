@@ -91,8 +91,8 @@ Id_t EventgroupCreate(void);
  * @argin: (Id_t *) eventgroup_id; Eventgroup ID.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the eventgroup was successfully deleted.
- * @retval:   OS_ERROR; if the eventgroup could not be found.
+ * @retval:   OS_RES_OK; if the eventgroup was successfully deleted.
+ * @retval:   OS_RES_ERROR; if the eventgroup could not be found.
  ******************************************************************************/
 OsResult_t EventgroupDelete(Id_t *eventgroup_id);
 
@@ -111,8 +111,8 @@ OsResult_t EventgroupDelete(Id_t *eventgroup_id);
  * @argin: (U8_t) mask; Event flag mask.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the eventgroup was successfully deleted.
- * @retval:   OS_ERROR; if the eventgroup could not be found.
+ * @retval:   OS_RES_OK; if the eventgroup was successfully deleted.
+ * @retval:   OS_RES_ERROR; if the eventgroup could not be found.
  ******************************************************************************/
 void EventgroupFlagsSet(Id_t eventgroup_id, U8_t mask);
 
@@ -129,8 +129,8 @@ void EventgroupFlagsSet(Id_t eventgroup_id, U8_t mask);
  * @argin: (U8_t) mask; Event flag mask.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the eventgroup was successfully deleted.
- * @retval:   OS_ERROR; if the eventgroup could not be found.
+ * @retval:   OS_RES_OK; if the eventgroup was successfully deleted.
+ * @retval:   OS_RES_ERROR; if the eventgroup could not be found.
  ******************************************************************************/
 OsResult_t EventgroupFlagsClear(Id_t eventgroup_id, U8_t mask);
 

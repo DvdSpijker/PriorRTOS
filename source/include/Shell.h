@@ -45,8 +45,8 @@ struct ShellCommand {
  *                                  token counts.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the command was registered.
- * @retval:   OS_FAIL; if the maximum amount of registered commands has been
+ * @retval:   OS_RES_OK; if the command was registered.
+ * @retval:   OS_RES_FAIL; if the maximum amount of registered commands has been
  *                     reached.
  ******************************************************************************/
 OsResult_t ShellCommandRegister(struct ShellCommand *command);

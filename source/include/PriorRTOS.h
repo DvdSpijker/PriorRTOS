@@ -108,8 +108,8 @@ extern "C" {
  *  @argout: (OsResult_t *) result_optional; Result of optional module initialization.
  *
  * @rettype:  (OsResult_t) Sys call result
- * @retval:   OS_OK; all essential modules were initialized successfully.
- * @retval:   OS_ERROR; if one of the essential modules was not initiated successfully.
+ * @retval:   OS_RES_OK; all essential modules were initialized successfully.
+ * @retval:   OS_RES_ERROR; if one of the essential modules was not initiated successfully.
  *          It is recommended to call OsReset or hard-reset the target.
  ******************************************************************************/
 OsResult_t OsInit(OsResult_t *result_optional);
@@ -151,8 +151,8 @@ void OsStop(void);
  * @argin: (U16_t) os_frequency; New OS frequency.
  *
  * @rettype:  (OsResult_t) Sys call result
- * @retval:   OS_OK; if the new frequency was set.
- * @retval:   OS_ERROR; if no configuration could be matched to the requested
+ * @retval:   OS_RES_OK; if the new frequency was set.
+ * @retval:   OS_RES_ERROR; if no configuration could be matched to the requested
  *          frequency.
  ******************************************************************************/
 OsResult_t OsFrequencySet(U16_t OS_frequency);
@@ -195,8 +195,8 @@ OsVer_t OsVersionGet(void);
  *                             target[0] = hours, target[1] = microseconds.
  *
  * @rettype:  (OsResult_t) Sys call result
- * @retval:   OS_OK; if the operation was successful.
- * @retval:   OS_ERROR; if the array did NOT comply with the requirements stated
+ * @retval:   OS_RES_OK; if the operation was successful.
+ * @retval:   OS_RES_ERROR; if the array did NOT comply with the requirements stated
  *          in the description.
  ******************************************************************************/
 OsResult_t OsRunTimeGet(U32_t* target);

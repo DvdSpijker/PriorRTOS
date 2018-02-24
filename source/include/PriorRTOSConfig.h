@@ -251,6 +251,9 @@
 
 /******************************************/
 
+/* Peripheral Abstraction Module Settings */
+#define PRTOS_CONFIG_ENABLE_PERPHERALS                            1
+/*************************/
 
 
 /************ Utility Settings ************/
@@ -286,20 +289,6 @@
 
 
 
-/************ Peripheral Settings ************/
-#define PRTOS_CONFIG_ENABLE_PERPHERALS                            1
-/*********************************************/
-#define PRTOS_CONFIG_ENABLE_GPIO                                  1 //Enable GPIO
 
-#define PRTOS_CONFIG_ENABLE_HARDWARE_TIMERS                       0 //Enable HW timers
-
-#define PRTOS_CONFIG_ENABLE_ADC                                   0 //Enable ADC
-
-#define PRTOS_CONFIG_ENABLE_SPI                                   0 //Enable Hardware SPI
-
-#define PRTOS_CONFIG_ENABLE_UART                                  0 //Enable Hardware UART
-
-#define PRTOS_CONFIG_ENABLE_WDT                                   0
-/*********************************************/
 
 #endif

@@ -297,7 +297,7 @@ bool ListNodeIsInList(LinkedList_t *list, ListNode_t *node);
 static ListNode_t *node = NULL;                               \
 node = ListSearch(list, id);                                     \
 if(node != NULL) {                                               \
-    if(ListNodeLock(node, LIST_LOCK_MODE_READ) == OS_OK) {    \
+    if(ListNodeLock(node, LIST_LOCK_MODE_READ) == OS_RES_OK) {    \
 
 /* Indicates the start of Access block.
  * Searches for the node in the list belonging to the ID.
@@ -307,7 +307,7 @@ if(node != NULL) {                                               \
 static ListNode_t *node = NULL;                               \
 node = ListSearch(list, id);                                     \
 if(node != NULL) {                                               \
-    if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_OK) {   \
+    if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {   \
 
 
 
@@ -331,7 +331,7 @@ bool ListIteratorEnd(struct ListIterator *list_it);
  * macros is executed at every iteration of the
  * loop. */
 #define LIST_ITERATOR_BEGIN(p_it, p_list, it_direction)         \
-if(ListIteratorInit(p_it, p_list, it_direction) == OS_OK) {     \
+if(ListIteratorInit(p_it, p_list, it_direction) == OS_RES_OK) {     \
 do {                                                            \
 
 #define LIST_ITERATOR_BREAK_ON_CONDITION(cond)  \

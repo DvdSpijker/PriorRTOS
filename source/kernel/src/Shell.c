@@ -78,7 +78,7 @@ RingbufBase_t ShellRxBuffer[SHELL_MAX_LINE_LENGTH];
 
 OsResult_t KShellInit(void)
 {
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
     TokenCount = 0;
 
     ShellRxRingbuf = RingbufCreate(ShellRxBuffer, SHELL_MAX_LINE_LENGTH);
@@ -87,7 +87,7 @@ OsResult_t KShellInit(void)
     if((ShellRxRingbuf == OS_ID_INVALID) || (ShellTxRingbuf == OS_ID_INVALID)) {
         RingbufDelete(&ShellRxRingbuf);
         RingbufDelete(&ShellTxRingbuf);
-        result = OS_ERROR;
+        result = OS_RES_ERROR;
     }
 
     Line = (char *)malloc(sizeof(char) * SHELL_MAX_LINE_LENGTH);
@@ -100,18 +100,18 @@ OsResult_t KShellInit(void)
     }
 
 
-    if(result == OS_OK) {
+    if(result == OS_RES_OK) {
         TotalShellCommands = 0;
         ShellCommandRegister(&ShellCommandShellConfig);
         ShellCommandRegister(&ShellCommandHelp);
         // ShellCommandRegister(&ShellCommandRun);
 
-        if(result == OS_OK) {
+        if(result == OS_RES_OK) {
             TidShellReadParse = KernelTaskCreate(OsTaskShellReadParse, 3, TASK_PARAM_NONE, 0, NULL, 0);
             if(TidShellExecute == OS_ID_INVALID) {
-                result = OS_ERROR;
+                result = OS_RES_ERROR;
             }
-            if(result == OS_OK) {
+            if(result == OS_RES_OK) {
                 result = TaskResumeWithVarg(TidShellReadParse, 0);
             }
         }
@@ -123,13 +123,13 @@ OsResult_t KShellInit(void)
 OsResult_t ShellCommandRegister(struct ShellCommand *command)
 {
     if(TotalShellCommands >= (sizeof(ShellCommandSet) / sizeof(struct ShellCommand))) {
-        return OS_FAIL;
+        return OS_RES_FAIL;
     }
 
     ShellCommandSet[TotalShellCommands] = *command;
     TotalShellCommands++;
 
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 S8_t IShellCommandTokensContainArgument(char **tokens, U8_t n_tokens, const char *argument)
@@ -161,7 +161,7 @@ U16_t ShellPutRaw(char *message, ...)
         }
         vsnprintf(msg_buffer, act_size, message, args);
     }
-    RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_TIMEOUT_INFINITE);
+    RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_RES_TIMEOUT_INFINITE);
 
 cleanup:
 	va_end(args);
@@ -187,7 +187,7 @@ U16_t ShellPutRawNewline(char *message, ...)
         vsnprintf(&msg_buffer[1], (act_size-1), message, args);
     }
     act_size+=1;
-    RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_TIMEOUT_INFINITE);
+    RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_RES_TIMEOUT_INFINITE);
 
 cleanup:
 	va_end(args);
@@ -215,7 +215,7 @@ U16_t ShellPut(char *message, ...)
         vsnprintf(&msg_buffer[offset], (act_size-offset), message, args);
     }
     act_size += offset;
-    RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_TIMEOUT_INFINITE);
+    RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_RES_TIMEOUT_INFINITE);
 
 cleanup:
     va_end(args);
@@ -308,9 +308,9 @@ void OsTaskShellReadParse(const void* p_arg, U32_t v_arg)
     }
     TASK_INIT_END();
 
-    if(TaskPoll(ShellRxRingbuf, RINGBUF_EVENT_DATA_IN, 0, true) == OS_EVENT) {
+    if(TaskPoll(ShellRxRingbuf, RINGBUF_EVENT_DATA_IN, 0, true) == OS_RES_EVENT) {
         read_amount = RingbufDataCountGet(ShellRxRingbuf);
-        RingbufRead(ShellRxRingbuf, (RingbufBase_t *)&Line[line_write_index], &read_amount, OS_TIMEOUT_INFINITE);
+        RingbufRead(ShellRxRingbuf, (RingbufBase_t *)&Line[line_write_index], &read_amount, OS_RES_TIMEOUT_INFINITE);
         if(read_amount) {
             line_write_index+=(read_amount-1);
             if(Line[line_write_index] == LineTerminatorChar) {
@@ -359,13 +359,13 @@ task_exit:
 
 OsResult_t ShellCommandExecuteConfig(char **tokens, U8_t n_tokens)
 {
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 OsResult_t ShellCommmandHelpConfig(void)
 {
     ShellPut("Help for command 'cfg'");
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 
@@ -406,7 +406,7 @@ OsResult_t ShellCommandExecuteLock(char **tokens, U8_t n_tokens)
         ShellReplyInvalidArgs("lock");
     }
 
-    return OS_OK;
+    return OS_RES_OK;
 
 
 }

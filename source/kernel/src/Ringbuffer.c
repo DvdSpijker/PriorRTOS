@@ -65,7 +65,7 @@ OsResult_t KRingbufInit(void)
 {
     //RingbufPool = MemPoolCreate(CONFIG_RINGBUFFER_MEMSIZE);
     ListInit(&RingbufList, ID_TYPE_RINGBUF);
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 
@@ -92,7 +92,7 @@ Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size)
     }
 
     ListNodeInit(&new_ringbuf->list_node, (void*)new_ringbuf);
-    if(ListNodeAddSorted(&RingbufList, &new_ringbuf->list_node) != OS_OK) {
+    if(ListNodeAddSorted(&RingbufList, &new_ringbuf->list_node) != OS_RES_OK) {
         KMemFreeObject((void **)&new_ringbuf, &int_buffer);
         return OS_ID_INVALID;
     }
@@ -111,10 +111,10 @@ OsResult_t RingbufDelete(Id_t *ringbuf_id)
 {
     pRingbuf_t ringbuf = IRingbufFromId(*ringbuf_id);
     if(ringbuf == NULL) {
-        return OS_ERROR;
+        return OS_RES_ERROR;
     }
 
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
     void **buffer = NULL;
     if(ringbuf->ext_buffer == false) {
         buffer = (void **)&ringbuf->buffer;
@@ -128,20 +128,20 @@ OsResult_t RingbufDelete(Id_t *ringbuf_id)
 
 OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32_t timeout)
 {
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
     pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
     if(ringbuf == NULL) {
-        result = OS_ERROR;
+        result = OS_RES_ERROR;
     }
 
     if(ringbuf->dcount == ringbuf->size) {
         EventEmit(ringbuf_id, RINGBUF_EVENT_FULL, EVENT_FLAG_NONE);
-        result = OS_FAIL;
+        result = OS_RES_FAIL;
     }
 
     U32_t i = 0;
 
-    if(result == OS_OK) {
+    if(result == OS_RES_OK) {
         if(IRingbufLockWrite(ringbuf) == 0) {
 
             while((i < *length)) { //Check if length is reached and if pWrite if still ahead of pRead
@@ -164,10 +164,10 @@ OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32
                 EventEmit(ringbuf_id, RINGBUF_EVENT_FULL, EVENT_FLAG_NONE);
             }
 #endif
-            result = OS_OK;
+            result = OS_RES_OK;
             IRingbufUnlockWrite(ringbuf);
         } else {
-            result = OS_LOCKED;
+            result = OS_RES_LOCKED;
         }
     }
 
@@ -178,20 +178,20 @@ OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32
 
 OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U32_t timeout)
 {
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
     pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
     if(ringbuf == NULL) {
-        result = OS_ERROR;
+        result = OS_RES_ERROR;
     }
 
     if(ringbuf->dcount == 0) {
         EventEmit(ringbuf_id, RINGBUF_EVENT_EMPTY, EVENT_FLAG_NONE);
-        result = OS_FAIL;
+        result = OS_RES_FAIL;
     }
 
     U32_t i = 0;
 
-    if(result == OS_OK) {
+    if(result == OS_RES_OK) {
         if(IRingbufLockRead(ringbuf) == 0) {
             while((i < *amount) ) { //Check if amount is reached and if read index is still lagging write index
                 ringbuf->read_index = IRingbufBlockNextGet(ringbuf, ringbuf->read_index);
@@ -214,10 +214,10 @@ OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U3
             }
 #endif
 
-            result = OS_OK;
+            result = OS_RES_OK;
             IRingbufUnlockRead(ringbuf);
         } else {
-            result = OS_LOCKED;
+            result = OS_RES_LOCKED;
         }
     }
 
@@ -231,7 +231,7 @@ U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target)
     U32_t count = 0;
     U32_t amount  = 0;
     do {
-        RingbufRead(ringbuf_id, &target[count], &amount, OS_TIMEOUT_INFINITE);
+        RingbufRead(ringbuf_id, &target[count], &amount, OS_RES_TIMEOUT_INFINITE);
         count++;
     } while (amount);
     return count;
@@ -239,13 +239,13 @@ U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target)
 
 OsResult_t RingbufFlush(Id_t ringbuf_id)
 {
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
     pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
     if(ringbuf == NULL) {
-        result = OS_ERROR;
+        result = OS_RES_ERROR;
     }
 
-    if(result == OS_OK) {
+    if(result == OS_RES_OK) {
         if((IRingbufLockRead(ringbuf) == 0) && (IRingbufLockWrite(ringbuf) == 0)) {
             ringbuf->dcount = 0;
             ringbuf->write_index = 0;
@@ -257,7 +257,7 @@ OsResult_t RingbufFlush(Id_t ringbuf_id)
             IRingbufUnlockWrite(ringbuf);
         }
     } else {
-        result = OS_LOCKED;
+        result = OS_RES_LOCKED;
     }
 
     return result;

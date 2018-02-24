@@ -38,7 +38,7 @@ OsResult_t LogInit(void)
 
     LOG_INFO_APPEND("\nLOGGING FORMAT\n");
     LOG_INFO_APPEND("[h:s:ms] [tag] [source:line nr] : message");
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 static void ILogFormat(U8_t log_line_opt, const char *tag, const char *source, const int line_nr, const char *message, va_list args)

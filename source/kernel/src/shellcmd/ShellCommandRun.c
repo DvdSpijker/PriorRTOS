@@ -30,11 +30,11 @@ OsResult_t ShellCommandExecuteRun(char **tokens, U8_t n_tokens)
         ShellReplyInvalidArgs("run");
     }
 
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 OsResult_t ShellCommandHelpRun(void)
 {
     ShellPut("The 'run' command can be used to run tasks manually.\nArguments:\n\t -i=<task id integer> \n\t -x=<task id hex>");
-    return OS_OK;
+    return OS_RES_OK;
 }

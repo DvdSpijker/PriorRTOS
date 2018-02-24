@@ -65,8 +65,8 @@ struct HalUartInstance LoggerUartHandle;
  * N/A
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK if the logging module was successfully initialized.
- * @retval:   OS_ERROR if the initialization failed.
+ * @retval:   OS_RES_OK if the logging module was successfully initialized.
+ * @retval:   OS_RES_ERROR if the initialization failed.
  ******************************************************************************/
 OsResult_t LogInit(void);
 

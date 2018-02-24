@@ -72,7 +72,7 @@ OsResult_t KTimerInit(void)
                               PRTOS_CONFIG_TIMER_INTERVAL_RESOLUTION_MS);
 
     //LOG_INFO_NEWLINE("TimerList: %p", &TimerList);
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 void KTimerUpdateAll(U32_t t_us)
@@ -167,10 +167,10 @@ Id_t TimerCreate(U32_t interval, U8_t parameter, TimerOverflowCallback_t overflo
 OsResult_t TimerDelete(Id_t *timer_id)
 {
     if(*timer_id == OS_ID_INVALID) {
-        return OS_INVALID_ID;
+        return OS_RES_ID_INVALID;
     }
     if((*timer_id & (Id_t)ID_TYPE_TIMER) == 0) {
-        return OS_INVALID_ID;
+        return OS_RES_ID_INVALID;
     }
 
     pTimer_t rm_timer = ITimerFromId(*timer_id);
@@ -179,23 +179,23 @@ OsResult_t TimerDelete(Id_t *timer_id)
         KMemFreeObject((void **)&rm_timer, NULL);
         LOG_INFO_NEWLINE("Deleted timer %04x", *timer_id);
         *timer_id = OS_ID_INVALID;
-        return OS_OK;
+        return OS_RES_OK;
     }
     LOG_ERROR_NEWLINE("Failed to delete timer %04x", *timer_id);
-    return OS_ERROR;
+    return OS_RES_ERROR;
 }
 
 
 
 OsResult_t TimerReset(Id_t timer_id)
 {
-    OsResult_t result = OS_ERROR;
+    OsResult_t result = OS_RES_ERROR;
     LIST_NODE_ACCESS_WRITE_BEGIN(&TimerList, timer_id) {
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         if(tmp_timer != NULL) {
             tmp_timer->ticks = 0;
             tmp_timer->state = TIMER_STATE_RUNNING;
-            result = OS_OK;
+            result = OS_RES_OK;
         }
     }
     LIST_NODE_ACCESS_END();
@@ -321,17 +321,17 @@ U8_t TimerIterationsGet(Id_t timer_id)
 
 OsResult_t TimerIterationsSet(Id_t timer_id, U8_t iterations)
 {
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
     if(iterations > 31 || iterations == 0) {
-        result = OS_OUT_OF_BOUNDS;
+        result = OS_RES_OUT_OF_BOUNDS;
     }
     LIST_NODE_ACCESS_WRITE_BEGIN(&TimerList, timer_id) {
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
-        if(tmp_timer != NULL && result == OS_OK) {
+        if(tmp_timer != NULL && result == OS_RES_OK) {
             tmp_timer->parameter &= 0x07;
             tmp_timer->parameter |= TIMER_PARAMETER_ITR_SET(iterations);
         } else {
-            result = OS_ERROR;
+            result = OS_RES_ERROR;
         }
     }
     LIST_NODE_ACCESS_END();
@@ -385,7 +385,7 @@ pTimer_t ITimerCreate(void)
     ListNodeInit(&new_timer->list_node, (void*)new_timer);
 
     OsResult_t result = ListNodeAddSorted(&TimerList, &new_timer->list_node);
-    if(result != OS_OK) {
+    if(result != OS_RES_OK) {
         ListNodeDeinit(&TimerList, &new_timer->list_node);
         KMemFreeObject((void **)&new_timer, NULL);
         return NULL;

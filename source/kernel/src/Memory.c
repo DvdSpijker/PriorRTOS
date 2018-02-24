@@ -83,7 +83,7 @@ static U16_t IPoolIdFromPointer(MemBase_t *ptr);
 
 OsResult_t KMemInit()
 {
-    OsResult_t result = OS_ERROR;
+    OsResult_t result = OS_RES_ERROR;
 
     TotalHeapPools = (U16_t)(N_POOLS);
     TotalHeapSize = (U32_t)sizeof(OsHeap);
@@ -102,7 +102,7 @@ OsResult_t KMemInit()
     LOG_INFO_NEWLINE("Creating Kernel pool...");
     KernelPoolId = MemPoolCreate(KERNEL_POOL_SIZE_BYTES);
     if(KernelPoolId == OS_ID_INVALID) {
-        result = OS_CRIT_ERROR;
+        result = OS_RES_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid pool ID returned");
         goto exit;
     } else {
@@ -112,7 +112,7 @@ OsResult_t KMemInit()
     LOG_INFO_NEWLINE("Creating Object pool..");
     ObjectPoolId = MemPoolCreate(PRTOS_CONFIG_OS_HEAP_SIZE_BYTES - PRTOS_CONFIG_USER_HEAP_SIZE_BYTES);
     if(ObjectPoolId == OS_ID_INVALID) {
-        result = OS_CRIT_ERROR;
+        result = OS_RES_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid pool ID returned");
         goto exit;
     } else {
@@ -190,11 +190,11 @@ Id_t MemPoolCreate(U32_t pool_size)
 OsResult_t MemPoolDelete(Id_t pool_id)
 {
     if(pool_id >= N_POOLS) {
-        return OS_INVALID_ID;
+        return OS_RES_ID_INVALID;
     }
     if(pool_id == KernelPoolId || pool_id == ObjectPoolId) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
-        return OS_RESTRICTED;
+        return OS_RES_RESTRICTED;
     }
     OsCritSectBegin();
     MemPoolFormat(pool_id);
@@ -203,17 +203,17 @@ OsResult_t MemPoolDelete(Id_t pool_id)
     PoolTable[pool_id].start_index = 0;
     PoolTable[pool_id].mem_left = 0;
     OsCritSectEnd();
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 OsResult_t MemPoolFormat(Id_t pool_id)
 {
     if(pool_id >= N_POOLS) {
-        return OS_INVALID_ID;
+        return OS_RES_ID_INVALID;
     }
     if((pool_id == KernelPoolId || pool_id == ObjectPoolId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
-        return OS_RESTRICTED;
+        return OS_RES_RESTRICTED;
     }
     OsCritSectBegin();
     pPmb_t mempool = &PoolTable[pool_id];
@@ -224,7 +224,7 @@ OsResult_t MemPoolFormat(Id_t pool_id)
     mempool->N=0;
     OsCritSectEnd();
 
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 
@@ -398,7 +398,7 @@ valid:
 
 OsResult_t KMemFreeObject(void **obj, void **obj_data)
 {
-    OsResult_t result = OS_ERROR;
+    OsResult_t result = OS_RES_ERROR;
 
     KCoreKernelModeEnter();
     result = MemFree(obj_data);
@@ -412,15 +412,15 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
 {
 
     if(cur_pool_id > TotalHeapPools || new_pool_id > TotalHeapPools) {
-        return OS_OUT_OF_BOUNDS;
+        return OS_RES_OUT_OF_BOUNDS;
     }
 
     if((cur_pool_id == KernelPoolId || new_pool_id == KernelPoolId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
-        return OS_RESTRICTED;
+        return OS_RES_RESTRICTED;
     } else if((cur_pool_id ==ObjectPoolId || new_pool_id == ObjectPoolId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
-        return OS_RESTRICTED;
+        return OS_RES_RESTRICTED;
     }
 
     if(new_pool_id == OS_ID_INVALID) {
@@ -432,7 +432,7 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
 
     if(tmp_ptr == NULL) {
         OsCritSectEnd();
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
 
 //for (U32_t i = 0; (i < size) && (i < new_size); i++) {
@@ -445,7 +445,7 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
     *ptr = tmp_ptr;
 
     OsCritSectEnd();
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 
@@ -453,27 +453,27 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
 OsResult_t MemFree(void **ptr)
 {
     if(*ptr == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
 
     U8_t *tmp_ptr = (U8_t*)(*ptr);
     Id_t pool_id = IPoolIdFromPointer(tmp_ptr);
 
     if(pool_id == OS_ID_INVALID) { /* Pool not found. */
-        return OS_INVALID_ID;
+        return OS_RES_ID_INVALID;
     }
     if((pool_id == KernelPoolId || pool_id == ObjectPoolId) && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
-        return OS_RESTRICTED;
+        return OS_RES_RESTRICTED;
     }
     OsCritSectBegin();
 
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
     pPmb_t pool = &PoolTable[pool_id];
     tmp_ptr = &tmp_ptr[-ALLOC_DATA_OFFSET]; /* Allocation size is located at pointer - ALLOC_DATA_INDEX_OFFSET */
     U32_t size = *((U32_t *)tmp_ptr);
 
-    if(result == OS_OK) {
+    if(result == OS_RES_OK) {
         /* Zero memory block. */
         for (U32_t i = 0; i < size; i++) {
             tmp_ptr[i] = 0;

@@ -45,17 +45,17 @@ preem_ret:                                          \
 
 #define SYSTEM_CALL_POLL_HANDLE_EVENT(obj_id, evt, p_res)               \
 if(OsIsrNestCountGet() == 0) {                                          \           
-    *p_res = TaskPoll(obj_id, evt, OS_TIMEOUT_INFINITE, false);         \
+    *p_res = TaskPoll(obj_id, evt, OS_RES_TIMEOUT_INFINITE, false);         \
 } else {                                                                \
-    *p_res = OS_FAIL;                                                   \       
+    *p_res = OS_RES_FAIL;                                                   \       
 }                                                                       \
-if(*p_res == OS_EVENT)                                                  \
+if(*p_res == OS_RES_EVENT)                                                  \
 
 #define SYSTEM_CALL_POLL_HANDLE_TIMEOUT(p_res) \               
-else if(*p_res == OS_TIMEOUT)           \
+else if(*p_res == OS_RES_TIMEOUT)           \
 
 #define SYSTEM_CALL_POLL_HANDLE_POLL(p_res) \
-else if(*p_res == OS_POLL)           \
+else if(*p_res == OS_RES_POLL)           \
 
 #else
 
@@ -82,7 +82,7 @@ if(OsIsrNestCountGet() == 0) {                                                  
 if(OsIsrNestCountGet() == 0) {                                                    \
 ListNodeUnlock(ls_node);                                                          \
 *p_res = TaskWait(obj_id, evt, t_out);                                            \                   
-if(*p_res == OS_EVENT) {                                                          \   
+if(*p_res == OS_RES_EVENT) {                                                          \   
     goto preem_ret;                                                               \
 }}                                                                                \
                                                                     

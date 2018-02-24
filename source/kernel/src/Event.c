@@ -39,7 +39,7 @@ OsResult_t EventInit(void)
     //LOG_DEBUG_NEWLINE("EventList: %p", &EventList);
     EmittedEventLifetimeUs = OsTickPeriodGet() * PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS;
 
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 pEvent_t EventCreate(Id_t source_id, U32_t event_code, U32_t life_time_us)
@@ -63,11 +63,11 @@ pEvent_t EventCreate(Id_t source_id, U32_t event_code, U32_t life_time_us)
 
 OsResult_t  EventAddToList(LinkedList_t *event_list, pEvent_t event)
 {
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
     if(event_list == NULL || event == NULL) {
-        result = OS_NULL_POINTER;
+        result = OS_RES_NULL_POINTER;
     }
-    if(result == OS_OK) {
+    if(result == OS_RES_OK) {
         result = ListNodeAddAtPosition(event_list, &event->list_node, LIST_POSITION_TAIL);
     }
     return result;
@@ -88,12 +88,12 @@ OsResult_t EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t even
         if(!(EVENT_FLAG_GET(new_event->event_code, EVENT_FLAG_NO_TIMEOUT))) {
             EventLifeTimeReset(new_event);
         }
-        return OS_FAIL;
+        return OS_RES_FAIL;
     }
 
     /* Set event flags. */
     U32_t new_event_code = event_code;
-    if(life_time_us == OS_TIMEOUT_INFINITE) {
+    if(life_time_us == OS_RES_TIMEOUT_INFINITE) {
         EVENT_FLAG_SET(new_event_code, EVENT_FLAG_NO_TIMEOUT);
     }
     EVENT_FLAG_SET(new_event_code, flags);
@@ -105,7 +105,7 @@ OsResult_t EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t even
         new_event->list_node.id = hash; /* Assign new event the generated hash value as its ID. */
         OsResult_t result = ListNodeAddAtPosition(task_event_list, &new_event->list_node, LIST_POSITION_TAIL);
 
-        if(result == OS_OK) { /* Only assign the event ID if there is a pointer. */
+        if(result == OS_RES_OK) { /* Only assign the event ID if there is a pointer. */
             if(out_event_id != NULL) {
                 *out_event_id = ListNodeIdGet(&new_event->list_node);
             }
@@ -122,7 +122,7 @@ OsResult_t EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t even
 
     /* This point will only be reached in case of an error. */
     LOG_ERROR_NEWLINE("Subscribing to event from object %04x failed.");
-    return OS_ERROR;
+    return OS_RES_ERROR;
 }
 
 
@@ -132,7 +132,7 @@ OsResult_t EventEmit(Id_t source_id, U32_t event_code, U8_t flags)
     ListNode_t *node = ListSearch(&EventList, hash);
     if(node != NULL) {
         EventLifeTimeReset((pEvent_t)ListNodeChildGet(node));
-        return OS_FAIL;
+        return OS_RES_FAIL;
     }
 
     U32_t new_event_code = event_code;
@@ -141,16 +141,16 @@ OsResult_t EventEmit(Id_t source_id, U32_t event_code, U8_t flags)
     if(new_event != NULL) {
         new_event->list_node.id = hash;
         /* Emitted events are stored in the EventList in a FIFO manner. */
-        if(ListNodeAddAtPosition(&EventList, &new_event->list_node, LIST_POSITION_TAIL) == OS_OK) {
+        if(ListNodeAddAtPosition(&EventList, &new_event->list_node, LIST_POSITION_TAIL) == OS_RES_OK) {
             //LOG_EVENT(new_event);
-            return OS_OK;
+            return OS_RES_OK;
         } else {
             KMemFreeObject((void **)&new_event, NULL);
         }
 
     }
     LOG_ERROR_NEWLINE("Emiting event for source %04x failed.");
-    return OS_ERROR;
+    return OS_RES_ERROR;
 }
 
 pEvent_t EventPeekHead(LinkedList_t *list)
@@ -283,12 +283,12 @@ pEvent_t EventHandleFifo(LinkedList_t *list)
 OsResult_t EventListDestroy(LinkedList_t *list)
 {
     if(list == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     } else if(list == &EventList) {
-        return OS_RESTRICTED;
+        return OS_RES_RESTRICTED;
     }
 
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
 
     if(list->size > 0) {
         ListNode_t *node = list->head;
@@ -306,7 +306,7 @@ OsResult_t EventDestroy(LinkedList_t *list, pEvent_t event)
 {
 
     if(event == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
     if(list == NULL) {
         list = &EventList;
@@ -317,7 +317,7 @@ OsResult_t EventDestroy(LinkedList_t *list, pEvent_t event)
     }
     KMemFreeObject((void **)&event, NULL);
     //free(event);
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 ListSize_t EventListSizeGet(LinkedList_t *event_list)
@@ -337,24 +337,24 @@ pEvent_t EventListContainsEvent(LinkedList_t *event_list, Id_t source_id, U32_t 
 OsResult_t  EventFlagSet(pEvent_t event, U8_t event_flag)
 {
     if(event == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
 
     EVENT_FLAG_SET(event->event_code, event_flag);
 
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 
 OsResult_t  EventFlagClear(pEvent_t event, U8_t event_flag)
 {
     if(event == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
 
     EVENT_FLAG_CLEAR(event->event_code, event_flag);
 
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 U8_t EventFlagGet(pEvent_t event, U8_t event_flag)
@@ -416,7 +416,7 @@ void EventListPrint(LinkedList_t *list)
     ListNode_t *node = NULL;
     pEvent_t event = NULL;
 
-    if(ListLock(list, LIST_LOCK_MODE_READ) != OS_OK) {
+    if(ListLock(list, LIST_LOCK_MODE_READ) != OS_RES_OK) {
         return;
     }
 

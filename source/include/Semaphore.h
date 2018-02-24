@@ -56,10 +56,10 @@ Id_t       SemaphoreCreate(U8_t sem_type, U8_t max_count);
  * @argin: (Id_t *) sem_id; Semaphore ID.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the semaphore was deleted.
- * @retval:   OS_LOCKED; if the Semaphore is still acquired by one or multiple
+ * @retval:   OS_RES_OK; if the semaphore was deleted.
+ * @retval:   OS_RES_LOCKED; if the Semaphore is still acquired by one or multiple
  *            users.
- * @retval:   OS_ERROR; if the semaphore was not found.
+ * @retval:   OS_RES_ERROR; if the semaphore was not found.
  ******************************************************************************/
 OsResult_t SemaphoreDelete(Id_t *sem_id);
 
@@ -72,10 +72,10 @@ OsResult_t SemaphoreDelete(Id_t *sem_id);
  * @argin: (Id_t ) sem_id; Semaphore ID.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the semaphore was acquired.
- * @retval:   OS_LOCKED; if the Semaphore is still acquired by one or multiple
+ * @retval:   OS_RES_OK; if the semaphore was acquired.
+ * @retval:   OS_RES_LOCKED; if the Semaphore is still acquired by one or multiple
  *            users.
- * @retval:   OS_ERROR; if the semaphore was not found.
+ * @retval:   OS_RES_ERROR; if the semaphore was not found.
  ******************************************************************************/
 OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout);
 
@@ -88,9 +88,9 @@ OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout);
  * @argin: (Id_t ) sem_id; Semaphore ID.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the semaphore was released.
- * @retval:   OS_LOCKED; if the semaphore was not acquired.
- * @retval:   OS_ERROR; if the semaphore was not found.
+ * @retval:   OS_RES_OK; if the semaphore was released.
+ * @retval:   OS_RES_LOCKED; if the semaphore was not acquired.
+ * @retval:   OS_RES_ERROR; if the semaphore was not found.
  ******************************************************************************/
 OsResult_t SemaphoreRelease(Id_t sem_id);
 
@@ -104,8 +104,8 @@ OsResult_t SemaphoreRelease(Id_t sem_id);
  * @argin: (U8_t) count; New max. acquire count.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the new count was set.
- * @retval:   OS_ERROR; if the semaphore was not found.
+ * @retval:   OS_RES_OK; if the new count was set.
+ * @retval:   OS_RES_ERROR; if the semaphore was not found.
  ******************************************************************************/
 OsResult_t SemaphoreCountSet(Id_t sem_id, U8_t count);
 
@@ -132,8 +132,8 @@ U8_t       SemaphoreCountGet(Id_t sem_id);
  * @argin: (Id_t) sem_id; Semaphore ID.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the count was reset.
- * @retval:   OS_ERROR; if the semaphore was not found.
+ * @retval:   OS_RES_OK; if the count was reset.
+ * @retval:   OS_RES_ERROR; if the semaphore was not found.
  ******************************************************************************/
 OsResult_t SemaphoreCountReset(Id_t sem_id);
 

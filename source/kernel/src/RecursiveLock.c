@@ -34,7 +34,7 @@ void RecursiveLockInit(RecursiveLock_t *lock, Id_t object_id)
 OsResult_t RecursiveLockLock(RecursiveLock_t *lock, LockMode_t mode, Id_t owner_id)
 {
     OsCritSectBegin();
-    OsResult_t result = OS_ERROR;
+    OsResult_t result = OS_RES_ERROR;
 
     if(mode == LOCK_MODE_READ) {
 
@@ -42,27 +42,27 @@ OsResult_t RecursiveLockLock(RecursiveLock_t *lock, LockMode_t mode, Id_t owner_
         * If the counter has not reached its max. value
         * increment, otherwise return. */
         if(LOCK_COUNT_GET(lock->lock) == LOCK_COUNT_MAX_VALUE) {
-            result = OS_LOCKED;
+            result = OS_RES_LOCKED;
             goto exit;
         } else if( ((LOCK_MODE_IS_WRITE(lock->lock)) && lock->owner == owner_id)) {
             LOCK_COUNT_INC(lock->lock);
-            result = OS_OK;
+            result = OS_RES_OK;
             goto exit;
         }
     } else if(mode == LOCK_MODE_WRITE) {
 
         if(1) { //LOCK_CHECKED_BIT_GET(lock->lock)
             if(LOCK_COUNT_GET(lock->lock) == LOCK_COUNT_MAX_VALUE) {
-                result = OS_LOCKED;
+                result = OS_RES_LOCKED;
                 goto exit;
             } else {
                 LOCK_COUNT_INC(lock->lock);
-                result = OS_OK;
+                result = OS_RES_OK;
                 goto exit;
             }
         } else {
             if(LOCK_COUNT_GET(lock->lock) == LOCK_COUNT_MAX_VALUE) {
-                result = OS_LOCKED;
+                result = OS_RES_LOCKED;
                 goto exit;
             } else {
                 /* Locking in write mode is not allowed when
@@ -70,23 +70,23 @@ OsResult_t RecursiveLockLock(RecursiveLock_t *lock, LockMode_t mode, Id_t owner_
                 * since there are active readers which are not
                 * protected by a critical section. */
                 if(LOCK_MODE_IS_READ(lock->lock) && LOCK_COUNT_GET(lock->lock) != 0) {
-                    result = OS_LOCKED;
+                    result = OS_RES_LOCKED;
                     goto exit;
                 }
                 LOCK_MODE_SET_WRITE(lock->lock);
                 LOCK_COUNT_INC(lock->lock);
                 OsCritSectBegin();
-                result = OS_OK;
+                result = OS_RES_OK;
                 goto exit;
             }
         }
     } else { /* Invalid mode. */
-        result = OS_ERROR;
+        result = OS_RES_ERROR;
     }
 
 exit:
 
-//if(result == OS_OK) {
+//if(result == OS_RES_OK) {
 //EventEmit(task_id, RECURSIVE_LOCK_EVENT_LOCK, EVENT_FLAG_NO_HANDLER);
 //}
     OsCritSectEnd();
@@ -96,7 +96,7 @@ exit:
 OsResult_t RecursiveLockUnlock(RecursiveLock_t *lock)
 {
     OsCritSectBegin();
-    OsResult_t result = OS_ERROR;
+    OsResult_t result = OS_RES_ERROR;
 
     LOCK_COUNT_DEC(lock->lock);
     if(LOCK_COUNT_GET(lock->lock) == 0) {
@@ -105,7 +105,7 @@ OsResult_t RecursiveLockUnlock(RecursiveLock_t *lock)
         }
         LOCK_MODE_SET_READ(lock->lock);
     }
-    result = OS_OK;
+    result = OS_RES_OK;
 
     OsCritSectEnd();
     return result;

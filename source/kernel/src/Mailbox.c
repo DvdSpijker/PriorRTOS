@@ -60,7 +60,7 @@ OsResult_t KMailboxInit(void)
 {
     ListInit(&MailboxList, ID_TYPE_MAILBOX);
 
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners)
@@ -85,7 +85,7 @@ Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners)
     }
 
     ListNodeInit(&new_mailbox->list_node, (void*)new_mailbox);
-    if(ListNodeAddSorted(&MailboxList, &new_mailbox->list_node) != OS_OK) {
+    if(ListNodeAddSorted(&MailboxList, &new_mailbox->list_node) != OS_RES_OK) {
         KMemFreeObject((void **)&new_mailbox->pend_counters, NULL);
         KMemFreeObject((void **)&new_mailbox, &buffer);
         return OS_ID_INVALID;
@@ -108,15 +108,15 @@ OsResult_t MailboxDelete(Id_t *mailbox_id)
         KMemFreeObject((void **)&mailbox->pend_counters, NULL);
         KMemFreeObject((void **)&mailbox, (void **)&mailbox->buffer);
         *mailbox_id = OS_ID_INVALID;
-        return OS_OK;
+        return OS_RES_OK;
     }
-    return OS_ERROR;
+    return OS_RES_ERROR;
 }
 
 OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout)
 {
 
-    OsResult_t result = OS_LOCKED;
+    OsResult_t result = OS_RES_LOCKED;
 
 #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
     SYSTEM_CALL_WAIT_HANDLE_EVENT;
@@ -133,33 +133,33 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
 #endif
 
     LIST_NODE_ACCESS_WRITE_BEGIN(&MailboxList, mailbox_id) {
-        result = OS_OK;
+        result = OS_RES_OK;
         pMailbox_t mailbox = ListNodeChildGet(node);
         if(mailbox == NULL) {
-            result = OS_ERROR;    //Search error
+            result = OS_RES_ERROR;    //Search error
         }
 
-        if(result == OS_OK) {
+        if(result == OS_RES_OK) {
 
             /* Validate address range. */
             if(address > (mailbox->size - 1)) {
-                result = OS_OUT_OF_BOUNDS;
+                result = OS_RES_OUT_OF_BOUNDS;
             }
 
             /* Check pend counter, if this is !0 then posting at this address is not allowed.
              * wait/poll for a pend event. */
-            if(result == OS_OK) {
+            if(result == OS_RES_OK) {
                 if(mailbox->pend_counters[address] != 0) {
 #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
                     SYSTEM_CALL_POLL_WAIT_EVENT(node, mailbox_id, MAILBOX_EVENT_PEND(address), &result, timeout);
 #else
-                    result = OS_LOCKED;
+                    result = OS_RES_LOCKED;
 #endif
                 }
 
                 /* If the pend counter is 0 the address can be accessed.
                  * After posting a post event is emitted. */
-                if(result == OS_OK) {
+                if(result == OS_RES_OK) {
                     mailbox->buffer[address] = data;
                     mailbox->pend_counters[address] = mailbox->n_owners;
 #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
@@ -177,7 +177,7 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
 {
 
     pTcb_t task = TcbRunning;
-    OsResult_t result = OS_LOCKED;
+    OsResult_t result = OS_RES_LOCKED;
 
 
 #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
@@ -197,22 +197,22 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
 
     /* Lock in write because the pend counters are modified. */
     LIST_NODE_ACCESS_WRITE_BEGIN(&MailboxList, mailbox_id) {
-        result = OS_OK;
+        result = OS_RES_OK;
         pMailbox_t mailbox = ListNodeChildGet(node);
 
         /* Validate ownership of this mailbox. */
         if(ITaskIsOwner(mailbox, task) == false) {
-            result = OS_RESTRICTED;
+            result = OS_RES_RESTRICTED;
         }
 
-        if(result == OS_OK) {
+        if(result == OS_RES_OK) {
 
             /* Validate address range. */
             if(address > (mailbox->size - 1)) {
-                result = OS_OUT_OF_BOUNDS;
+                result = OS_RES_OUT_OF_BOUNDS;
             }
 
-            if(result == OS_OK) {
+            if(result == OS_RES_OK) {
 
                 /* Check pend counter, if this is 0 there is nothing to pend and we can
                  * wait/poll for a post event. */
@@ -220,13 +220,13 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
 #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
                     SYSTEM_CALL_POLL_WAIT_EVENT(node, mailbox_id, MAILBOX_EVENT_POST(address), &result, timeout);
 #else
-                    result = OS_LOCKED;
+                    result = OS_RES_LOCKED;
 #endif
                 }
 
                 /* If the pend counter != 0 the address can be accessed.
                  * After pending a pend event is emitted. */
-                if(result == OS_OK) {
+                if(result == OS_RES_OK) {
                     *data = mailbox->buffer[address];
 #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
                     EventEmit(mailbox_id, MAILBOX_EVENT_PEND(address), EVENT_FLAG_NONE);

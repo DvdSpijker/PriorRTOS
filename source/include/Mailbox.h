@@ -90,8 +90,8 @@ Id_t       MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners);
  *  @argout: (Id_t *) mailbox_id; ID of the mailbox to delete.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the mailbox was deleted.
- * @retval:   OS_ERROR; if the mailbox could not be found.
+ * @retval:   OS_RES_OK; if the mailbox was deleted.
+ * @retval:   OS_RES_ERROR; if the mailbox could not be found.
  ******************************************************************************/
 OsResult_t MailboxDelete(Id_t *mailbox_id);
 
@@ -110,11 +110,11 @@ OsResult_t MailboxDelete(Id_t *mailbox_id);
  * @argin: (MailboxBase_t) data; Data to be posted.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the mailbox was deleted.
- * @retval:   OS_ERROR; if the mailbox could not be found.
- * @retval:   OS_LOCKED; if the pend counter of one of the addresses within
+ * @retval:   OS_RES_OK; if the mailbox was deleted.
+ * @retval:   OS_RES_ERROR; if the mailbox could not be found.
+ * @retval:   OS_RES_LOCKED; if the pend counter of one of the addresses within
  *            the specified range is not 0.
- * @retval:   OS_OUT_OF_BOUNDS; if the address is not part of the mailbox address range.
+ * @retval:   OS_RES_OUT_OF_BOUNDS; if the address is not part of the mailbox address range.
  ******************************************************************************/
 OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout);
 
@@ -134,11 +134,11 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
  *           be copied to.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the mailbox was deleted.
- * @retval:   OS_ERROR; if the mailbox could not be found.
- * @retval:   OS_LOCKED; if the pend counter is already 0.
- * @retval:   OS_RESTRICTED; if the pending task is not an owner.
- * @retval:   OS_OUT_OF_BOUNDS; if the address is not part of the mailbox address range.
+ * @retval:   OS_RES_OK; if the mailbox was deleted.
+ * @retval:   OS_RES_ERROR; if the mailbox could not be found.
+ * @retval:   OS_RES_LOCKED; if the pend counter is already 0.
+ * @retval:   OS_RES_RESTRICTED; if the pending task is not an owner.
+ * @retval:   OS_RES_OUT_OF_BOUNDS; if the address is not part of the mailbox address range.
  ******************************************************************************/
 OsResult_t MailboxPend(Id_t mailbox_id, U8_t address,  MailboxBase_t *data, U32_t timeout);
 

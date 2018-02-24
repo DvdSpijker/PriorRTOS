@@ -124,8 +124,8 @@ Id_t TimerCreate(U32_t interval_us, U8_t parameter, TimerOverflowCallback_t over
  * @argout: (Id_t *) timer_id; ID of the timer to delete. Will be set to INVALID_ID.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the timer was successfully deleted.
- * @retval:   OS_ERROR; if the timer could not be found.
+ * @retval:   OS_RES_OK; if the timer was successfully deleted.
+ * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
 OsResult_t TimerDelete(Id_t *timer_id);
 
@@ -142,8 +142,8 @@ OsResult_t TimerDelete(Id_t *timer_id);
  * @argin: (Id_t) timer_id; ID of the timer to stop.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the timer was successfully stopped.
- * @retval:   OS_ERROR; if the timer could not be found.
+ * @retval:   OS_RES_OK; if the timer was successfully stopped.
+ * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
 void TimerStop(Id_t timer_id);
 
@@ -158,8 +158,8 @@ void TimerStop(Id_t timer_id);
  * @argin: (Id_t) timer_id; ID of the timer to start.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the timer was successfully started.
- * @retval:   OS_ERROR; if the timer could not be found.
+ * @retval:   OS_RES_OK; if the timer was successfully started.
+ * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
 void TimerStart(Id_t timer_id);
 
@@ -177,8 +177,8 @@ void TimerStart(Id_t timer_id);
  * @argin: (Id_t) timer_id; ID of the timer to pause.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the timer was successfully paused.
- * @retval:   OS_ERROR; if the timer could not be found.
+ * @retval:   OS_RES_OK; if the timer was successfully paused.
+ * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
 void TimerPause(Id_t timer_id);
 
@@ -193,8 +193,8 @@ void TimerPause(Id_t timer_id);
  * @argin: (Id_t) timer_id; ID of the timer to reset.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the timer was successfully reset.
- * @retval:   OS_ERROR; if the timer could not be found.
+ * @retval:   OS_RES_OK; if the timer was successfully reset.
+ * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
 OsResult_t TimerReset(Id_t timer_id);
 
@@ -323,9 +323,9 @@ U8_t TimerIterationsGet(Id_t timer_id);
  * @argin: (U8_t) iterations; Number of iterations, 1-31.
  *
  * @rettype:  (OsResult_t) Sys call result:
- * @retval:   OS_OK; if the operation was successful.
- * @retval:   OS_ERROR; if the timer could not be found.
- * @retval:   OS_OUT_OF_BOUNDS; if the iteration value was > 31 or 0.
+ * @retval:   OS_RES_OK; if the operation was successful.
+ * @retval:   OS_RES_ERROR; if the timer could not be found.
+ * @retval:   OS_RES_OUT_OF_BOUNDS; if the iteration value was > 31 or 0.
  ******************************************************************************/
 OsResult_t TimerIterationsSet(Id_t timer_id, U8_t iterations);
 

@@ -94,8 +94,8 @@ Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size);
  * @argin: (Id_t *) ringbuf_id; ID of the ring-buffer to delete.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the ring-buffer was deleted.
- * @retval:   OS_ERROR; if the ring-buffer could not be found.
+ * @retval:   OS_RES_OK; if the ring-buffer was deleted.
+ * @retval:   OS_RES_ERROR; if the ring-buffer could not be found.
  ******************************************************************************/
 OsResult_t RingbufDelete(Id_t *ringbuf_id);
 
@@ -115,10 +115,10 @@ OsResult_t RingbufDelete(Id_t *ringbuf_id);
  * @argout: (U32_t *) length; Actual amount written.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if data was written.
- * @retval:   OS_FAIL; if the buffer is empty.
- * @retval:   OS_LOCKED; if the ringbuffer is already locked for writing.
- * @retval:   OS_ERROR; if the ringbuffer could not be found.
+ * @retval:   OS_RES_OK; if data was written.
+ * @retval:   OS_RES_FAIL; if the buffer is empty.
+ * @retval:   OS_RES_LOCKED; if the ringbuffer is already locked for writing.
+ * @retval:   OS_RES_ERROR; if the ringbuffer could not be found.
  ******************************************************************************/
 OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32_t timeout);
 
@@ -141,11 +141,11 @@ OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32
  *
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if data was read.
- * @retval:   OS_LOCKED; if the ringbuffer is already locked for reading.
- * @retval:   OS_FAIL; if the buffer is empty.
- * @retval:   OS_OUT_OF_BOUNDS; if the target array was not compliant.
- * @retval:   OS_ERROR; if the ringbuffer could not be found.
+ * @retval:   OS_RES_OK; if data was read.
+ * @retval:   OS_RES_LOCKED; if the ringbuffer is already locked for reading.
+ * @retval:   OS_RES_FAIL; if the buffer is empty.
+ * @retval:   OS_RES_OUT_OF_BOUNDS; if the target array was not compliant.
+ * @retval:   OS_RES_ERROR; if the ringbuffer could not be found.
  ******************************************************************************/
 OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U32_t timeout);
 
@@ -180,9 +180,9 @@ U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target);
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_OK; if the ring-buffer was flushed.
- * @retval:   OS_LOCKED; if the ring-buffer is locked for reading or writing.
- * @retval:   OS_ERROR; if the ring-buffer could not be found.
+ * @retval:   OS_RES_OK; if the ring-buffer was flushed.
+ * @retval:   OS_RES_LOCKED; if the ring-buffer is locked for reading or writing.
+ * @retval:   OS_RES_ERROR; if the ring-buffer could not be found.
  ******************************************************************************/
 OsResult_t RingbufFlush(Id_t ringbuf_id);
 

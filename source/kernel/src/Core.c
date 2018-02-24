@@ -201,8 +201,8 @@ else { while (1); }             \
 OsResult_t OsInit(OsResult_t *status_optional)
 {
     OsCritSectBegin();
-    OsResult_t status_kernel   = OS_OK; //status tracker for essential kernel modules
-    *status_optional = OS_OK; //status tracker for optional modules
+    OsResult_t status_kernel   = OS_RES_OK; //status tracker for essential kernel modules
+    *status_optional = OS_RES_OK; //status tracker for optional modules
     KernelReg.lock = 0;
     KERNEL_REG_LOCK() {
         KernelReg.os_running = 1;
@@ -246,7 +246,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     LOG_INFO_NEWLINE("Initializing module:Memory Management...");
     status_kernel = KMemInit(); //Initiate memory management
-    if(status_kernel == OS_CRIT_ERROR) {
+    if(status_kernel == OS_RES_CRIT_ERROR) {
         LOG_ERROR_NEWLINE("critical error");
         return status_kernel;
     }
@@ -254,7 +254,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     LOG_INFO_NEWLINE("Initializing module:Task...");
     status_kernel = KTaskInit(); //Initiate task management
-    if(status_kernel == OS_CRIT_ERROR) {
+    if(status_kernel == OS_RES_CRIT_ERROR) {
         LOG_ERROR_NEWLINE("critical error");
         return status_kernel;
     }
@@ -262,7 +262,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     LOG_INFO_NEWLINE("Initializing module:Event...");
     status_kernel = EventInit();
-    if(status_kernel != OS_OK) {
+    if(status_kernel != OS_RES_OK) {
         LOG_ERROR_NEWLINE("Failed to initialize module: Event!");
         return status_kernel;
     }
@@ -279,7 +279,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
 #if PRTOS_CONFIG_ENABLE_SOFTWARE_TIMERS==1
     LOG_INFO_NEWLINE("Initializing module:Timer...");
     status_kernel = KTimerInit();
-    if(status_kernel == OS_CRIT_ERROR) {
+    if(status_kernel == OS_RES_CRIT_ERROR) {
         LOG_ERROR_NEWLINE("No timer ID buffer defined");
         return status_kernel;
     }
@@ -333,7 +333,6 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
 #if PRTOS_CONFIG_ENABLE_PERPHERALS==1
     LOG_INFO_NEWLINE("Initializing module:Peripheral...");
-    //HalInit(); //Initiate Peripherals
     LOG_INFO_APPEND("ok");
 #endif
 
@@ -346,13 +345,13 @@ OsResult_t OsInit(OsResult_t *status_optional)
     * lowest possible priority. However, the Idle task is essential and cannot be deleted. */
     KernelTaskIdIdle = TaskCreate(KernelTaskIdle, TASK_CAT_LOW, 1, TASK_PARAM_ESSENTIAL, 0, NULL, 0);
     if(KernelTaskIdIdle == OS_ID_INVALID) { //Create Idle task, check if successful
-        status_kernel = OS_CRIT_ERROR;
+        status_kernel = OS_RES_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid ID returned while creating KernelTaskIdle");
         return status_kernel;
     } else {
         TcbIdle = KTcbFromId(KernelTaskIdIdle); //Assign pointer to Idle TCB to TCB_idle
         if(TcbIdle == NULL) {
-            status_kernel = OS_CRIT_ERROR;
+            status_kernel = OS_RES_CRIT_ERROR;
             LOG_ERROR_NEWLINE("KernelTaskIdle could not be found in the task list.");
             return status_kernel;
         }
@@ -464,7 +463,7 @@ void OsReset(void)
 OsResult_t OsFrequencySet(U16_t OS_frequency)
 {
     if(OS_frequency > 5250 || OS_frequency == 0) {
-        return OS_FAIL;    //Check if frequency is within bounds
+        return OS_RES_FAIL;    //Check if frequency is within bounds
     }
 
     OsCritSectBegin();//Disable interrupts
@@ -474,7 +473,7 @@ OsResult_t OsFrequencySet(U16_t OS_frequency)
     PortOsTimerInit(KernelReg.prescaler, sysTimerovf);  //Initialize timer with new ovf
     PortOsTimerStart();
     OsCritSectEnd(); //Enable interrupts
-    return OS_OK; //Return status
+    return OS_RES_OK; //Return status
 }
 
 U16_t OsFrequencyGet(void)
@@ -506,13 +505,13 @@ OsResult_t OsRunTimeGet(U32_t* target)
 {
     //Input check
     if(target[0] != 0x00000000 || target[1] != 0x00000000) {
-        return OS_FAIL;
+        return OS_RES_FAIL;
     }
-    OsResult_t result = OS_LOCKED;
+    OsResult_t result = OS_RES_LOCKED;
     KERNEL_REG_LOCK() {
         target[0] = KernelReg.hours;
         target[1] = KernelReg.micros;
-        result = OS_OK;
+        result = OS_RES_OK;
     }
     KERNEL_REG_UNLOCK();
 
@@ -574,7 +573,7 @@ bool OsTaskExists(Id_t task_id)
 Id_t OsCurrentTaskGet(void)
 {
     Id_t id = OS_ID_INVALID;
-    if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_OK) {
+    if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
         id = ListNodeIdGet(&TcbRunning->list_node);
         ListNodeUnlock(&TcbRunning->list_node);
     }
@@ -797,7 +796,7 @@ static void ICoreSchedulerInit(void)
     * to keep the EventHandle cycle running, since
     * it also needs to update listened event
     * lifetimes. */
-    if(EventEmit(OS_ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_OK) {
+    if(EventEmit(OS_ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_RES_OK) {
         LOG_ERROR_NEWLINE("Failed to publish the mock event!");
         while(1); /* Trap. Wdt will overflow if enabled. */
     }
@@ -996,7 +995,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
     * Else loop through list and compare priorities. */
     if(ListSizeGet(to_list) == 0) {
         //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at head.", task->list_node.id);
-        if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_HEAD) != OS_OK) {
+        if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_HEAD) != OS_RES_OK) {
             LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, from_list);
         }
     } else {
@@ -1011,7 +1010,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
                 * If the priority is not higher, compare again on next iteration at next node. */
                 if(task->priority > compare_task->priority) {
                     //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x before %04x.", task->list_node.id, it.current_node->id);
-                    if(ListNodeAddAtNode(to_list, &task->list_node, it.current_node, LIST_ADD_BEFORE) != OS_OK) {
+                    if(ListNodeAddAtNode(to_list, &task->list_node, it.current_node, LIST_ADD_BEFORE) != OS_RES_OK) {
                         LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, from_list);
                         while(1);
                     }
@@ -1019,7 +1018,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
                 }
             } else {
                 //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at tail.", task->list_node.id);
-                if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_TAIL) != OS_OK) {
+                if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_TAIL) != OS_RES_OK) {
                     LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, from_list);
                     while(1);
                 }
@@ -1085,7 +1084,7 @@ static void ICoreSwitchTask(void)
 * the Idle task is loaded instead. */
 static OsResult_t ICoreLoadNewTask(pTcb_t tcb)
 {
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
 
     if(tcb == NULL) {
         if (ListSizeGet(&ExecutionQueue) != 0) {

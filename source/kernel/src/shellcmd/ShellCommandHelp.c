@@ -33,5 +33,5 @@ OsResult_t ShellCommandExecuteHelp(char **tokens, U8_t n_tokens)
         //}
         //ShellPutRaw("\n--------------------------------");
     //}
-    return OS_OK;
+    return OS_RES_OK;
 }

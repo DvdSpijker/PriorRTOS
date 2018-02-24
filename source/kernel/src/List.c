@@ -71,11 +71,11 @@ OsResult_t ListDestroy(LinkedList_t *list)
 {
     if(list == NULL) {
         LOG_ERROR_NEWLINE("Argument is null");
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
 
     if(ListIsLocked(list)) {
-        return OS_LOCKED;
+        return OS_RES_LOCKED;
     }
 
     /* Note that the list will be locked, but not unlocked.
@@ -83,7 +83,7 @@ OsResult_t ListDestroy(LinkedList_t *list)
      * the list. */
 
     ListNode_t *rm_node = NULL;
-    OsResult_t result = OS_OK;
+    OsResult_t result = OS_RES_OK;
     for (ListSize_t i = 0; i <= list->size; i++) {
         rm_node = ListNodeRemoveFromHead(list);
         if(rm_node != NULL) {
@@ -104,13 +104,13 @@ OsResult_t ListDestroy(LinkedList_t *list)
 OsResult_t ListLock(LinkedList_t *list, U8_t mode)
 {
     if(list == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
 
     OsResult_t result = UtilLock(&list->lock, mode);
-    /* TODO: Catch OS_LOCKED case and wait for it to unlock. */
+    /* TODO: Catch OS_RES_LOCKED case and wait for it to unlock. */
 
-    if(result != OS_OK) {
+    if(result != OS_RES_OK) {
         LOG_ERROR_NEWLINE("Failed to lock list %p in %s mode. Lock val: 0x%02x", list, (mode == 0 ? "READ" : "WRITE"), list->lock);
     }
     return result;
@@ -119,12 +119,12 @@ OsResult_t ListLock(LinkedList_t *list, U8_t mode)
 OsResult_t ListUnlock(LinkedList_t *list)
 {
     if(list == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
     OsResult_t result = UtilUnlock(&list->lock);
-    /* TODO: Catch OS_LOCKED case and wait for it to unlock. */
+    /* TODO: Catch OS_RES_LOCKED case and wait for it to unlock. */
 
-    if(result != OS_OK) {
+    if(result != OS_RES_OK) {
         LOG_ERROR_NEWLINE("Failed to unlock list %p in %s mode. Lock val: 0x%02x", list, (LOCK_MODE_IS_READ(list->lock) ? "READ" : "WRITE"), list->lock);
     }
 
@@ -139,7 +139,7 @@ bool ListIsLocked(LinkedList_t *list)
 ListSize_t ListSizeGet(LinkedList_t *list)
 {
     ListSize_t size  = 0;
-    if(ListLock(list, LIST_LOCK_MODE_READ) == OS_OK) {
+    if(ListLock(list, LIST_LOCK_MODE_READ) == OS_RES_OK) {
         size = list->size;
         ListUnlock(list);
     }
@@ -150,18 +150,18 @@ OsResult_t ListMerge(LinkedList_t *list_x, LinkedList_t *list_y)
 {
 
     if(list_x == NULL || list_y == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
     if(ListSizeGet(list_x) == 0) {
-        return OS_FAIL;
+        return OS_RES_FAIL;
     }
 
     OsResult_t result;
 
     result = ListLock(list_x, LIST_LOCK_MODE_WRITE);
-    if(result == OS_OK) {
+    if(result == OS_RES_OK) {
         result = ListLock(list_y, LIST_LOCK_MODE_WRITE);
-        if(result != OS_OK) {
+        if(result != OS_RES_OK) {
             ListUnlock(list_x);
             return result;
         }
@@ -197,7 +197,7 @@ OsResult_t ListMerge(LinkedList_t *list_x, LinkedList_t *list_y)
 
 ListNode_t *ListSearchLinear(LinkedList_t *list, Id_t id)
 {
-    if(ListLock(list, LIST_LOCK_MODE_READ) == OS_OK) {
+    if(ListLock(list, LIST_LOCK_MODE_READ) == OS_RES_OK) {
         struct ListIterator it;
 
         LIST_ITERATOR_BEGIN(&it, list, LIST_ITERATOR_DIRECTION_FORWARD);
@@ -216,7 +216,7 @@ ListNode_t *ListSearchLinear(LinkedList_t *list, Id_t id)
 
 ListNode_t *ListSearch(LinkedList_t *list, Id_t id)
 {
-    if(ListLock(list, LIST_LOCK_MODE_READ) == OS_OK) {
+    if(ListLock(list, LIST_LOCK_MODE_READ) == OS_RES_OK) {
         struct ListIterator it;
         U8_t search_dir = LIST_ITERATOR_DIRECTION_FORWARD; /* Default it direction. */
 
@@ -259,14 +259,14 @@ OsResult_t ListNodeInit(ListNode_t *node, void *child)
 
     if(node == NULL) {
         LOG_ERROR_NEWLINE("Could not initialize node.");
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
 
     node->next_node = node->prev_node = NULL;
     node->child = child;
     node->lock = 0;
     node->id = OS_ID_INVALID;
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 OsResult_t ListNodeDeinit(LinkedList_t *list, ListNode_t *node)
@@ -279,17 +279,17 @@ OsResult_t ListNodeDeinit(LinkedList_t *list, ListNode_t *node)
     rm_node->id = 0;
     rm_node->child = NULL;
     rm_node->next_node = rm_node->prev_node = NULL;
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 OsResult_t ListNodeLock(ListNode_t *node, U8_t mode)
 {
     if(node == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
     OsResult_t result = UtilLock(&node->lock, mode);
-    /* TODO: Catch OS_LOCKED case and wait for it to unlock. */
-    if(result == OS_LOCKED) {
+    /* TODO: Catch OS_RES_LOCKED case and wait for it to unlock. */
+    if(result == OS_RES_LOCKED) {
         LOG_ERROR_NEWLINE("Access to node %04x denied;locked", node->id);
     }
     return result;
@@ -298,9 +298,9 @@ OsResult_t ListNodeLock(ListNode_t *node, U8_t mode)
 OsResult_t ListNodeUnlock(ListNode_t *node)
 {
     if(node == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
-    /* TODO: Catch OS_LOCKED case and wait for it to unlock. */
+    /* TODO: Catch OS_RES_LOCKED case and wait for it to unlock. */
     return (UtilUnlock(&node->lock));
 }
 
@@ -312,7 +312,7 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
 
     if(ListSizeGet(list) == LIST_SIZE_MAX) {
         LOG_ERROR_NEWLINE("List (%p) has reached its max capacity.", list);
-        return OS_FAIL;
+        return OS_RES_FAIL;
     }
 
     if(node == NULL || list == NULL) {
@@ -320,13 +320,13 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
         while(1);
     }
 
-    OsResult_t result = OS_ERROR;
-    if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_OK) {
+    OsResult_t result = OS_RES_ERROR;
+    if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
         if(node->id == OS_ID_INVALID) {
             node->id = IListIdGet(list);
             if(node->id == OS_ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node, list);
-                result = OS_INVALID_ID;
+                result = OS_RES_ID_INVALID;
                 goto unlock;
             }
         }
@@ -349,7 +349,7 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
 
 
         list->size++;
-        result = OS_OK;
+        result = OS_RES_OK;
         list->sorted = false;
 
 unlock:
@@ -367,15 +367,15 @@ OsResult_t ListNodeAddAtNode(LinkedList_t *list, ListNode_t *node_y, ListNode_t 
 {
     if(ListSizeGet(list) == LIST_SIZE_MAX) {
         LOG_ERROR_NEWLINE("List (%p) has reached its max capacity.", list);
-        return OS_FAIL;
+        return OS_RES_FAIL;
     }
-    OsResult_t result = OS_ERROR;
-    if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_OK) {
+    OsResult_t result = OS_RES_ERROR;
+    if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
         if(node_y->id == OS_ID_INVALID) {
             node_y->id = IListIdGet(list);
             if(node_y->id == OS_ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node_y, list);
-                result = OS_INVALID_ID;
+                result = OS_RES_ID_INVALID;
                 goto unlock;
             }
         }
@@ -449,7 +449,7 @@ insert_after:
         }
 
         list->size++;
-        result = OS_OK;
+        result = OS_RES_OK;
         list->sorted = false;
 unlock:
         ListUnlock(list);
@@ -467,7 +467,7 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
 
     if(ListSizeGet(list) == LIST_SIZE_MAX) {
         LOG_ERROR_NEWLINE("List (%p) has reached its max capacity.", list);
-        return OS_FAIL;
+        return OS_RES_FAIL;
     }
     OsResult_t result;
 
@@ -477,12 +477,12 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
     if(list->sorted == false && ListSizeGet(list) != 0) { /* We only care about sorted state if the list is not empty. */
         LOG_ERROR_NEWLINE("List %p is not in sorted state. Adding node %p at list tail.", list, node);
         ListNodeAddAtPosition(list, node, LIST_POSITION_TAIL);
-        return OS_OK;
+        return OS_RES_OK;
     }
 
     result = ListLock(list, LIST_LOCK_MODE_WRITE);
-    if(result == OS_OK) {
-        result = OS_LOCKED;
+    if(result == OS_RES_OK) {
+        result = OS_RES_LOCKED;
         struct ListIterator it;
         bool stop_loop = false;
 
@@ -491,7 +491,7 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
             node->id = IListIdGet(list);
             if(node->id == OS_ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node, list);
-                result = OS_INVALID_ID;
+                result = OS_RES_ID_INVALID;
                 goto unlock;
             }
         }
@@ -515,17 +515,17 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
                     stop_loop = true;
                 } else if(node->id == it.current_node->id) { /* ID is the same somehow. */
                     /* TODO: Throw exception. */
-                    result = OS_ERROR;
+                    result = OS_RES_ERROR;
                     stop_loop = true;
                 }
             } else { /* New node will likely be the first node. */
                 if(it.list->size == 0) {
                     result = ListNodeAddAtPosition(list, node, LIST_POSITION_HEAD);
-                    if(result == OS_OK) {
+                    if(result == OS_RES_OK) {
                         list->middle = node;
                     }
                 } else {
-                    result = OS_ERROR;
+                    result = OS_RES_ERROR;
                 }
                 stop_loop = true;
             }
@@ -533,7 +533,7 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
             LIST_ITERATOR_BREAK_ON_CONDITION(stop_loop);
         }
         LIST_ITERATOR_END(&it);
-        if(result == OS_OK) {
+        if(result == OS_RES_OK) {
             /* If added node has higher ID and the list has a middle.
              * Move the middle node pointer 1 node forward.
              * If added node has lower ID and the list has a middle.
@@ -566,7 +566,7 @@ ListNode_t *ListNodeRemove(LinkedList_t *list, ListNode_t *node)
     }
     ListNode_t *x = NULL, *y = NULL, *z = NULL;
 
-    if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_OK) {
+    if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
 
         y = node;
         x = y->prev_node;
@@ -632,7 +632,7 @@ ListNode_t *ListNodeRemoveFromTail(LinkedList_t *list)
 OsResult_t ListNodeMove(LinkedList_t *list_x, LinkedList_t *list_y, ListNode_t *node)
 {
     OsCritSectBegin();
-    OsResult_t result = OS_ERROR;
+    OsResult_t result = OS_RES_ERROR;
     ListNode_t *mv_node = ListNodeRemove(list_x, node);
     if(mv_node != NULL) {
         result = ListNodeAddSorted(list_y, node); /* TODO: Replace with AddSorted. */
@@ -654,19 +654,19 @@ void *ListNodeChildFromId(LinkedList_t *list, Id_t id)
 OsResult_t ListNodeSwap(LinkedList_t *list, ListNode_t *node_x, ListNode_t *node_y)
 {
     if(list == NULL || node_x == NULL || node_y == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
 
     if(ListIsLocked(list)) {
-        return OS_LOCKED;
+        return OS_RES_LOCKED;
     }
 
     if (list->size < 2) {
-        return OS_FAIL;
+        return OS_RES_FAIL;
     }
 
 
-    if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_OK) {
+    if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
         ListNode_t *x_p, *x, *x_n, *y_p, *y, *y_n; /* x_p = x previous, x = Node x, x_n = x next, etc. */
 
         x = node_x;
@@ -721,7 +721,7 @@ OsResult_t ListNodeSwap(LinkedList_t *list, ListNode_t *node_x, ListNode_t *node
     ListIntegrityVerify(list);
 #endif
 
-    return OS_OK;
+    return OS_RES_OK;
 }
 
 ListNode_t *ListNodePeek(LinkedList_t *list, U8_t position)
@@ -777,14 +777,14 @@ void *ListNodeChildGet(ListNode_t *node)
 OsResult_t ListNodeChildSet(ListNode_t *node, void *child)
 {
     if (node == NULL || child == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
-    if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_OK) {
+    if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
         node->child = child;
         ListNodeUnlock(node);
-        return OS_OK;
+        return OS_RES_OK;
     } else {
-        return OS_LOCKED;
+        return OS_RES_LOCKED;
     }
 
 }
@@ -818,7 +818,7 @@ S8_t ListIntegrityVerify(LinkedList_t *list)
         return LIST_INTEGRITY_RESULT_LOCKED;
     }
 
-    if(ListLock(list, LIST_LOCK_MODE_READ) != OS_OK) {
+    if(ListLock(list, LIST_LOCK_MODE_READ) != OS_RES_OK) {
         return LIST_INTEGRITY_RESULT_LOCKED;
     }
     S8_t result = LIST_INTEGRITY_RESULT_LIST_INTACT;
@@ -898,13 +898,13 @@ ret:
 OsResult_t ListIteratorInit(struct ListIterator *list_it, LinkedList_t *list, U8_t it_direction)
 {
     if(list_it == NULL || list == NULL) {
-        return OS_NULL_POINTER;
+        return OS_RES_NULL_POINTER;
     }
     if(it_direction != LIST_ITERATOR_DIRECTION_FORWARD && it_direction != LIST_ITERATOR_DIRECTION_REVERSE) {
-        return OS_INVALID_VALUE;
+        return OS_RES_INVALID_VALUE;
     }
 
-    if(ListLock(list, LIST_LOCK_MODE_READ) == OS_OK) {
+    if(ListLock(list, LIST_LOCK_MODE_READ) == OS_RES_OK) {
         list_it->list = list;
         list_it->direction = it_direction;
         if(it_direction == LIST_ITERATOR_DIRECTION_FORWARD) {
@@ -924,10 +924,10 @@ OsResult_t ListIteratorInit(struct ListIterator *list_it, LinkedList_t *list, U8
         }
 
         ListUnlock(list);
-        return OS_OK;
+        return OS_RES_OK;
     }
 
-    return OS_LOCKED;
+    return OS_RES_LOCKED;
 }
 
 ListNode_t *ListIteratorNext(struct ListIterator *list_it)
@@ -1027,7 +1027,7 @@ char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size)
     if(list == NULL || buffer_size == NULL) {
         return NULL;
     }
-    if(ListLock(list, LIST_LOCK_MODE_READ) != OS_OK) {
+    if(ListLock(list, LIST_LOCK_MODE_READ) != OS_RES_OK) {
         *buffer_size = 0;
         return NULL;
     }
@@ -1063,7 +1063,7 @@ char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size)
 static OsResult_t UtilLock(volatile U8_t *lock, U8_t mode)
 {
     OsCritSectBegin();
-    OsResult_t result = OS_ERROR;
+    OsResult_t result = OS_RES_ERROR;
 
     if(mode == LIST_LOCK_MODE_READ) {
 
@@ -1071,27 +1071,27 @@ static OsResult_t UtilLock(volatile U8_t *lock, U8_t mode)
          * If the counter has not reached its max. value
          * increment, otherwise return. */
         if(LOCK_COUNT_GET(*lock) == LOCK_COUNT_MAX_VALUE) {
-            result = OS_LOCKED;
+            result = OS_RES_LOCKED;
             goto exit;
         } else {
             LOCK_COUNT_INC(*lock);
-            result = OS_OK;
+            result = OS_RES_OK;
             goto exit;
         }
     } else if(mode == LIST_LOCK_MODE_WRITE) {
 
         if(LOCK_CHECKED_BIT_GET(*lock)) {
             if(LOCK_COUNT_GET(*lock) == LOCK_COUNT_MAX_VALUE) {
-                result = OS_LOCKED;
+                result = OS_RES_LOCKED;
                 goto exit;
             } else {
                 LOCK_COUNT_INC(*lock);
-                result = OS_OK;
+                result = OS_RES_OK;
                 goto exit;
             }
         } else {
             if(LOCK_COUNT_GET(*lock) == LOCK_COUNT_MAX_VALUE) {
-                result = OS_LOCKED;
+                result = OS_RES_LOCKED;
                 goto exit;
             } else {
                 /* Locking in write mode is not allowed when
@@ -1099,19 +1099,19 @@ static OsResult_t UtilLock(volatile U8_t *lock, U8_t mode)
                  * since there are active readers which are not
                  * protected by a critical section. */
                 if(LOCK_MODE_IS_READ(*lock) && LOCK_COUNT_GET(*lock) != 0) {
-                    result = OS_LOCKED;
+                    result = OS_RES_LOCKED;
                     goto exit;
                 }
                 LOCK_MODE_SET_WRITE(*lock);
                 LOCK_CHECKED_BIT_SET(*lock);
                 LOCK_COUNT_INC(*lock);
                 //OsCritSectBegin();
-                result = OS_OK;
+                result = OS_RES_OK;
                 goto exit;
             }
         }
     } else { /* Invalid mode. */
-        result = OS_ERROR;
+        result = OS_RES_ERROR;
     }
 
 exit:
@@ -1123,7 +1123,7 @@ exit:
 static OsResult_t UtilUnlock(volatile U8_t *lock)
 {
     OsCritSectBegin();
-    OsResult_t result = OS_ERROR;
+    OsResult_t result = OS_RES_ERROR;
 
     LOCK_COUNT_DEC(*lock);
     if(LOCK_COUNT_GET(*lock) == 0) {
@@ -1133,7 +1133,7 @@ static OsResult_t UtilUnlock(volatile U8_t *lock)
         LOCK_CHECKED_BIT_CLEAR(*lock);
         LOCK_MODE_SET_READ(*lock);
     }
-    result = OS_OK;
+    result = OS_RES_OK;
 
 
     OsCritSectEnd();
