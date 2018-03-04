@@ -184,12 +184,5 @@ U8_t ConvertIntToString(U32_t integer, char *out_int_str)
 
 Id_t ConvertHexStringToId(char *hex_id_str)
 {
-    Id_t id = 0;
-    U16_t mask = 0xF000;
-    U8_t hex = 0;
-    for (U8_t i = 0; i < 4; i++) {
-        hex = ConvertCharToDec(hex_id_str[i]) & 0x0F;
-    }
-
     return OS_ID_INVALID;
 }
