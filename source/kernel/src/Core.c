@@ -113,7 +113,8 @@ OsResult_t KShellInit(void);
 
 #define KERNEL_HEAP_MAGICWORD (MemBase_t)0xAB
 
-void CoreTick(void);
+static void ICoreTickCoop(void);
+static void ICoreTickPreem(void);
 static void ICoreTickInvoke(U32_t tc);
 
 static void ICoreSchedulerInit(void);
@@ -143,7 +144,7 @@ static void ICoreRunTimeAccumulate(U32_t t_us);
 static void ICoreOsIntDisable(void);
 static void ICoreOsIntEnable(void);
 
-#if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
 static void ICoreWdtInit(void);
 static void ICoreWdtKick();
 static void ICoreWdtEnable(U8_t wdt_expire_opt);
@@ -233,7 +234,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
     /*Initiate essential modules*/
     LOG_INFO_NEWLINE("Initializing kernel...");
 
-#if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
     ICoreWdtInit();
     ICoreWdtEnable(PORT_WDT_EXPIRE_8_S);
 #endif
@@ -365,7 +366,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     KCoreKernelModeExit(); //Clear kernel mode flag
 
-#if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
     ICoreWdtDisable();
 #endif
 
@@ -377,7 +378,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
 void OsStart(Id_t start_task_id)
 {
 
-#if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
     ICoreWdtEnable(PORT_WDT_EXPIRE_120MS);
 #endif
 
@@ -413,7 +414,7 @@ void OsStart(Id_t start_task_id)
     PortOsTimerStart();
     LOG_INFO_APPEND("running");
 
-#if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
     ICoreWdtDisable();
     ICoreWdtEnable(PORT_WDT_EXPIRE_8_S);
 #endif
@@ -422,7 +423,7 @@ void OsStart(Id_t start_task_id)
     U8_t *running = &KernelReg.os_running;
     while (*running) {
 
-#if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
         ICoreWdtKick();
 #endif
         if(TcbRunning->handler != NULL) {
@@ -444,7 +445,7 @@ void OsStart(Id_t start_task_id)
         ICoreTickInvoke(PortOsTimerTicksGet());
     }
 
-#if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
     ICoreWdtDisable();
 #endif
 }
@@ -716,8 +717,24 @@ static void ICoreRunTimeUpdate(void)
 
 /************OS Tick***********/
 
+void OsTick(void)
+{
+#ifdef PRTOS_CONFIG_USE_SCHEDULER_COOP
+	ICoreTickCoop();
+#else
+	ICoreTickPreem();
+#endif	
+
+}
+
+static void ICoreTickPreem(void)
+{
+
+}
+
+
 /* Cooperative Tick. */
-void CoreTick(void)
+static void ICoreTickCoop(void)
 {
     OsIsrBegin();
     PortGlobalIntDisable();//Disable OS timer interrupt to make sure OS ticks don't nest
@@ -775,7 +792,7 @@ static void ICoreTickInvoke(U32_t tc)
 
     KCoreFlagSet(CORE_FLAG_DISPATCH); /* Set dispatch flag so Tick interrupt will switch tasks. */
     PortOsTimerTicksSet(KernelReg.ovf); /* Invoke Tick interrupt by setting the timer-counter to its compare value. */
-#if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
     PortWdtKick();
 #endif
     while(KCoreFlagGet(CORE_FLAG_DISPATCH)); /* Wait until Tick interrupt handles the task switch and clears the dispatch flag. */
@@ -1240,7 +1257,7 @@ static U16_t ICoreCalculatePrescaler(U16_t f_os)
 
 /************OS Watchdog Timer************/
 
-#if PRTOS_CONFIG_ENABLE_WDT==1
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
 
 static void ICoreWdtInit(void)
 {
@@ -1262,7 +1279,7 @@ static void ICoreWdtKick(void)
     PortWdtKick();
 }
 
-void CoreWdtIsr(void)
+void OsWdtIsr(void)
 {
     OsIsrBegin();
     OsCritSectBegin();
