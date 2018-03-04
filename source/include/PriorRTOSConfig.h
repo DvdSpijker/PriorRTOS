@@ -251,10 +251,11 @@
 
 /******************************************/
 
-/* Peripheral Abstraction Module Settings */
+/* Peripheral Module Settings */
 #define PRTOS_CONFIG_ENABLE_PERPHERALS                            1
 /*************************/
 
+#define PRTOS_CONFIG_ENABLE_WATCHDOG							  0
 
 /************ Utility Settings ************/
 
@@ -267,6 +268,7 @@
 /******************************************/
 
 /************ Logging and Debugging Settings ************/
+#define PRTOS_CONFIG_ENABLE_LOGGING								  1
 #define PRTOS_CONFIG_USE_NEWLIB                                   1
 #define PRTOS_CONFIG_ENABLE_LOG_EVENT                             1
 #define PRTOS_CONFIG_ENABLE_LOG_INFO                              0
