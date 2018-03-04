@@ -93,7 +93,7 @@ OsResult_t EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t even
 
     /* Set event flags. */
     U32_t new_event_code = event_code;
-    if(life_time_us == OS_RES_TIMEOUT_INFINITE) {
+    if(life_time_us == OS_TIMEOUT_INFINITE) {
         EVENT_FLAG_SET(new_event_code, EVENT_FLAG_NO_TIMEOUT);
     }
     EVENT_FLAG_SET(new_event_code, flags);

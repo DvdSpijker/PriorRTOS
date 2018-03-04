@@ -231,7 +231,7 @@ U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target)
     U32_t count = 0;
     U32_t amount  = 0;
     do {
-        RingbufRead(ringbuf_id, &target[count], &amount, OS_RES_TIMEOUT_INFINITE);
+        RingbufRead(ringbuf_id, &target[count], &amount, OS_TIMEOUT_INFINITE);
         count++;
     } while (amount);
     return count;
