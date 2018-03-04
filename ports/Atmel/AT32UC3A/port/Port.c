@@ -1,5 +1,4 @@
 
-#include <PriorRTOS_config.h>
 #include <Port.h>
 #include <tc.h>
 //#include <Types.h>
@@ -160,9 +159,7 @@ void PortOsTimerTicksSet(uint32_t ticks)
 __attribute__((__interrupt__))
 static void os_timer_irq(void)
 {
-    CoreTick();
-
-
+    OsTick();
 }
 
 void PortOsTickInit(IrqPriority_t os_tick_irq_prio)
@@ -186,35 +183,6 @@ void PortOsTickInit(IrqPriority_t os_tick_irq_prio)
 
 
 
-//void PortWdtInit(U8_t wdt_mode, IrqPriority_t wdt_irq_prio)
-//{
-//char x = 0;
-//x++;
-//}
-
-//void PortWdtEnable(U8_t wdt_expire_opt)
-//{
-//PortGlobalIntDisable();
-//
-//PortGlobalIntEnable();
-//}
-
-void PortWdtDisable()
-{
-    char x = 0;
-    x++;
-}
-
-void PortWdtKick()
-{
-    char x = 0;
-    x++;
-}
-
-//ISR(WDT_vect)
-//{
-//CoreWdtIsr();
-//}
 
 
 

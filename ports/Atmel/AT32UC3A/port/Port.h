@@ -1,15 +1,29 @@
 #ifndef PRIOR_PORT_H
 #define PRIOR_PORT_H
 
+#include <PriorRTOS_config.h>
 #include <stdint.h>
 
-#define PORT_WDT_EXPIRE_15_MS  0
-#define PORT_WDT_EXPIRE_30_MS  1
-#define PORT_WDT_EXPIRE_60_MS  2
-#define PORT_WDT_EXPIRE_120MS  3
-#define PORT_WDT_EXPIRE_8_S    4
+#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
+#include <PortWdt.h>
+#endif
+
+#if PRTOS_CONFIG_ENABLE_LOGGING==1
+#include <PortLog.h>
+#endif
+
+#if PRTOS_CONFIG_ENABLE_SHELL==1
+#include <PortShell.h>
+#endif
+
 
 typedef uint8_t IrqPriority_t;
+
+/* SuperVisor mode Port. */
+void PortSuperVisorModeEnable(void);
+
+void PortSuperVisorModeDisable(void);
+
 
 /* Global Interrupt HAL. */
 void PortGlobalIntDisable(void);
@@ -38,21 +52,12 @@ void PortOsIntEnable(void);
 
 void PortOsIntFlagClear(void);
 
-extern void CoreTick(void);
-
 void PortOsTickInit(IrqPriority_t os_tick_irq_prio);
 
-/* Watchdog Timer HAL. */
+extern void OsTick(void);
 
-void PortWdtInit(uint8_t wdt_mode, IrqPriority_t wdt_irq_prio);
 
-void PortWdtEnable(uint8_t wdt_expire_opt);
 
-void PortWdtDisable(void);
-
-void PortWdtKick(void);
-
-extern void CoreWdtIsr(void);
 
 
 
