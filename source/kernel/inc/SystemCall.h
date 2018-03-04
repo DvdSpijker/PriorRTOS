@@ -12,13 +12,15 @@
 #include <stdlib.h>
 #include <Types.h>
 #include <Event.h>
-#include <Task.h>
 #include <TaskDef.h>
 #include <List.h>
 
 #include <PriorRTOSConfig.h>
 
 extern S8_t OsIsrNestCountGet(void);
+
+OsResult_t KSysCallPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll);
+OsResult_t KSysCallWait(Id_t object_id, U32_t event, U32_t timeout_ms);
 
 /* System Call header for Pre-Emptive handling. 
  * Contains the label 'preem_ret' which is 
@@ -45,7 +47,7 @@ preem_ret:                                          \
 
 #define SYSTEM_CALL_POLL_HANDLE_EVENT(obj_id, evt, p_res)               \
 if(OsIsrNestCountGet() == 0) {                                          \           
-    *p_res = TaskPoll(obj_id, evt, OS_RES_TIMEOUT_INFINITE, false);         \
+    *p_res = KSysCallPoll(obj_id, evt, OS_TIMEOUT_INFINITE, false);         \
 } else {                                                                \
     *p_res = OS_RES_FAIL;                                                   \       
 }                                                                       \
@@ -73,7 +75,7 @@ else if(*p_res == OS_RES_POLL)           \
 
 #define SYSTEM_CALL_POLL_WAIT_EVENT(ls_node, obj_id, evt, p_res, t_out)           \
 if(OsIsrNestCountGet() == 0) {                                                    \
-*p_res = TaskPoll(obj_id, evt, t_out, true);                                      \
+*p_res = KSysCallPoll(obj_id, evt, t_out, true);                                  \
 }                                                                                 \
 
 #else  
@@ -81,8 +83,8 @@ if(OsIsrNestCountGet() == 0) {                                                  
 #define SYSTEM_CALL_POLL_WAIT_EVENT(ls_node, obj_id, evt, p_res, t_out)           \
 if(OsIsrNestCountGet() == 0) {                                                    \
 ListNodeUnlock(ls_node);                                                          \
-*p_res = TaskWait(obj_id, evt, t_out);                                            \                   
-if(*p_res == OS_RES_EVENT) {                                                          \   
+*p_res = KSysCallWait(obj_id, evt, t_out);                                        \                   
+if(*p_res == OS_RES_EVENT) {                                                      \   
     goto preem_ret;                                                               \
 }}                                                                                \
                                                                     
