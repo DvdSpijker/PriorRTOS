@@ -59,7 +59,7 @@ typedef enum {
 #define JOB_FLAG_COPY           0x04    /* The job is copied upon to the worker queue i.e. WorkerJob struct can be deleted after adding it. */
 #define JOB_FLAG_NO_RETURN      0x08    /* The job has no return value and will automatically removed after processing. */
 
-struct WorkerJobPrivate_t;
+typedef struct WorkerJobPrivate_t;
 
 struct WorkerJob {
     WorkerJobFunction   entry;
@@ -74,14 +74,18 @@ struct WorkerJob {
     WorkerJobPrivate_t   *private;
 };
 
-/* Worker API. */
-OsResult_t WorkerInit(void);
+/* Worker Task prototype. Must be used as the task
+ * handler function for a Worker Task. */
+void WorkerTask(const void *p_arg, U32_t v_arg); 
 
-/* Workers are tasks in the low or medium category, depending on the configuration.
+/* Worker API. */
+OsResult_t KWorkerInit(void);
+
+/* A task must be linked to the worker.
  * A priority within this category can still be assigned (1-5).
  * Max size indicates the maximum queue size.
  * Max time indicates the maximum amount of time that may be spend processing. */
-Id_t WorkerCreate(Prio_t priority, U32_t max_size, U32_t max_time);
+Id_t WorkerCreate(Id_t task_id, U32_t max_size, U32_t max_time);
 
 OsResult_t WorkerDelete(Id_t worker_id);
 
@@ -89,7 +93,7 @@ TaskState_t WorkerStateGet(Id_t worker_id);
 
 /* Worker Job API. */
 
-Id_t WorkerJobAdd(struct WorkerJob *job);
+Id_t WorkerJobAdd(Id_t worker_id, struct WorkerJob *job);
 
 OsResult_t WorkerJobRemove(Id_t job_id);
 
