@@ -103,13 +103,13 @@ void LogDebug(U8_t log_line_opt, const char *source, const int line_nr, const ch
 #if PRTOS_CONFIG_ENABLE_LOG_EVENT==1
 void KLogEvent(pEvent_t event)
 {
-    char src_packet[10];
-    char msg_packet[100];
+    char src_buffer[10];
+    char msg_buffer[100];
 
-    snprintf(src_packet, sizeof(src_packet), "%04x", event->source_id);
-    snprintf(msg_packet, sizeof(msg_packet), "Event Code: 0x%08x | Occurrence Count: %u | Lifetime (set/cnt): %u/%u", event->event_code,
+    snprintf(src_buffer, sizeof(src_buffer), "%04x", event->source_id);
+    snprintf(msg_buffer, sizeof(msg_buffer), "Event Code: 0x%08x | Occurrence Count: %u | Lifetime (set/cnt): %u/%u", event->event_code,
              event->occurrence_cnt, event->life_time_us, event->life_time_us_cnt);
-    ILogFormat(LOG_LINE_NEW, "event", src_packet, 0, msg_packet, NULL);
+    ILogFormat(LOG_LINE_NEW, "event", src_buffer, 0, msg_buffer, NULL);
 }
 #endif
 

@@ -389,7 +389,7 @@ OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
             /* The priority stored in the TCB is a combined priority of the minor and category.
-             * The original minor priority can be removeed. */
+             * The original minor priority can be extracted. */
             tcb->priority = KCalculatePriority(tcb->category, new_priority);
             result = OS_RES_OK;
             ListNodeUnlock(&tcb->list_node);

@@ -79,8 +79,8 @@ extern "C" {
 #include <Pipe.h>
 #endif
 
-#if PRTOS_CONFIG_ENABLE_RINGpacketS==1
-#include <Ringpacket.h>
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+#include <Ringbuffer.h>
 #endif
 
 #if PRTOS_CONFIG_ENABLE_SIGNALS==1

@@ -39,8 +39,8 @@
 
 #include <Peripheral.h>
 
-#if PRTOS_CONFIG_ENABLE_RINGpacketS==1
-#include <Ringpacket.h>
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+#include <RingBuffer.h>
 #endif
 
 OsResult_t PeripheralInit(struct PeripheralDescriptor *periph_desc)
@@ -84,12 +84,12 @@ OsResult_t PeripheralWriteSingle(struct PeripheralDescriptor *periph_desc, Perip
 	if(periph_desc->write_single == NULL) {
 		return OS_RES_FAIL;
 	}
-	if(periph_desc->write_packet == OS_ID_INVALID) {
+	if(periph_desc->write_buffer == OS_ID_INVALID) {
 		return periph_desc->write_single(periph_desc->hal_instance, data);	
 	} else {
-#if PRTOS_CONFIG_ENABLE_RINGpacketS==1
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
 		U32_t length = 1;
-		return RingpacketWrite(periph_desc->write_packet, data, &length, OS_TIMEOUT_INFINITE);
+		return RingBufferWrite(periph_desc->write_buffer, data, &length, OS_TIMEOUT_INFINITE);
 #else	
 		return OS_RES_ERROR;
 #endif
@@ -107,11 +107,11 @@ OsResult_t PeripheralWriteBlock(struct PeripheralDescriptor *periph_desc, Periph
 	if(*size == 0) {
 		return OS_RES_INVALID_VALUE;
 	}
-	if(periph_desc->write_packet == OS_ID_INVALID) {
+	if(periph_desc->write_buffer == OS_ID_INVALID) {
 		return periph_desc->write_block(periph_desc->hal_instance, data, size);	
 	} else {
-#if PRTOS_CONFIG_ENABLE_RINGpacketS==1
-		return RingpacketWrite(periph_desc->write_packet, data, size, OS_TIMEOUT_INFINITE);
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+		return RingBufferWrite(periph_desc->write_buffer, data, size, OS_TIMEOUT_INFINITE);
 #else
 		return OS_RES_ERROR;
 #endif
@@ -127,12 +127,12 @@ OsResult_t PeripheralReadSingle(struct PeripheralDescriptor *periph_desc, Periph
 	if(periph_desc->read_single == NULL) {
 		return OS_RES_FAIL;
 	}
-	if(periph_desc->read_packet == OS_ID_INVALID) {
+	if(periph_desc->read_buffer == OS_ID_INVALID) {
 		return periph_desc->read_single(periph_desc->hal_instance, target);
 	} else {
-#if PRTOS_CONFIG_ENABLE_RINGpacketS==1
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
 		U32_t length = 1;
-		return RingpacketRead(periph_desc->read_packet, target, &length, OS_TIMEOUT_INFINITE);
+		return RingBufferRead(periph_desc->read_buffer, target, &length, OS_TIMEOUT_INFINITE);
 #else
 		return OS_RES_ERROR;
 #endif
@@ -150,11 +150,11 @@ OsResult_t PeripheralReadBlock(struct PeripheralDescriptor *periph_desc, Periphe
 	if(*size == 0) {
 		return OS_RES_INVALID_VALUE;
 	}
-	if(periph_desc->read_packet == OS_ID_INVALID) {
+	if(periph_desc->read_buffer == OS_ID_INVALID) {
 		return periph_desc->read_block(periph_desc->hal_instance, target, size);
 	} else {
-#if PRTOS_CONFIG_ENABLE_RINGpacketS==1
-		return RingpacketRead(periph_desc->read_packet, target, size, OS_TIMEOUT_INFINITE);
+#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
+		return RingBufferRead(periph_desc->read_buffer, target, size, OS_TIMEOUT_INFINITE);
 #else
 		return OS_RES_ERROR;
 #endif

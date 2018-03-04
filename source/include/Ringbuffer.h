@@ -1,6 +1,6 @@
 /******************************************************************************************************************************************
- *  File: Ringpacket.h
- *  Description: Ring-packet API.
+ *  File: Ringbuffer.h
+ *  Description: Ring-buffer API.
 
  *  OS Version: V0.4
  *
@@ -34,8 +34,8 @@
  *  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **********************************************************************************************************************************************/
 
-#ifndef RINGpacket_H_
-#define RINGpacket_H_
+#ifndef RINGBUFFER_H_
+#define RINGBUFFER_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -46,95 +46,95 @@ extern "C" {
 #include <PriorRTOSConfig.h>
 #include <EventDef.h>
 
-/* Ring-packet Events. */
-#define RINGpacket_EVENT_CREATE         EVENT_TYPE_CREATE
-#define RINGpacket_EVENT_DELETE         EVENT_TYPE_DELETE
+/* Ring-buffer Events. */
+#define RINGBUF_EVENT_CREATE         EVENT_TYPE_CREATE
+#define RINGBUF_EVENT_DELETE         EVENT_TYPE_DELETE
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGpacket_DATA_IN_OUT
-#define RINGpacket_EVENT_DATA_IN        (EVENT_TYPE_ACCESS | 0x00001000)
-#define RINGpacket_EVENT_DATA_OUT       (EVENT_TYPE_ACCESS | 0x00002000)
+#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_DATA_IN_OUT
+#define RINGBUF_EVENT_DATA_IN        (EVENT_TYPE_ACCESS | 0x00001000)
+#define RINGBUF_EVENT_DATA_OUT       (EVENT_TYPE_ACCESS | 0x00002000)
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGpacket_EMPTY_FULL
-#define RINGpacket_EVENT_EMPTY          (EVENT_TYPE_STATE_CHANGE | 0x00001000)
-#define RINGpacket_EVENT_FULL           (EVENT_TYPE_STATE_CHANGE | 0x00002000)
+#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_EMPTY_FULL
+#define RINGBUF_EVENT_EMPTY          (EVENT_TYPE_STATE_CHANGE | 0x00001000)
+#define RINGBUF_EVENT_FULL           (EVENT_TYPE_STATE_CHANGE | 0x00002000)
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGpacket_FLUSH
-#define RINGpacket_EVENT_FLUSHED        (EVENT_TYPE_STATE_CHANGE | 0x00003000)
+#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_FLUSH
+#define RINGBUF_EVENT_FLUSHED        (EVENT_TYPE_STATE_CHANGE | 0x00003000)
 #endif
 
-/* Ring-packet Base Type. */
-typedef volatile  U8_t RingpacketBase_t;
+/* Ring-buffer Base Type. */
+typedef volatile  U8_t RingbufBase_t;
 
 
 /******************************************************************************
- * @func: Id_t RingpacketCreate(U32_t size)
+ * @func: Id_t RingbufCreate(U32_t size)
  *
- * @desc: Creates a ring-packet of given size. Note that the width of
- * each node in the packet is defined by RingpacketBase_t (U8_t by default).
+ * @desc: Creates a ring-buffer of given size. Note that the width of
+ * each node in the buffer is defined by RingbufBase_t (U8_t by default).
  *
  * Arguments:
- * @argin: (U32_t) size; Ring-packet size in nodes.
+ * @argin: (U32_t) size; Ring-buffer size in nodes.
  *
- * @rettype:  (Id_t) Ring-packet ID
+ * @rettype:  (Id_t) Ring-buffer ID
  * @retval:   INVALID_ID; if an error occurred during creation.
- * @retval:   Other; valid ID if the ring-packet was created.
+ * @retval:   Other; valid ID if the ring-buffer was created.
  ******************************************************************************/
-Id_t RingpacketCreate(RingpacketBase_t *packet, U32_t size);
+Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size);
 
 
 /******************************************************************************
- * @func: OsResult_t RingpacketDelete (Id_t *ringpacket_id)
+ * @func: OsResult_t RingbufDelete (Id_t *ringbuf_id)
  *
- * @desc: Deletes the specified ring-packet. ringpacket_id is set to INVALID_ID if
+ * @desc: Deletes the specified ring-buffer. ringbuf_id is set to INVALID_ID if
  * the operation is successful.
  *
  * Arguments:
- * @argin: (Id_t *) ringpacket_id; ID of the ring-packet to delete.
+ * @argin: (Id_t *) ringbuf_id; ID of the ring-buffer to delete.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_RES_OK; if the ring-packet was deleted.
- * @retval:   OS_RES_ERROR; if the ring-packet could not be found.
+ * @retval:   OS_RES_OK; if the ring-buffer was deleted.
+ * @retval:   OS_RES_ERROR; if the ring-buffer could not be found.
  ******************************************************************************/
-OsResult_t RingpacketDelete(Id_t *ringpacket_id);
+OsResult_t RingbufDelete(Id_t *ringbuf_id);
 
 
 
 /******************************************************************************
- * @func: OsResult_t RingpacketWrite(Id_t ringpacket_id, RingpacketBase_t *data,
+ * @func: OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data,
  *              U32_t *length)
  *
- * @desc: Writes a given number of data nodes to the ring-packet. The
+ * @desc: Writes a given number of data nodes to the ring-buffer. The
  * number of nodes actually written is returned.
  *
  * Arguments:
- * @argin: (Id_t) ringpacket_id; Ring-packet ID.
- * @argin: (RingpacketBase_t) data; Array of data nodes.
+ * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
+ * @argin: (RingbufBase_t) data; Array of data nodes.
  * @argin: (U32_t *) length; Length of data in nodes.
  * @argout: (U32_t *) length; Actual amount written.
  *
  * @rettype:  (OsResult_t) sys call result
  * @retval:   OS_RES_OK; if data was written.
- * @retval:   OS_RES_FAIL; if the packet is empty.
- * @retval:   OS_RES_LOCKED; if the ringpacket is already locked for writing.
- * @retval:   OS_RES_ERROR; if the ringpacket could not be found.
+ * @retval:   OS_RES_FAIL; if the buffer is empty.
+ * @retval:   OS_RES_LOCKED; if the ringbuffer is already locked for writing.
+ * @retval:   OS_RES_ERROR; if the ringbuffer could not be found.
  ******************************************************************************/
-OsResult_t RingpacketWrite(Id_t ringpacket_id, RingpacketBase_t *data, U32_t *length, U32_t timeout);
+OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32_t timeout);
 
 
 /******************************************************************************
- * @func: OsResult_t RingpacketRead(Id_t ringpacket_id, RingpacketBase_t *data,
+ * @func: OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *data,
  *              U32_t *amount)
  *
- * @desc: Reads a given number of data nodes from the ring-packet. The
+ * @desc: Reads a given number of data nodes from the ring-buffer. The
  * number of nodes actually read is returned. Read data is copied to the
  * provided target array. The target array has to comply with the pre-conditions
  * stated below.
  *
  * Arguments:
- * @argin: (Id_t) ringpacket_id; Ring-packet ID.
- * @argin: (RingpacketBase_t) target; Target data array.
+ * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
+ * @argin: (RingbufBase_t) target; Target data array.
  *                        Pre-condition: target[0] = 0xFE, target[amount-1] = 0xEF
  * @argin: (U32_t *) amount; Amount of data to read.
  * @argout:(U32_t *) amount; Actual amount of data read.
@@ -142,99 +142,99 @@ OsResult_t RingpacketWrite(Id_t ringpacket_id, RingpacketBase_t *data, U32_t *le
  *
  * @rettype:  (OsResult_t) sys call result
  * @retval:   OS_RES_OK; if data was read.
- * @retval:   OS_RES_LOCKED; if the ringpacket is already locked for reading.
- * @retval:   OS_RES_FAIL; if the packet is empty.
+ * @retval:   OS_RES_LOCKED; if the ringbuffer is already locked for reading.
+ * @retval:   OS_RES_FAIL; if the buffer is empty.
  * @retval:   OS_RES_OUT_OF_BOUNDS; if the target array was not compliant.
- * @retval:   OS_RES_ERROR; if the ringpacket could not be found.
+ * @retval:   OS_RES_ERROR; if the ringbuffer could not be found.
  ******************************************************************************/
-OsResult_t RingpacketRead(Id_t ringpacket_id, RingpacketBase_t *target, U32_t *amount, U32_t timeout);
+OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U32_t timeout);
 
 
 /******************************************************************************
- * @func: U32_t RingpacketDump(Id_t ringpacket_id, RingpacketBase_t *target)
+ * @func: U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t *target)
  *
- * @desc: Dumps all data present in the ring-packet in the target array.
+ * @desc: Dumps all data present in the ring-buffer in the target array.
  * The number of nodes actually read is returned. The target array has to comply
  * with the pre-conditions stated below.
  *
  * Arguments:
- * @argin: (Id_t) ringpacket_id; Ring-packet ID.
- * @argin: (RingpacketBase_t) target; Target data array.
+ * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
+ * @argin: (RingbufBase_t) target; Target data array.
  *                        Pre-condition: target[0] = 0xFE,
- *                        target[ring-packet size-1] = 0xEF
+ *                        target[ring-buffer size-1] = 0xEF
  *
  *
- * @rettype:  (U32_t) Actual amount of nodes read from the ring-packet. 0 if
+ * @rettype:  (U32_t) Actual amount of nodes read from the ring-buffer. 0 if
  *                  pre-conditions were not compliant.
  ******************************************************************************/
-U32_t RingpacketDump(Id_t ringpacket_id, RingpacketBase_t* target);
+U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target);
 
 
 /******************************************************************************
- * @func: OsResult_t RingpacketFlush(Id_t ringpacket_id)
+ * @func: OsResult_t RingbufFlush(Id_t ringbuf_id)
  *
- * @desc: Resets the ring-packet's read and write locations as well as
+ * @desc: Resets the ring-buffer's read and write locations as well as
  * its current data count resulting in all its initial space becoming available.
  *
  * Arguments:
- * @argin: (Id_t) ringpacket_id; Ring-packet ID.
+ * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  *
  * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_RES_OK; if the ring-packet was flushed.
- * @retval:   OS_RES_LOCKED; if the ring-packet is locked for reading or writing.
- * @retval:   OS_RES_ERROR; if the ring-packet could not be found.
+ * @retval:   OS_RES_OK; if the ring-buffer was flushed.
+ * @retval:   OS_RES_LOCKED; if the ring-buffer is locked for reading or writing.
+ * @retval:   OS_RES_ERROR; if the ring-buffer could not be found.
  ******************************************************************************/
-OsResult_t RingpacketFlush(Id_t ringpacket_id);
+OsResult_t RingbufFlush(Id_t ringbuf_id);
 
 
 /******************************************************************************
- * @func: U32_t RingpacketSearch(Id_t ringpacket_id, RingpacketBase_t *query,
+ * @func: U32_t RingbufSearch(Id_t ringbuf_id, RingbufBase_t *query,
  *              U32_t query_length)
  *
- * @desc: Searched the ring-packet for the given query of given length.
- * The number of occurrences of the query in the packet is returned.
+ * @desc: Searched the ring-buffer for the given query of given length.
+ * The number of occurrences of the query in the buffer is returned.
  *
  * Arguments:
- * @argin: (Id_t) ringpacket_id; Ring-packet ID.
- * @argin: (RingpacketBase_t) query; Search query.
+ * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
+ * @argin: (RingbufBase_t) query; Search query.
  * @argin: (U32_t) query_length; Length of the search query.
  *
  * @rettype:  (U32_t) Number of occurrences.
  ******************************************************************************/
-U32_t RingpacketSearch(Id_t ringpacket_id, RingpacketBase_t *query, U32_t query_length);
+U32_t RingbufSearch(Id_t ringbuf_id, RingbufBase_t *query, U32_t query_length);
 
 /* Returns the index at which the query first occurs. */
-U32_t RingpacketSearchIndex(Id_t ringpacket_id, RingpacketBase_t *query, U32_t query_length);
+U32_t RingbufSearchIndex(Id_t ringbuf_id, RingbufBase_t *query, U32_t query_length);
 
 
 /******************************************************************************
- * @func: U32_t RingpacketDataCountGet(Id_t ringpacket_id)
+ * @func: U32_t RingbufDataCountGet(Id_t ringbuf_id)
  *
  * @desc: Returns the amount of data nodes are present in the ring-
- * packet.
+ * buffer.
  *
  * Arguments:
- * @argin: (Id_t) ringpacket_id; Ring-packet ID.
+ * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  *
  * @rettype:  (U32_t) Number of data nodes.
  ******************************************************************************/
-U32_t RingpacketDataCountGet(Id_t ringpacket_id);
+U32_t RingbufDataCountGet(Id_t ringbuf_id);
 
 
 /******************************************************************************
- * @func: U32_t RingpacketDataSpaceGet(Id_t ringpacket_id)
+ * @func: U32_t RingbufDataSpaceGet(Id_t ringbuf_id)
  *
- * @desc: Returns the amount of space left in the ring-packet.
+ * @desc: Returns the amount of space left in the ring-buffer.
  *
  * Arguments:
- * @argin: (Id_t) ringpacket_id; Ring-packet ID.
+ * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  *
  * @rettype:  (U32_t) Data space left.
  ******************************************************************************/
-U32_t RingpacketDataSpaceGet(Id_t ringpacket_id);
+U32_t RingbufDataSpaceGet(Id_t ringbuf_id);
 
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* RINGpacket_H_ */
+#endif /* RINGBUFFER_H_ */

@@ -166,18 +166,18 @@ U8_t ConvertIntToString(U32_t integer, char *out_int_str)
     }
 
     U8_t i = 0;
-    bool lastPACKETindex = false;
+    bool last_buffer_index = false;
     /* Now mod and print, then divide divisor.
     * While keeping in mind the bounds of the
-    * string packet. */
+    * string buffer. */
     do {
         if(out_int_str[i] == 0x20) {
-            lastPACKETindex = true;
+            last_buffer_index = true;
         }
         out_int_str[i] =((char)('0' + (integer / divisor % 10)));
         divisor /= 10;
         i++;
-    } while (divisor > 0 && i < 254 && lastPACKETindex == false);
+    } while (divisor > 0 && i < 254 && last_buffer_index == false);
 
     return i;
 }
