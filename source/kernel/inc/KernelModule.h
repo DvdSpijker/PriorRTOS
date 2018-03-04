@@ -4,18 +4,18 @@
 #include <Types.h>
 
 /* KM = Kernel Module. */
-typdef enum {
+typedef enum {
 	KM_STATE_DISABLED, 
 	KM_STATE_UNINITIALIZED, 
 	KM_STATE_AVAILABLE, 
 	KM_STATE_ERROR,
-} KernelModuleState_t
+} KernelModuleState_t;
 
 /* Kmf = Kernel Module Function. */
-typdef OsResult_t	(*KmfInit)(const void *args);
-typdef uint32_t		(*KmfObjectToString)(void *obj, char *obj_str);
-typdef OsResult_t	(*KmfHookException)(U32_t exception);
-typdef void 		(*KmfHookTick)(void);
+typedef OsResult_t	(*KmfInit)(const void *args);
+typedef U32_t		(*KmfObjectToString)(void *obj, char *obj_str);
+typedef OsResult_t	(*KmfHookException)(U32_t exception);
+typedef void 		(*KmfHookTick)(void);
 
 struct KernelModule {
 	const char name[];
