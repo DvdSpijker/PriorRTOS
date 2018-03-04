@@ -200,16 +200,16 @@ S8_t ListIntegrityVerify(LinkedList_t *list);
 OsResult_t ListIntegrityRestore(LinkedList_t *list, S8_t list_verify_result); /* TODO: Implement ListIntegrityRestore. */
 
 
-/* Allocates a format buffer and inserts the following list characteristics
- * in the allocated buffer in the specified order.
+/* Allocates a format packet and inserts the following list characteristics
+ * in the allocated packet in the specified order.
  * - size
  * - lock
  * - ID type
  * - all node IDs, masked with ID_MASK_UID.
- * formatted_Listsize will be equal to the format buffer size, the list
+ * formatted_Listsize will be equal to the format packet size, the list
  * is returned.
  * NOTE: The user is responsible for freeing the format list after usage! */
-char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size);
+char *ListPrintTopacket(LinkedList_t *list,  U32_t *packet_size);
 
 
 /**** ListNode API. ****/

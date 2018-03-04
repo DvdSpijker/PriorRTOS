@@ -11,7 +11,7 @@ extern "C" {
 
 #include <serial.h>
 
-#define UART_RX_BUFSIZE 20 /* Buffer size per channel. */
+#define UART_RX_packetSIZE 20 /* packet size per channel. */
 
 #define HAL_UART_STOP_BITS_1 0
 #define HAL_UART_STOP_BITS_2 1
@@ -29,11 +29,11 @@ struct  HalUartInstance {
     UartInstanceCallback_t rx_callback;
 
     /* Do not access these fields directly. */
-    uint8_t rx_buffer[UART_RX_BUFSIZE];
-    volatile uint8_t buffer_read_i;
-    volatile uint8_t buffer_write_i;
-    volatile uint8_t buffer_data_avail;
-    volatile uint8_t buffer_status; //0 = empty, 1 = data present, 2 = full
+    uint8_t rx_packet[UART_RX_packetSIZE];
+    volatile uint8_t packet_read_i;
+    volatile uint8_t packet_write_i;
+    volatile uint8_t packet_data_avail;
+    volatile uint8_t packet_status; //0 = empty, 1 = data present, 2 = full
 };
 
 void HalUartInit(struct HalUartInstance *uart_handle);
@@ -44,13 +44,13 @@ void HalUartSendString(struct HalUartInstance *uart_handle, const char* str);
 
 uint8_t HalUartReceive(struct HalUartInstance *uart_handle, char* target, uint8_t amount);
 
-uint8_t HalUartBufferDataAmountGet(struct HalUartInstance *uart_handle);
+uint8_t HalUartpacketDataAmountGet(struct HalUartInstance *uart_handle);
 
-uint8_t HalUartBufferStatusGet(struct HalUartInstance *uart_handle);
+uint8_t HalUartpacketStatusGet(struct HalUartInstance *uart_handle);
 
-uint8_t HalUartBufferContains(struct HalUartInstance *uart_handle, const char check_char);
+uint8_t HalUartpacketContains(struct HalUartInstance *uart_handle, const char check_char);
 
-void HalUartBufferFlush(struct HalUartInstance *uart_handle);
+void HalUartpacketFlush(struct HalUartInstance *uart_handle);
 
 #ifdef __cplusplus
 }

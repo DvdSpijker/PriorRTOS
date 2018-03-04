@@ -23,9 +23,9 @@ typedef OsResult_t (*PeripheralCallbackRwBlock)(void *hal_instance, PeripheralBa
 
 struct PeripheralDescriptor {
 	
-	/* In V0.4.0 buffer linking is only supported for RingBuffers. */
-    Id_t write_buffer;	/* Must be set to OS_RES_ID_INVALID if no buffer is used. */
-    Id_t read_buffer;	/* Must be set to OS_RES_ID_INVALID if no buffer is used. */
+	/* In V0.4.0 packet linking is only supported for Ringpackets. */
+    Id_t write_packet;	/* Must be set to OS_RES_ID_INVALID if no packet is used. */
+    Id_t read_packet;	/* Must be set to OS_RES_ID_INVALID if no packet is used. */
 
     void *hal_instance; /* Link to a HAL instance object, set NULL if unused. */
 
@@ -47,12 +47,12 @@ OsResult_t PeripheralOpen(struct PeripheralDescriptor *periph_desc);
 
 OsResult_t PeripheralClose(struct PeripheralDescriptor *periph_desc);
 
-/* Write single data to the peripheral. Calls the peripheral's write_single callback directly if no write_buffer is not used.
- * If a buffer is used the data is written to the buffer. */
+/* Write single data to the peripheral. Calls the peripheral's write_single callback directly if no write_packet is not used.
+ * If a packet is used the data is written to the packet. */
 OsResult_t PeripheralWriteSingle(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *data);
 
-/* Write a block of data of a given size to the peripheral. Calls the peripheral's write_block callback directly if no write_buffer is not used.
- * If a buffer is used the data is written to the buffer.
+/* Write a block of data of a given size to the peripheral. Calls the peripheral's write_block callback directly if no write_packet is not used.
+ * If a packet is used the data is written to the packet.
  * *size must contain the block size before the call. It will contain the size actually written after the call. */
 OsResult_t PeripheralWriteBlock(struct PeripheralDescriptor *periph_desc, PeripheralBase_t *data, U32_t *size);
 

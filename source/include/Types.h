@@ -143,7 +143,7 @@ typedef enum {
     ID_TYPE_EVENTGROUP  = 0x3000,
     ID_TYPE_SEMAPHORE   = 0x4000,
     ID_TYPE_MAILBOX     = 0x5000,
-    ID_TYPE_RINGBUF     = 0x6000,
+    ID_TYPE_RINGpacket     = 0x6000,
 } IdType_t;
 
 

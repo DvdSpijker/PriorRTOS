@@ -95,8 +95,8 @@ LOG_FILE_NAME("Core.c");
 #include <SemaphoreDef.h>
 #endif
 
-#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
-#include <RingbufferDef.h>
+#if PRTOS_CONFIG_ENABLE_RINGpacketS==1
+#include <RingpacketDef.h>
 #endif
 
 #if PRTOS_CONFIG_ENABLE_PERPHERALS==1
@@ -227,9 +227,9 @@ OsResult_t OsInit(OsResult_t *status_optional)
     LogInit();
 #endif
 
-    char os_version_buf[CONVERT_BUFFER_SIZE_OSVERSION_TO_STRING];
-    ConvertOsVersionToString(OS_VERSION, os_version_buf);
-    LOG_INFO_NEWLINE("Prior RTOS %s",os_version_buf);
+    char os_version_packet[CONVERTPACKETSIZE_OSVERSION_TO_STRING];
+    ConvertOsVersionToString(OS_VERSION, os_version_packet);
+    LOG_INFO_NEWLINE("Prior RTOS %s",os_version_packet);
 
     /*Initiate essential modules*/
     LOG_INFO_NEWLINE("Initializing kernel...");
@@ -281,7 +281,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
     LOG_INFO_NEWLINE("Initializing module:Timer...");
     status_kernel = KTimerInit();
     if(status_kernel == OS_RES_CRIT_ERROR) {
-        LOG_ERROR_NEWLINE("No timer ID buffer defined");
+        LOG_ERROR_NEWLINE("No timer ID packet defined");
         return status_kernel;
     }
     LOG_INFO_APPEND("ok");
@@ -306,9 +306,9 @@ OsResult_t OsInit(OsResult_t *status_optional)
     LOG_INFO_APPEND("ok");
 #endif
 
-#if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
-    LOG_INFO_NEWLINE("Initializing module:Ringbuffer...");
-    KRingbufInit();
+#if PRTOS_CONFIG_ENABLE_RINGpacketS==1
+    LOG_INFO_NEWLINE("Initializing module:Ringpacket...");
+    KRingpacketInit();
     LOG_INFO_APPEND("ok");
 
 #if PRTOS_CONFIG_ENABLE_SHELL==1

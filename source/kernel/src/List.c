@@ -15,9 +15,9 @@
 
 LOG_FILE_NAME("List.c");
 
-#define ID_BUFFER_SLOT_INVALID        0xFF
-#define ID_BUFFER_SLOT_OCCUP          0x01
-#define ID_BUFFER_SLOT_FREE           0x02
+#define IDPACKETSLOT_INVALID        0xFF
+#define IDPACKETSLOT_OCCUP          0x01
+#define IDPACKETSLOT_FREE           0x02
 
 #define LOCK_MASK_CHECKED          0b01000000
 #define LOCK_MASK_MODE             0b10000000
@@ -984,7 +984,7 @@ bool ListIteratorEnd(struct ListIterator *list_it)
 
 
 
-/**** ID buffering API ****/
+/**** ID packeting API ****/
 
 
 static void IListIdInit(LinkedList_t *list, IdType_t id_type)
@@ -1014,7 +1014,7 @@ static Id_t IListIdGet(LinkedList_t *list)
 }
 
 
-const char *PrintToBufferText[] = {
+const char *PrintTopacketText[] = {
     "\nList:\t",
     "Size:\t",
     "Lock:\t",
@@ -1022,40 +1022,40 @@ const char *PrintToBufferText[] = {
     "\n\tID:",
 };
 
-char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size)
+char *ListPrintTopacket(LinkedList_t *list,  U32_t *packet_size)
 {
-    if(list == NULL || buffer_size == NULL) {
+    if(list == NULL || packet_size == NULL) {
         return NULL;
     }
     if(ListLock(list, LIST_LOCK_MODE_READ) != OS_RES_OK) {
-        *buffer_size = 0;
+        *packet_size = 0;
         return NULL;
     }
 
     struct ListIterator it;
-    U32_t buffer_write_offset = 0;
-    *buffer_size = sizeof(PrintToBufferText[0]) + sizeof(list)
-                   + sizeof(PrintToBufferText[1]) + sizeof(list->size)
-                   + sizeof(PrintToBufferText[2]) + sizeof(list->lock)
-                   + sizeof(PrintToBufferText[3])
-                   + (sizeof(PrintToBufferText[4]) + sizeof(Id_t)  * list->size);
-    *buffer_size *= 3;
-    char *format_buffer = (char*)malloc(*buffer_size);
-    if(format_buffer != NULL) {
-        buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s%p\n", PrintToBufferText[0], list);
-        buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s%u\n", PrintToBufferText[1], list->size);
-        buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s%02x\n", PrintToBufferText[2], list->lock);
-        buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s", PrintToBufferText[3]);
+    U32_t packet_write_offset = 0;
+    *packet_size = sizeof(PrintTopacketText[0]) + sizeof(list)
+                   + sizeof(PrintTopacketText[1]) + sizeof(list->size)
+                   + sizeof(PrintTopacketText[2]) + sizeof(list->lock)
+                   + sizeof(PrintTopacketText[3])
+                   + (sizeof(PrintTopacketText[4]) + sizeof(Id_t)  * list->size);
+    *packet_size *= 3;
+    char *format_packet = (char*)malloc(*packet_size);
+    if(format_packet != NULL) {
+        packet_write_offset += sprintf(&format_packet[packet_write_offset], "%s%p\n", PrintTopacketText[0], list);
+        packet_write_offset += sprintf(&format_packet[packet_write_offset], "%s%u\n", PrintTopacketText[1], list->size);
+        packet_write_offset += sprintf(&format_packet[packet_write_offset], "%s%02x\n", PrintTopacketText[2], list->lock);
+        packet_write_offset += sprintf(&format_packet[packet_write_offset], "%s", PrintTopacketText[3]);
         LIST_ITERATOR_BEGIN(&it, list, LIST_ITERATOR_DIRECTION_FORWARD) {
             if(it.current_node != NULL) {
-                buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s%04x", PrintToBufferText[4], it.current_node->id);
+                packet_write_offset += sprintf(&format_packet[packet_write_offset], "%s%04x", PrintTopacketText[4], it.current_node->id);
             }
         }
         LIST_ITERATOR_END(&it);
     }
 
 
-    return format_buffer;
+    return format_packet;
 }
 
 

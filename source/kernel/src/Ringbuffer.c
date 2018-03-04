@@ -1,7 +1,7 @@
 /**********************************************************************************************************************************************
- *  File: Ringbuffer.c
+ *  File: Ringpacket.c
  *
- *  Description: Prior Ringbuffer module
+ *  Description: Prior Ringpacket module
  *
  *  OS Version: V0.4
  *  Date: 13/03/2015
@@ -38,134 +38,134 @@
  **********************************************************************************************************************************************/
 
 
-#include <Ringbuffer.h>
+#include <Ringpacket.h>
 #include <Types.h>
 #include <MemoryDef.h>
 #include <List.h>
 #include <Event.h>
-#include <RingbufferDef.h>
+#include <RingpacketDef.h>
 
 #include <stdlib.h>
 #include <inttypes.h>
 #include <stdio.h>
 
-static S8_t IRingbufLockWrite(Ringbuf_t *ringbuf);
-static S8_t IRingbufUnlockWrite(Ringbuf_t *ringbuf);
+static S8_t IRingpacketLockWrite(Ringpacket_t *ringpacket);
+static S8_t IRingpacketUnlockWrite(Ringpacket_t *ringpacket);
 
-static S8_t IRingbufLockRead(Ringbuf_t *ringbuf);
-static S8_t IRingbufUnlockRead(Ringbuf_t *ringbuf);
+static S8_t IRingpacketLockRead(Ringpacket_t *ringpacket);
+static S8_t IRingpacketUnlockRead(Ringpacket_t *ringpacket);
 
-static pRingbuf_t IRingbufFromId(Id_t ringbuf_id);
-static U32_t IRingbufBlockNextGet(Ringbuf_t *ringbuf,  U32_t index);
+static pRingpacket_t IRingpacketFromId(Id_t ringpacket_id);
+static U32_t IRingpacketBlockNextGet(Ringpacket_t *ringpacket,  U32_t index);
 
-LinkedList_t RingbufList;
+LinkedList_t RingpacketList;
 
 
-OsResult_t KRingbufInit(void)
+OsResult_t KRingpacketInit(void)
 {
-    //RingbufPool = MemPoolCreate(CONFIG_RINGBUFFER_MEMSIZE);
-    ListInit(&RingbufList, ID_TYPE_RINGBUF);
+    //RingpacketPool = MemPoolCreate(CONFIG_RINGpacket_MEMSIZE);
+    ListInit(&RingpacketList, ID_TYPE_RINGpacket);
     return OS_RES_OK;
 }
 
 
-Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size)
+Id_t RingpacketCreate(RingpacketBase_t *packet, U32_t size)
 {
-    pRingbuf_t new_ringbuf = NULL;
-    void *int_buffer = NULL;
-    if(buffer == NULL) {
-        new_ringbuf = (pRingbuf_t)KMemAllocObject(sizeof(Ringbuf_t), (size*sizeof(RingbufBase_t)), &int_buffer);
-        if(new_ringbuf != NULL) {
-            new_ringbuf->buffer = (RingbufBase_t *)int_buffer;
-            new_ringbuf->ext_buffer = false;
+    pRingpacket_t new_ringpacket = NULL;
+    void *int_packet = NULL;
+    if(packet == NULL) {
+        new_ringpacket = (pRingpacket_t)KMemAllocObject(sizeof(Ringpacket_t), (size*sizeof(RingpacketBase_t)), &int_packet);
+        if(new_ringpacket != NULL) {
+            new_ringpacket->packet = (RingpacketBase_t *)int_packet;
+            new_ringpacket->ext_packet = false;
         } else {
             return OS_ID_INVALID;
         }
     } else {
-        new_ringbuf = (pRingbuf_t)KMemAllocObject(sizeof(Ringbuf_t), 0, NULL);
-        if(new_ringbuf != NULL) {
-            new_ringbuf->buffer = buffer;
-            new_ringbuf->ext_buffer = true;
+        new_ringpacket = (pRingpacket_t)KMemAllocObject(sizeof(Ringpacket_t), 0, NULL);
+        if(new_ringpacket != NULL) {
+            new_ringpacket->packet = packet;
+            new_ringpacket->ext_packet = true;
         } else {
             return OS_ID_INVALID;
         }
     }
 
-    ListNodeInit(&new_ringbuf->list_node, (void*)new_ringbuf);
-    if(ListNodeAddSorted(&RingbufList, &new_ringbuf->list_node) != OS_RES_OK) {
-        KMemFreeObject((void **)&new_ringbuf, &int_buffer);
+    ListNodeInit(&new_ringpacket->list_node, (void*)new_ringpacket);
+    if(ListNodeAddSorted(&RingpacketList, &new_ringpacket->list_node) != OS_RES_OK) {
+        KMemFreeObject((void **)&new_ringpacket, &int_packet);
         return OS_ID_INVALID;
     }
 
-    new_ringbuf->size = size;
-    new_ringbuf->head = new_ringbuf->buffer;
-    new_ringbuf->tail = &new_ringbuf->buffer[size-1];
+    new_ringpacket->size = size;
+    new_ringpacket->head = new_ringpacket->packet;
+    new_ringpacket->tail = &new_ringpacket->packet[size-1];
 
-    new_ringbuf->read_index = size - 1;
-    new_ringbuf->write_index = 0;
+    new_ringpacket->read_index = size - 1;
+    new_ringpacket->write_index = 0;
 
-    return ListNodeIdGet(&new_ringbuf->list_node);
+    return ListNodeIdGet(&new_ringpacket->list_node);
 }
 
-OsResult_t RingbufDelete(Id_t *ringbuf_id)
+OsResult_t RingpacketDelete(Id_t *ringpacket_id)
 {
-    pRingbuf_t ringbuf = IRingbufFromId(*ringbuf_id);
-    if(ringbuf == NULL) {
+    pRingpacket_t ringpacket = IRingpacketFromId(*ringpacket_id);
+    if(ringpacket == NULL) {
         return OS_RES_ERROR;
     }
 
     OsResult_t result = OS_RES_OK;
-    void **buffer = NULL;
-    if(ringbuf->ext_buffer == false) {
-        buffer = (void **)&ringbuf->buffer;
+    void **packet = NULL;
+    if(ringpacket->ext_packet == false) {
+        packet = (void **)&ringpacket->packet;
     }
-    ListNodeDeinit(&RingbufList, &ringbuf->list_node);
-    KMemFreeObject((void **)&ringbuf, buffer);
-    *ringbuf_id = OS_ID_INVALID;
+    ListNodeDeinit(&RingpacketList, &ringpacket->list_node);
+    KMemFreeObject((void **)&ringpacket, packet);
+    *ringpacket_id = OS_ID_INVALID;
 
     return result;
 }
 
-OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32_t timeout)
+OsResult_t RingpacketWrite(Id_t ringpacket_id, RingpacketBase_t *data, U32_t *length, U32_t timeout)
 {
     OsResult_t result = OS_RES_OK;
-    pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
-    if(ringbuf == NULL) {
+    pRingpacket_t ringpacket = IRingpacketFromId(ringpacket_id);
+    if(ringpacket == NULL) {
         result = OS_RES_ERROR;
     }
 
-    if(ringbuf->dcount == ringbuf->size) {
-        EventEmit(ringbuf_id, RINGBUF_EVENT_FULL, EVENT_FLAG_NONE);
+    if(ringpacket->dcount == ringpacket->size) {
+        EventEmit(ringpacket_id, RINGpacket_EVENT_FULL, EVENT_FLAG_NONE);
         result = OS_RES_FAIL;
     }
 
     U32_t i = 0;
 
     if(result == OS_RES_OK) {
-        if(IRingbufLockWrite(ringbuf) == 0) {
+        if(IRingpacketLockWrite(ringpacket) == 0) {
 
             while((i < *length)) { //Check if length is reached and if pWrite if still ahead of pRead
-                ringbuf->buffer[ringbuf->write_index] = data[i]; //Copy data
-                ringbuf->dcount++;
+                ringpacket->packet[ringpacket->write_index] = data[i]; //Copy data
+                ringpacket->dcount++;
                 i++;
-                ringbuf->write_index = IRingbufBlockNextGet(ringbuf, ringbuf->write_index);
-                if(ringbuf->write_index == ringbuf->read_index && ringbuf->dcount != 0) {
+                ringpacket->write_index = IRingpacketBlockNextGet(ringpacket, ringpacket->write_index);
+                if(ringpacket->write_index == ringpacket->read_index && ringpacket->dcount != 0) {
                     break;
                 }
 
             }
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_DATA_IN_OUT
-            EventEmit(ringbuf_id, RINGBUF_EVENT_DATA_IN, EVENT_FLAG_NONE);
+#ifdef PRTOS_CONFIG_USE_EVENT_RINGpacket_DATA_IN_OUT
+            EventEmit(ringpacket_id, RINGpacket_EVENT_DATA_IN, EVENT_FLAG_NONE);
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_EMPTY_FULL
-            if(ringbuf->dcount == ringbuf->size) {
-                EventEmit(ringbuf_id, RINGBUF_EVENT_FULL, EVENT_FLAG_NONE);
+#ifdef PRTOS_CONFIG_USE_EVENT_RINGpacket_EMPTY_FULL
+            if(ringpacket->dcount == ringpacket->size) {
+                EventEmit(ringpacket_id, RINGpacket_EVENT_FULL, EVENT_FLAG_NONE);
             }
 #endif
             result = OS_RES_OK;
-            IRingbufUnlockWrite(ringbuf);
+            IRingpacketUnlockWrite(ringpacket);
         } else {
             result = OS_RES_LOCKED;
         }
@@ -176,46 +176,46 @@ OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32
     return result;
 }
 
-OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U32_t timeout)
+OsResult_t RingpacketRead(Id_t ringpacket_id, RingpacketBase_t *target, U32_t *amount, U32_t timeout)
 {
     OsResult_t result = OS_RES_OK;
-    pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
-    if(ringbuf == NULL) {
+    pRingpacket_t ringpacket = IRingpacketFromId(ringpacket_id);
+    if(ringpacket == NULL) {
         result = OS_RES_ERROR;
     }
 
-    if(ringbuf->dcount == 0) {
-        EventEmit(ringbuf_id, RINGBUF_EVENT_EMPTY, EVENT_FLAG_NONE);
+    if(ringpacket->dcount == 0) {
+        EventEmit(ringpacket_id, RINGpacket_EVENT_EMPTY, EVENT_FLAG_NONE);
         result = OS_RES_FAIL;
     }
 
     U32_t i = 0;
 
     if(result == OS_RES_OK) {
-        if(IRingbufLockRead(ringbuf) == 0) {
+        if(IRingpacketLockRead(ringpacket) == 0) {
             while((i < *amount) ) { //Check if amount is reached and if read index is still lagging write index
-                ringbuf->read_index = IRingbufBlockNextGet(ringbuf, ringbuf->read_index);
-                if(ringbuf->read_index == ringbuf->write_index && ringbuf->dcount == 0) {
+                ringpacket->read_index = IRingpacketBlockNextGet(ringpacket, ringpacket->read_index);
+                if(ringpacket->read_index == ringpacket->write_index && ringpacket->dcount == 0) {
                     break;
                 }
-                target[i] =  ringbuf->buffer[ringbuf->read_index] ; //Copy new data
-                ringbuf->dcount--;
+                target[i] =  ringpacket->packet[ringpacket->read_index] ; //Copy new data
+                ringpacket->dcount--;
                 i++;
 
             }
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_DATA_IN_OUT
-            EventEmit(ringbuf_id, RINGBUF_EVENT_DATA_OUT, EVENT_FLAG_NONE);
+#ifdef PRTOS_CONFIG_USE_EVENT_RINGpacket_DATA_IN_OUT
+            EventEmit(ringpacket_id, RINGpacket_EVENT_DATA_OUT, EVENT_FLAG_NONE);
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_EMPTY_FULL
-            if(ringbuf->dcount == 0) {
-                EventEmit(ringbuf_id, RINGBUF_EVENT_EMPTY, EVENT_FLAG_NONE);
+#ifdef PRTOS_CONFIG_USE_EVENT_RINGpacket_EMPTY_FULL
+            if(ringpacket->dcount == 0) {
+                EventEmit(ringpacket_id, RINGpacket_EVENT_EMPTY, EVENT_FLAG_NONE);
             }
 #endif
 
             result = OS_RES_OK;
-            IRingbufUnlockRead(ringbuf);
+            IRingpacketUnlockRead(ringpacket);
         } else {
             result = OS_RES_LOCKED;
         }
@@ -226,35 +226,35 @@ OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U3
 }
 
 
-U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target)
+U32_t RingpacketDump(Id_t ringpacket_id, RingpacketBase_t* target)
 {
     U32_t count = 0;
     U32_t amount  = 0;
     do {
-        RingbufRead(ringbuf_id, &target[count], &amount, OS_TIMEOUT_INFINITE);
+        RingpacketRead(ringpacket_id, &target[count], &amount, OS_TIMEOUT_INFINITE);
         count++;
     } while (amount);
     return count;
 }
 
-OsResult_t RingbufFlush(Id_t ringbuf_id)
+OsResult_t RingpacketFlush(Id_t ringpacket_id)
 {
     OsResult_t result = OS_RES_OK;
-    pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
-    if(ringbuf == NULL) {
+    pRingpacket_t ringpacket = IRingpacketFromId(ringpacket_id);
+    if(ringpacket == NULL) {
         result = OS_RES_ERROR;
     }
 
     if(result == OS_RES_OK) {
-        if((IRingbufLockRead(ringbuf) == 0) && (IRingbufLockWrite(ringbuf) == 0)) {
-            ringbuf->dcount = 0;
-            ringbuf->write_index = 0;
-            ringbuf->read_index = ringbuf->size - 1;
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_FLUSH
-            result = EventEmit(ringbuf_id, RINGBUF_EVENT_FLUSHED, EVENT_FLAG_NONE);
+        if((IRingpacketLockRead(ringpacket) == 0) && (IRingpacketLockWrite(ringpacket) == 0)) {
+            ringpacket->dcount = 0;
+            ringpacket->write_index = 0;
+            ringpacket->read_index = ringpacket->size - 1;
+#ifdef PRTOS_CONFIG_USE_EVENT_RINGpacket_FLUSH
+            result = EventEmit(ringpacket_id, RINGpacket_EVENT_FLUSHED, EVENT_FLAG_NONE);
 #endif
-            IRingbufUnlockRead(ringbuf);
-            IRingbufUnlockWrite(ringbuf);
+            IRingpacketUnlockRead(ringpacket);
+            IRingpacketUnlockWrite(ringpacket);
         }
     } else {
         result = OS_RES_LOCKED;
@@ -263,74 +263,74 @@ OsResult_t RingbufFlush(Id_t ringbuf_id)
     return result;
 }
 
-U32_t RingbufSearch(Id_t ringbuf_id, RingbufBase_t *query, U32_t query_length);
+U32_t RingpacketSearch(Id_t ringpacket_id, RingpacketBase_t *query, U32_t query_length);
 
-/* TODO: Fix bug in RingbufSearchIndex. Somehow gets stuck in inf. loop. */
-U32_t RingbufSearchIndex(Id_t ringbuf_id, RingbufBase_t *query, U32_t query_length)
+/* TODO: Fix bug in RingpacketSearchIndex. Somehow gets stuck in inf. loop. */
+U32_t RingpacketSearchIndex(Id_t ringpacket_id, RingpacketBase_t *query, U32_t query_length)
 {
-    pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
+    pRingpacket_t ringpacket = IRingpacketFromId(ringpacket_id);
     U32_t data_index = 0;
     U32_t occ_index = 0;
     bool found = false;
     U32_t j;
-    if(ringbuf != NULL) {
-        data_index = ringbuf->read_index;
-        for (U32_t i = 0; i <= ringbuf->dcount; i++) {
+    if(ringpacket != NULL) {
+        data_index = ringpacket->read_index;
+        for (U32_t i = 0; i <= ringpacket->dcount; i++) {
             for (j = 0; j < query_length; j++) {
-                if(ringbuf->buffer[data_index]== query[j]) {
+                if(ringpacket->packet[data_index]== query[j]) {
                     found = true;
                 } else {
                     found = false;
                     break;
                 }
-                data_index = IRingbufBlockNextGet(ringbuf, data_index);
+                data_index = IRingpacketBlockNextGet(ringpacket, data_index);
             }
             i += j;
             if(found == true) {
                 occ_index = data_index;
             }
-            data_index = IRingbufBlockNextGet(ringbuf, data_index);
+            data_index = IRingpacketBlockNextGet(ringpacket, data_index);
         }
     }
 
     return occ_index;
 }
 
-U32_t RingbufDataCountGet(Id_t ringbuf_id)
+U32_t RingpacketDataCountGet(Id_t ringpacket_id)
 {
-    pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
-    if(ringbuf == NULL) {
+    pRingpacket_t ringpacket = IRingpacketFromId(ringpacket_id);
+    if(ringpacket == NULL) {
         return 0;
     }
 
-    return ringbuf->dcount;
+    return ringpacket->dcount;
 }
 
-U32_t RingbufDataSpaceGet(Id_t ringbuf_id)
+U32_t RingpacketDataSpaceGet(Id_t ringpacket_id)
 {
-    pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
-    if(ringbuf == NULL) {
+    pRingpacket_t ringpacket = IRingpacketFromId(ringpacket_id);
+    if(ringpacket == NULL) {
         return 0;
     }
 
-    return (ringbuf->size - ringbuf->dcount);
+    return (ringpacket->size - ringpacket->dcount);
 }
 
 
-static pRingbuf_t IRingbufFromId(Id_t ringbuf_id)
+static pRingpacket_t IRingpacketFromId(Id_t ringpacket_id)
 {
-    ListNode_t *node = ListSearch(&RingbufList, ringbuf_id);
+    ListNode_t *node = ListSearch(&RingpacketList, ringpacket_id);
     if(node != NULL) {
-        return (pRingbuf_t)ListNodeChildGet(node);
+        return (pRingpacket_t)ListNodeChildGet(node);
     }
     return NULL;
 
 }
 
 
-static U32_t IRingbufBlockNextGet(Ringbuf_t *ringbuf, U32_t index)
+static U32_t IRingpacketBlockNextGet(Ringpacket_t *ringpacket, U32_t index)
 {
-    if(index == (ringbuf->size - 1)) {
+    if(index == (ringpacket->size - 1)) {
         return index = 0;
     } else {
         return (index + 1);
@@ -338,47 +338,47 @@ static U32_t IRingbufBlockNextGet(Ringbuf_t *ringbuf, U32_t index)
 }
 
 
-static S8_t IRingbufLockWrite(Ringbuf_t *ringbuf)
+static S8_t IRingpacketLockWrite(Ringpacket_t *ringpacket)
 {
-    if((ringbuf->rw_lock & RINGBUF_LOCK_WRITE_MASK)) {
+    if((ringpacket->rw_lock & RINGpacket_LOCK_WRITE_MASK)) {
         return -1;
     }
 
-    ringbuf->rw_lock |= RINGBUF_LOCK_WRITE_MASK;
+    ringpacket->rw_lock |= RINGpacket_LOCK_WRITE_MASK;
 
     return 0;
 }
 
-static S8_t IRingbufUnlockWrite(Ringbuf_t *ringbuf)
+static S8_t IRingpacketUnlockWrite(Ringpacket_t *ringpacket)
 {
-    if(!(ringbuf->rw_lock & RINGBUF_LOCK_WRITE_MASK)) {
+    if(!(ringpacket->rw_lock & RINGpacket_LOCK_WRITE_MASK)) {
         return -1;
     }
 
-    ringbuf->rw_lock &= ~(RINGBUF_LOCK_WRITE_MASK);
+    ringpacket->rw_lock &= ~(RINGpacket_LOCK_WRITE_MASK);
 
     return 0;
 }
 
 
-static S8_t IRingbufLockRead(Ringbuf_t *ringbuf)
+static S8_t IRingpacketLockRead(Ringpacket_t *ringpacket)
 {
-    if((ringbuf->rw_lock & RINGBUF_LOCK_READ_MASK)) {
+    if((ringpacket->rw_lock & RINGpacket_LOCK_READ_MASK)) {
         return -1;
     }
 
-    ringbuf->rw_lock |= RINGBUF_LOCK_READ_MASK;
+    ringpacket->rw_lock |= RINGpacket_LOCK_READ_MASK;
 
     return 0;
 }
 
-static S8_t IRingbufUnlockRead(Ringbuf_t *ringbuf)
+static S8_t IRingpacketUnlockRead(Ringpacket_t *ringpacket)
 {
-    if(!(ringbuf->rw_lock & RINGBUF_LOCK_READ_MASK)) {
+    if(!(ringpacket->rw_lock & RINGpacket_LOCK_READ_MASK)) {
         return -1;
     }
 
-    ringbuf->rw_lock &= ~(RINGBUF_LOCK_READ_MASK);
+    ringpacket->rw_lock &= ~(RINGpacket_LOCK_READ_MASK);
 
     return 0;
 }

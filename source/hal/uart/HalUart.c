@@ -8,9 +8,9 @@
 
 void HalUartInit(struct HalUartInstance *uart_handle)
 {
-    uart_handle->buffer_write_i = uart_handle->buffer_read_i = (UART_RX_BUFSIZE -1);
-    uart_handle->buffer_data_avail = 0;
-    uart_handle->buffer_status = 0;
+    uart_handle->packet_write_i = uart_handle->packet_read_i = (UART_RX_packetSIZE -1);
+    uart_handle->packet_data_avail = 0;
+    uart_handle->packet_status = 0;
 
     usart_serial_options_t uart_opt;
     uart_opt.baudrate = uart_handle->baud_rate;
@@ -43,7 +43,7 @@ void HalUartSendString(struct HalUartInstance *uart_handle, const char* str)
 
 uint8_t HalUartReceive(struct HalUartInstance *uart_handle, char* target, uint8_t amount)
 {
-    if(uart_handle->buffer_status == 0) {
+    if(uart_handle->packet_status == 0) {
         return 0;    //no data present
     }
 
@@ -51,58 +51,58 @@ uint8_t HalUartReceive(struct HalUartInstance *uart_handle, char* target, uint8_
     do {
 
 
-        if (uart_handle->buffer_read_i == (UART_RX_BUFSIZE-1) && uart_handle->buffer_data_avail) {
-            uart_handle->buffer_read_i  = 0;
+        if (uart_handle->packet_read_i == (UART_RX_packetSIZE-1) && uart_handle->packet_data_avail) {
+            uart_handle->packet_read_i  = 0;
         }
 
-        else if(uart_handle->buffer_data_avail) {
-            uart_handle->buffer_read_i++;
+        else if(uart_handle->packet_data_avail) {
+            uart_handle->packet_read_i++;
         }
 
         else {
-            uart_handle->buffer_status = 0;
+            uart_handle->packet_status = 0;
             break;
         }
 
-        *(target+i) = uart_handle->rx_buffer[uart_handle->buffer_read_i];
-        uart_handle->buffer_data_avail--;
+        *(target+i) = uart_handle->rx_packet[uart_handle->packet_read_i];
+        uart_handle->packet_data_avail--;
         i++;
-    } while(i<(amount) && uart_handle->buffer_data_avail);
+    } while(i<(amount) && uart_handle->packet_data_avail);
 
-    if(!uart_handle->buffer_data_avail) {
-        uart_handle->buffer_status = 0;
+    if(!uart_handle->packet_data_avail) {
+        uart_handle->packet_status = 0;
     } else {
-        uart_handle->buffer_status = 1;
+        uart_handle->packet_status = 1;
     }
 
     return i;
 
 }
 
-uint8_t HalUartBufferDataAmountGet(struct HalUartInstance *uart_handle)
+uint8_t HalUartpacketDataAmountGet(struct HalUartInstance *uart_handle)
 {
-    return uart_handle->buffer_data_avail;
+    return uart_handle->packet_data_avail;
 }
 
-uint8_t HalUartBufferStatusGet(struct HalUartInstance *uart_handle)
+uint8_t HalUartpacketStatusGet(struct HalUartInstance *uart_handle)
 {
-    return uart_handle->buffer_status;
+    return uart_handle->packet_status;
 }
 
-uint8_t HalUartBufferContains(struct HalUartInstance *uart_handle, const char check_char)
+uint8_t HalUartpacketContains(struct HalUartInstance *uart_handle, const char check_char)
 {
-    for (uint8_t i=0; i<uart_handle->buffer_data_avail; i++) {
-        if(uart_handle->rx_buffer[i] == check_char) {
+    for (uint8_t i=0; i<uart_handle->packet_data_avail; i++) {
+        if(uart_handle->rx_packet[i] == check_char) {
             return i;
         }
     }
     return 0;
 }
 
-void HalUartBufferFlush(struct HalUartInstance *uart_handle)
+void HalUartpacketFlush(struct HalUartInstance *uart_handle)
 {
-    uart_handle->buffer_read_i = uart_handle->buffer_write_i = (UART_RX_BUFSIZE -1);
-    uart_handle->buffer_status = 0;
+    uart_handle->packet_read_i = uart_handle->packet_write_i = (UART_RX_packetSIZE -1);
+    uart_handle->packet_status = 0;
 }
 
 
@@ -112,22 +112,22 @@ void HalUartBufferFlush(struct HalUartInstance *uart_handle)
 //ISR(USART0_RX_vect)
 //{
 //
-//if (uart_handle_0->buffer_status != 2) {
+//if (uart_handle_0->packet_status != 2) {
 //
-//if (uart_handle_0->buffer_write_i == (UART_RX_BUFSIZE-1) && (UART_RX_BUFSIZE - uart_handle_0->buffer_data_avail)) {
-//uart_handle_0->buffer_write_i = 0;
-//} else if (UART_RX_BUFSIZE -  uart_handle_0->buffer_data_avail) {
-//uart_handle_0->buffer_write_i++;
+//if (uart_handle_0->packet_write_i == (UART_RX_packetSIZE-1) && (UART_RX_packetSIZE - uart_handle_0->packet_data_avail)) {
+//uart_handle_0->packet_write_i = 0;
+//} else if (UART_RX_packetSIZE -  uart_handle_0->packet_data_avail) {
+//uart_handle_0->packet_write_i++;
 //}
 //
-//uart_handle_0->buffer_status = 1;
+//uart_handle_0->packet_status = 1;
 //
-//if(uart_handle_0->buffer_data_avail == UART_RX_BUFSIZE) {
-//uart_handle_0->buffer_status = 2;
+//if(uart_handle_0->packet_data_avail == UART_RX_packetSIZE) {
+//uart_handle_0->packet_status = 2;
 //}
 //
-//uart_handle_0->rx_buffer[uart_handle_0->buffer_write_i] = UDR0;
-//uart_handle_0->buffer_data_avail++;
+//uart_handle_0->rx_packet[uart_handle_0->packet_write_i] = UDR0;
+//uart_handle_0->packet_data_avail++;
 //}
 //
 //}

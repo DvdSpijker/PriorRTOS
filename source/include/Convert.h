@@ -44,8 +44,8 @@ extern "C" {
 
 #include <Types.h>
 
-#define CONVERT_BUFFER_SIZE_RESULT_TO_STRING    15
-#define CONVERT_BUFFER_SIZE_OSVERSION_TO_STRING 7
+#define CONVERTPACKETSIZE_RESULT_TO_STRING    15
+#define CONVERTPACKETSIZE_OSVERSION_TO_STRING 7
 
 
 /******************************************************************************
@@ -87,7 +87,7 @@ U32_t ConvertMsToUs(U32_t ms);
  * @argin: (OsResult_t) result; Result to convert.
  * @argout: (char *) out_result_str; Array containing the result string. The
  *                                   array should be at least of size
- *                                   CONVERT_BUFFER_SIZE_RESULT_TO_STRING.
+ *                                   CONVERTPACKETSIZE_RESULT_TO_STRING.
  *
  * @rettype:  (U8_t) number of characters (excluding \0).
  * @retval:   0; Operation failed.
@@ -161,7 +161,7 @@ U8_t ConvertCharToDec(char character);
  * @argin: (OsVer_t) os_version; OS Version to convert.
  * @argout: (char *) out_os_version_str; Array containing the OS version string.
  *                                       The array should be at least of size
- *                                       CONVERT_BUFFER_SIZE_OS_VERSION_TO_STRING.
+ *                                       CONVERTPACKETSIZE_OS_VERSION_TO_STRING.
  *
  * @rettype:  (U8_t) number of characters (excluding \0).
  * @retval:   0; Operation failed.
