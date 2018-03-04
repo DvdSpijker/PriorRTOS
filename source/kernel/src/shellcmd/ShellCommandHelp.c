@@ -18,20 +18,20 @@ struct ShellCommand ShellCommandHelp = {
 
 OsResult_t ShellCommandExecuteHelp(char **tokens, U8_t n_tokens)
 {
-    //if(n_tokens == 3) { /* Calling help of a specific command, not general Shell help. */
-        //struct ShellCommand *cmd = ShellCommandFromName(tokens[2]);
-        //if(cmd != NULL) {
-            //if(cmd->callback_help != NULL) {
-                //cmd->callback_help();
-            //}
-        //}
-        //} else {
-        //ShellPut("\n");
-        //ShellPutRaw("---Available Shell Commands:%u---", TotalShellCommands);
-        //for(U8_t i = 0; i < TotalShellCommands; i++) {
-            //ShellPutRawNewline("  -%s", ShellCommandSet[i].cmd);
-        //}
-        //ShellPutRaw("\n--------------------------------");
-    //}
+    if(n_tokens == 3) { /* Calling help of a specific command, not general Shell help. */
+        struct ShellCommand *cmd = ShellCommandFromName(tokens[2]);
+        if(cmd != NULL) {
+            if(cmd->callback_help != NULL) {
+                cmd->callback_help();
+            }
+        }
+        } else {
+        ShellPut("\n");
+        ShellPutRaw("---Available Shell Commands:%u---", TotalShellCommands);
+        for(U8_t i = 0; i < TotalShellCommands; i++) {
+            ShellPutRawNewline("  -%s", ShellCommandSet[i].cmd);
+        }
+        ShellPutRaw("\n--------------------------------");
+    }
     return OS_RES_OK;
 }
