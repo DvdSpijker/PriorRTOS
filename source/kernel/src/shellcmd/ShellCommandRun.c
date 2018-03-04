@@ -1,9 +1,7 @@
 #include <Shell.h>
 #include <PriorRTOS.h>
+#include <ShellCommandRun.h>
 #include <string.h>
-
-OsResult_t ShellCommandExecuteRun(char **tokens, U8_t n_tokens);
-OsResult_t ShellCommandHelpRun(void);
 
 struct ShellCommand ShellCommandRun = {
     .cmd = "run",
