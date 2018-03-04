@@ -133,8 +133,8 @@ typedef enum {
 #define OS_ID_MASK_TYPE         0xF000
 #define OS_ID_MASK_UID          0x0FFF
 
-#define OS_TIMEOUT_INFINITE  0xFFFFFFFF
-
+#define OS_TIMEOUT_INFINITE	0xFFFFFFFF /* Wait or Poll forever. */
+#define OS_TIMEOUT_NONE		0x00000000 /* Do not Wait or Poll. */
 
 typedef enum {
     ID_TYPE_POOL        = 0x0000,
