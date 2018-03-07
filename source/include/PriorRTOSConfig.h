@@ -250,11 +250,6 @@
 /*************************/
 
 /******************************************/
-
-/* Peripheral Module Settings */
-#define PRTOS_CONFIG_ENABLE_PERPHERALS                            1
-/*************************/
-
 #define PRTOS_CONFIG_ENABLE_WATCHDOG							  0
 
 /************ Utility Settings ************/

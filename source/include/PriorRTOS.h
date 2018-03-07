@@ -47,7 +47,6 @@ extern "C" {
 
 #include <PriorRTOSConfig.h>
 #include <Types.h>
-#include <Port.h>
 
 /*Core API includes*/
 #include <Memory.h>
@@ -90,13 +89,6 @@ extern "C" {
 #if PRTOS_CONFIG_ENABLE_SEMAPHORES==1
 #include <Semaphore.h>
 #endif
-
-#if PRTOS_CONFIG_ENABLE_PERPHERALS==1
-#include <Peripheral.h>
-#endif
-
-
-
 
 /******************************************************************************
  * @func: OsResult_t OsInit(OsResult_t *result_optional)

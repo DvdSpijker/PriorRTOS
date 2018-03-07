@@ -48,6 +48,7 @@
 #include <List.h>
 #include <Event.h>
 
+#include <PortCore.h>
 #include <CoreDef.h>
 #include <TaskDef.h>
 #include <MemoryDef.h>
@@ -97,10 +98,6 @@ LOG_FILE_NAME("Core.c");
 
 #if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
 #include <RingbufferDef.h>
-#endif
-
-#if PRTOS_CONFIG_ENABLE_PERPHERALS==1
-#include <Peripheral.h>
 #endif
 
 #if PRTOS_CONFIG_ENABLE_SHELL==1

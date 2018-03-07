@@ -194,8 +194,6 @@ OsResult_t EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t ti
     LIST_NODE_ACCESS_END();
 #endif
 
-
-
     return result;
 }
 
