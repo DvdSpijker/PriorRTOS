@@ -7,6 +7,7 @@
 
 #include <Logger.h>
 #include <LoggerDef.h>
+#include <PortLogger.h>
 #include <stdio.h>
 
 #if PRTOS_CONFIG_USE_NEWLIB==1
@@ -25,16 +26,11 @@ extern OsResult_t OsRunTimeGet(U32_t* target);
 
 OsResult_t LogInit(void)
 {
-    LoggerUartHandle.baud_rate = PRTOS_CONFIG_LOGGER_UART_BAUD_RATE;
-    LoggerUartHandle.n_stop_bits = HAL_UART_STOP_BITS_2;
-    LoggerUartHandle.rx_callback = NULL;
-    LoggerUartHandle.channel = UART_CHANNEL_LOGGER;
-    HalUartInit(&LoggerUartHandle);
-
+	PortDebugUartInit(PRTOS_CONFIG_LOGGER_UART_BAUD_RATE);
+	
 #if PRTOS_CONFIG_USE_NEWLIB==0
     stdout = &mystdout;
 #endif
-
 
     LOG_INFO_APPEND("\nLOGGING FORMAT\n");
     LOG_INFO_APPEND("[h:s:ms] [tag] [source:line nr] : message");
@@ -117,7 +113,7 @@ void KLogEvent(pEvent_t event)
 #if PRTOS_CONFIG_USE_NEWLIB==0
 static int ILogPutChar(char c, FILE *stream)
 {
-    HalUartSendChar(&LoggerUartHandle, c);
+    PortDebugUartWriteChar(c);
     return 1;
 }
 
@@ -135,9 +131,9 @@ int _write(int file, char *ptr, int len)
     if (file == STDOUT_FILENO || file == STDERR_FILENO) {
         for (i = 0; i < len; i++) {
             if (ptr[i] == '\n') {
-                HalUartSendChar(&LoggerUartHandle, cr);
+				PortDebugUartWriteChar(cr);
             }
-            HalUartSendChar(&LoggerUartHandle, ptr[i]);
+            PortDebugUartWriteChar(ptr[i]);
         }
         return i;
     }

@@ -16,7 +16,7 @@ extern "C" {
 #define HAL_UART_STOP_BITS_1 0
 #define HAL_UART_STOP_BITS_2 1
 
-#define UART_CHANNEL_LOGGER &AVR32_USART1
+#define HAL_UART_CHANNEL_LOGGER &AVR32_USART1
 
 typedef void (*UartInstanceCallback_t)(void);
 

@@ -48,10 +48,6 @@ extern "C" {
 
 #include <PriorRTOSConfig.h>
 #include <Types.h>
-#include <HalUart.h>
-
-struct HalUartInstance LoggerUartHandle;
-
 
 #define LOG_LINE_NEW    0x00
 #define LOG_LINE_APPEND 0x01
