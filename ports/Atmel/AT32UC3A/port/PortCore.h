@@ -1,21 +1,7 @@
-#ifndef PRIOR_PORT_H
-#define PRIOR_PORT_H
+#ifndef PORT_CORE_H
+#define PORT_CORE_H
 
-#include <PriorRTOS_config.h>
 #include <stdint.h>
-
-#if PRTOS_CONFIG_ENABLE_WATCHDOG==1
-#include <PortWdt.h>
-#endif
-
-#if PRTOS_CONFIG_ENABLE_LOGGING==1
-#include <PortLog.h>
-#endif
-
-#if PRTOS_CONFIG_ENABLE_SHELL==1
-#include <PortShell.h>
-#endif
-
 
 typedef uint8_t IrqPriority_t;
 
@@ -55,11 +41,6 @@ void PortOsIntFlagClear(void);
 void PortOsTickInit(IrqPriority_t os_tick_irq_prio);
 
 extern void OsTick(void);
-
-
-
-
-
 
 
 #endif

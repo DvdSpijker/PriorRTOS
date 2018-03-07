@@ -5,7 +5,7 @@
  *  Author: Dorus
  */ 
 
-#include <PortWdt.h>
+#include "PortWdt.h"
 
 //void PortWdtInit(U8_t wdt_mode, IrqPriority_t wdt_irq_prio)
 //{

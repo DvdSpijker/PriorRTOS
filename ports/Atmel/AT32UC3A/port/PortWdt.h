@@ -9,7 +9,6 @@
 #ifndef PORT_WDT_H_
 #define PORT_WDT_H_
 
-
 #define PORT_WDT_EXPIRE_15_MS  0
 #define PORT_WDT_EXPIRE_30_MS  1
 #define PORT_WDT_EXPIRE_60_MS  2
