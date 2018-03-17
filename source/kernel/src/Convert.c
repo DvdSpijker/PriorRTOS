@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 U8_t ConvertResultToString(OsResult_t result, char *out_result_str)
 {
@@ -182,7 +183,10 @@ U8_t ConvertIntToString(U32_t integer, char *out_int_str)
     return i;
 }
 
+
 Id_t ConvertHexStringToId(char *hex_id_str)
 {
-    return OS_ID_INVALID;
+	Id_t id = OS_ID_INVALID;
+	sscanf(hex_id_str, "%08x", &id);
+    return id;
 }
