@@ -7,6 +7,7 @@
 
 #include "ShellCommandHelp.h"
 
+
 struct ShellCommand ShellCommandHelp = {
     .cmd = "help",
     .callback_init = NULL,
@@ -26,12 +27,12 @@ OsResult_t ShellCommandExecuteHelp(char **tokens, U8_t n_tokens)
             }
         }
         } else {
-        ShellPut("\n");
-        ShellPutRaw("---Available Shell Commands:%u---", TotalShellCommands);
-        for(U8_t i = 0; i < TotalShellCommands; i++) {
-            ShellPutRawNewline("  -%s", ShellCommandSet[i].cmd);
-        }
-        ShellPutRaw("\n--------------------------------");
+//        ShellPut("\n");
+//        ShellPutRaw("---Available Shell Commands:%u---", TotalShellCommands);
+//        for(U8_t i = 0; i < TotalShellCommands; i++) {
+//            ShellPutRawNewline("- %s\n", ShellCommandSet[i].cmd);
+//        }
+//        ShellPutRaw("\n--------------------------------");
     }
     return OS_RES_OK;
 }
