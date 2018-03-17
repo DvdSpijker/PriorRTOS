@@ -180,7 +180,7 @@ Id_t MemPoolCreate(U32_t pool_size)
 #endif
     } else {
         LOG_ERROR_NEWLINE("Not enough memory available (%u bytes) to create a new pool (%u bytes).", mem_found, mem_req);
-        pool_id = OS_ID_INVALID;    //No memory available for the requested pool size
+        pool_id = (U16_t)OS_ID_INVALID;    //No memory available for the requested pool size
     }
 
     OsCritSectEnd();
@@ -457,7 +457,7 @@ OsResult_t MemFree(void **ptr)
     }
 
     U8_t *tmp_ptr = (U8_t*)(*ptr);
-    Id_t pool_id = IPoolIdFromPointer(tmp_ptr);
+    Id_t pool_id = IPoolIdFromPointer((MemBase_t *)tmp_ptr);
 
     if(pool_id == OS_ID_INVALID) { /* Pool not found. */
         return OS_RES_ID_INVALID;
@@ -522,7 +522,7 @@ U32_t MemAllocSizeGet(void *ptr)
 
 static U16_t IPoolIdFromIndex(U32_t index)
 {
-    U16_t id = OS_ID_INVALID;
+    U16_t id = (U16_t)OS_ID_INVALID;
     for (U16_t i = 0; i < (TotalHeapPools); i++) {
         if(index >= PoolTable[i].start_index && index <= PoolTable[i].end_index && PoolTable[i].pool_size > 0) {
             id = i;
@@ -534,7 +534,7 @@ static U16_t IPoolIdFromIndex(U32_t index)
 
 static U16_t IPoolIdFromPointer(MemBase_t *ptr)
 {
-    U16_t id = OS_ID_INVALID;
+    U16_t id = (U16_t)OS_ID_INVALID;
     MemBase_t *start_addr = NULL;
     MemBase_t *end_addr = NULL;
     for (U16_t i = 0; i < (TotalHeapPools); i++) {
