@@ -171,9 +171,6 @@ U8_t ConvertOsVersionToString(OsVer_t os_version, char *out_os_version_str);
 
 U8_t ConvertIdToString(Id_t id, char *out_id_str);
 
-Id_t ConvertStringToId(char *id_str);
-
-
 Id_t ConvertHexStringToId(char *hex_id_str);
 
 
