@@ -38,6 +38,7 @@
  *  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **********************************************************************************************************************************************/
 
+#include <stdint.h>
 
 /************ General Settings ************/
 
@@ -49,7 +50,7 @@
  * @dtype:    (U32_t)
  * @unit:     Hertz.
  ******************************************************************************/
-#define PRTOS_CONFIG_F_CPU_HZ                                     (U32_t)48000000
+#define PRTOS_CONFIG_F_CPU_HZ                                     (uint32_t)48000000
 
 
 /******************************************************************************
@@ -74,8 +75,9 @@
  * @dtype:    (U16_t)
  * @unit:     Hertz.
  ******************************************************************************/
-#define PRTOS_CONFIG_F_OS_HZ                                      (U16_t)2000
+#define PRTOS_CONFIG_F_OS_HZ                                        (uint16_t)2000
 
+#define PRTOS_CONFIG_IRQ_PRIORITY_TYPE                                  uint32_t                   
 
 /******************************************************************************
  * @macro: PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY
@@ -84,7 +86,7 @@
  *
  * @dtype:    (IrqPriority_t)
  ******************************************************************************/
-#define PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY                         (IrqPriority_t)7
+#define PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY                                   7
 
 
 /******************************************************************************
@@ -124,7 +126,7 @@
  *
  * @data type: (U8_t) Unsigned 8 bit integer
  ******************************/
-#define PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS                        (U8_t)2
+#define PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS                        (uint8_t)2
 
 
 /***** List settings. *****/
@@ -153,14 +155,14 @@
 /* Size (in bytes) of the statically allocated OS Heap. The OS Heap is split
  * into a part used by the kernel, and a part that can be used by the user.
  * The size of the user heap can be configured; PRTOS_CONFIG_USER_HEAP_SIZE. */
-#define PRTOS_CONFIG_OS_HEAP_SIZE_BYTES                           2304
+#define PRTOS_CONFIG_OS_HEAP_SIZE_BYTES                           2560
 
 /* Size (in bytes) of the User accessible part of the OS Heap. */
-#define PRTOS_CONFIG_USER_HEAP_SIZE_BYTES                         0
+#define PRTOS_CONFIG_USER_HEAP_SIZE_BYTES                         512
 
 /* Number of pools available to the user to allocate blocks of memory.
  * Pools are statically allocated. */
-#define PRTOS_CONFIG_N_USER_POOLS                                 0
+#define PRTOS_CONFIG_N_USER_POOLS                                 2
 
 /* Enables protection of each pool by means of padding and a checksum. */
 #define PRTOS_CONFIG_ENABLE_MEMORY_PROTECTION                     0
@@ -195,7 +197,7 @@
  *
  * Unit: ms
  ******************************/
-#define PRTOS_CONFIG_REAL_TIME_TASK_DEADLINE_DEFAULT_MS           (U8_t)15
+#define PRTOS_CONFIG_REAL_TIME_TASK_DEADLINE_DEFAULT_MS           (uint8_t)15
 
 //#define PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
 //#define PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
@@ -209,7 +211,7 @@
 * A higher prescaler results in software timers with a lower resolution e.g.
 * Prescaler 5 => resolution: 5 * OS tick period. On the other hand it also reduces
 * CPU load. Prescaler 2 results in max resolution and CPU load. */
-#define PRTOS_CONFIG_TIMER_INTERVAL_RESOLUTION_MS                 (U8_t)10
+#define PRTOS_CONFIG_TIMER_INTERVAL_RESOLUTION_MS                 (uint8_t)10
 
 #define PRTOS_CONFIG_USE_EVENT_TIMER_OVERFLOW
 #define PRTOS_CONFIG_USE_EVENT_TIMER_START_STOP_RESET
@@ -270,7 +272,7 @@
 #define PRTOS_CONFIG_ENABLE_LOG_ERROR                             0
 #define PRTOS_CONFIG_ENABLE_LOG_DEBUG                             0
 
-#define PRTOS_CONFIG_LOGGER_UART_BAUD_RATE                        (U32_t)115200
+#define PRTOS_CONFIG_LOGGER_UART_BAUD_RATE                        (uint32_t)115200
 
 /* #define PRTOS_CONFIG_USE_LOGGER_MODE_FILE */ /* !!!NOT YET AVAILABLE IN V 0.4.1!!! */
 #define PRTOS_CONFIG_USE_LOGGER_MODE_UART
@@ -283,9 +285,6 @@
 #define PRTOS_CONFIG_ENABLE_TASKTRACE                             0
 
 /******************************************/
-
-
-
 
 
 #endif
