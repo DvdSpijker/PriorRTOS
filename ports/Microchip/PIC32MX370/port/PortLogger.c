@@ -6,33 +6,30 @@
  */ 
 
 #include "PortLogger.h"
-#include <HalUart.h>
 #include <stdlib.h>
 
-struct  HalUartInstance DebugUartInstance;
+#include "uart.h"
 
 int PortDebugUartInit(uint32_t baud_rate)
 {
-	DebugUartInstance.baud_rate = baud_rate;
-	DebugUartInstance.channel = HAL_UART_CHANNEL_LOGGER;
-	DebugUartInstance.n_stop_bits = HAL_UART_STOP_BITS_2;
-	DebugUartInstance.rx_callback = NULL;
-	HalUartInit(&DebugUartInstance);
+    UART_Init(baud_rate);
 }
 
 int PortDebugUartWriteString(char *str)
 {
-	HalUartSendString(&DebugUartInstance, str);
+	UART_PutString(str);
 }
 
-int PortDebugUartWriteChar(char *c)
+int PortDebugUartWriteChar(char c)
 {
-	HalUartSendChar(&DebugUartInstance, c);
+	UART_PutChar(c);
 }
 
 char PortDebugUartReadChar(void)
 {
 	char c = '\0';
-	HalUartReceive(&HalUartInstance, &c, 1);
+	if(UART_AvaliableRx()) {
+        UART_GetString(&c, 1);
+    }
 	return c;
 }

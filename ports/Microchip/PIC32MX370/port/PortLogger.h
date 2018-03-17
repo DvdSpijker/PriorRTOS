@@ -17,7 +17,7 @@ int PortDebugUartInit(uint32_t baud_rate);
 
 int PortDebugUartWriteString(char *str);
 
-int PortDebugUartWriteChar(char *c);
+int PortDebugUartWriteChar(char c);
 
 char PortDebugUartReadChar();
 
