@@ -13,5 +13,9 @@ OsResult_t KSysCallPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_
 }
 OsResult_t KSysCallWait(Id_t object_id, U32_t event, U32_t timeout_ms)
 {
+#ifdef PRTOS_CONFIG_USE_SCHEDULER_PREEM
 	return TaskWait(object_id, event, timeout_ms);	
+#else
+    return OS_RES_ERROR;
+#endif
 }
