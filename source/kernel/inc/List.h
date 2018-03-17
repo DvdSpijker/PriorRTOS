@@ -108,7 +108,7 @@ typedef struct LinkedList_t {
     /* ID related fields. */
     IdType_t                id_type;        /* ID Type of the list. */
     Id_t                    free_id;        /* Free ID. Calculated at creation of the previous node. */
-    bool                    id_rollover; 
+    bool                    id_rollover;	/* Incremental IDs have reached the limit. */
 } LinkedList_t;
 
 struct ListIterator {
@@ -340,11 +340,9 @@ if(cond) break;                                 \
 #define LIST_ITERATOR_GOTO_NEXT(p_it)   \
 goto p_it##_next;                       \
 
-#define LIST_ITERATOR_GOTO_NEXT_ON_CONDITION(p_it, cond)    \
-if(cond) goto p_it##_next;                                  \
+#define LIST_ITERATOR_GOTO_NEXT_ON_CONDITION(p_it, cond)  
 
 #define LIST_ITERATOR_END(p_it)     \
-p_it##_next:                        \
 if(ListIteratorNext(p_it) == NULL)  \
 break;                              \
 } while (!ListIteratorEnd(p_it)); } \
