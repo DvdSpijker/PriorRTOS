@@ -59,7 +59,7 @@ typedef enum {
 #define JOB_FLAG_COPY           0x04    /* The job is copied upon to the worker queue i.e. WorkerJob struct can be deleted after adding it. */
 #define JOB_FLAG_NO_RETURN      0x08    /* The job has no return value and will automatically removed after processing. */
 
-typedef struct WorkerJobPrivate_t;
+struct WorkerJobPrivate_t;
 
 struct WorkerJob {
     WorkerJobFunction   entry;
@@ -71,7 +71,11 @@ struct WorkerJob {
     U32_t               v_arg_ret;
     /*****************************/
 
-    WorkerJobPrivate_t   *private;
+    struct WorkerJobPrivate_t   *private;
+};
+
+struct WorkerJobPrivate_t {
+    U8_t    temp;
 };
 
 /* Worker Task prototype. Must be used as the task
