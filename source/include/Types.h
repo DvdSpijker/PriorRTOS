@@ -45,8 +45,6 @@ extern "C" {
 #include <stdint.h>
 #include <PriorRTOSConfig.h>
 
-#define OS_ARG_UNUSED(arg) ((void)(arg))
-
 typedef uint8_t     U8_t;
 typedef int8_t      S8_t;
 typedef uint16_t    U16_t;
@@ -57,19 +55,27 @@ typedef uint64_t    U64_t;
 typedef int64_t     S64_t;
 
 #ifdef PRTOS_CONFIG_MEM_WIDTH_8_BITS
+#if (defined(PRTOS_CONFIG_MEM_WIDTH_16_BITS) || defined(PRTOS_CONFIG_MEM_WIDTH_32_BITS))
+#error "Ambiguous memory width; multiple PRTOS_CONFIG_MEM_WIDTH_* definitions found."
+#endif
 typedef     U8_t   MemBase_t;
 #endif
 #ifdef PRTOS_CONFIG_MEM_WIDTH_16_BITS
+#if (defined(PRTOS_CONFIG_MEM_WIDTH_8_BITS) || defined(PRTOS_CONFIG_MEM_WIDTH_32_BITS))
+#error "Ambiguous memory width; multiple PRTOS_CONFIG_MEM_WIDTH_* definitions found."
+#endif
 typedef     U16_t   MemBase_t;
 #endif
 #ifdef PRTOS_CONFIG_MEM_WIDTH_32_BITS
+#if (defined(PRTOS_CONFIG_MEM_WIDTH_8_BITS) || defined(PRTOS_CONFIG_MEM_WIDTH_16_BITS))
+#error "Ambiguous memory width; multiple PRTOS_CONFIG_MEM_WIDTH_* definitions found."
+#endif
 typedef     U32_t   MemBase_t;
 #endif
 
-typedef     U16_t               Id_t;
 typedef     U8_t                Prio_t;
 typedef     U16_t               OsVer_t;
-
+typedef     PRTOS_CONFIG_IRQ_PRIORITY_TYPE  IrqPriority_t;
 
 typedef enum {
     /* The system call was successful. */
@@ -128,24 +134,28 @@ typedef enum {
 
 } OsResult_t;
 
-
-#define OS_ID_INVALID           0xFFFF //Invalid ID
-#define OS_ID_MASK_TYPE         0xF000
-#define OS_ID_MASK_UID          0x0FFF
+/* Can be used to suppress compiler warnings regarding unused (task) arguments. */
+#define OS_ARG_UNUSED(arg) ((void)(arg))
 
 #define OS_TIMEOUT_INFINITE	0xFFFFFFFF /* Wait or Poll forever. */
 #define OS_TIMEOUT_NONE		0x00000000 /* Do not Wait or Poll. */
 
+/* Any OS object ID consists of 2 parts; an ID type and a unique ID. */
+typedef U32_t Id_t;
+
 typedef enum {
-    ID_TYPE_POOL        = 0x0000,
-    ID_TYPE_TASK        = 0x1000,
-    ID_TYPE_TIMER       = 0x2000,
-    ID_TYPE_EVENTGROUP  = 0x3000,
-    ID_TYPE_SEMAPHORE   = 0x4000,
-    ID_TYPE_MAILBOX     = 0x5000,
-    ID_TYPE_RINGBUF     = 0x6000,
+    ID_TYPE_POOL        = 0x00000000,
+    ID_TYPE_TASK        = 0x01000000,
+    ID_TYPE_TIMER       = 0x02000000,
+    ID_TYPE_EVENTGROUP  = 0x03000000,
+    ID_TYPE_SEMAPHORE   = 0x04000000,
+    ID_TYPE_MAILBOX     = 0x05000000,
+    ID_TYPE_RINGBUF     = 0x06000000,
 } IdType_t;
 
+#define OS_ID_INVALID           0xFFFFFFFF /* Invalid ID definition. */
+#define OS_ID_MASK_TYPE         0xFF000000 /* ID type mask. */
+#define OS_ID_MASK_UID          0x00FFFFFF /* Unique ID (UID) mask. */
 
 
 /* Task type definition */
