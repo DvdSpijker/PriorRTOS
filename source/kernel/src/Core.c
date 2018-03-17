@@ -63,10 +63,9 @@
 #include <stdio.h>
 #include <math.h>
 
-
-//#define KERNEL_TIMERS   2 /* Number of Kernel timers. */
-
+#define N_KERNEL_TIMERS  0	/* Number of Kernel timers. */
 #define KERNEL_HEAP_SIZE 20
+#define KERNEL_HEAP_MAGICWORD (MemBase_t)0xAB
 #define OBJECT_HEAP_SIZE (PRTOS_CONFIG_OS_HEAP_SIZE_BYTES - (PRTOS_CONFIG_USER_HEAP_SIZE_BYTES + KERNEL_HEAP_SIZE))
 
 LOG_FILE_NAME("Core.c");
@@ -107,8 +106,6 @@ OsResult_t KShellInit(void);
 
 
 /****************************/
-
-#define KERNEL_HEAP_MAGICWORD (MemBase_t)0xAB
 
 static void ICoreTickCoop(void);
 static void ICoreTickPreem(void);
@@ -167,7 +164,9 @@ typedef struct Reg_t {
     volatile U16_t      sreg;
     U8_t                os_running;
 
-    //Id_t                OS_TimerTable[KERNEL_TIMERS];
+#if N_KERNEL_TIMERS>0
+    Id_t				timer_table[N_KERNEL_TIMERS];
+#endif
 
     volatile U32_t      micros;
     volatile U32_t      hours;
@@ -327,13 +326,6 @@ OsResult_t OsInit(OsResult_t *status_optional)
     KSemaphoreInit();
     LOG_INFO_APPEND("ok");
 #endif
-
-
-#if PRTOS_CONFIG_ENABLE_PERPHERALS==1
-    LOG_INFO_NEWLINE("Initializing module:Peripheral...");
-    LOG_INFO_APPEND("ok");
-#endif
-
 
     LOG_INFO_NEWLINE("Creating Kernel tasks and services...");
 
@@ -557,7 +549,7 @@ U32_t OsEventsTotalGet(void)
 
 bool OsTaskExists(Id_t task_id)
 {
-    if((task_id & OS_ID_MASK_TYPE) != (U16_t)ID_TYPE_TASK) {
+    if((task_id & OS_ID_MASK_TYPE) != (Id_t)ID_TYPE_TASK) {
         return false;
     }
     pTcb_t tcb = KTcbFromId(task_id);
@@ -580,7 +572,6 @@ Id_t OsCurrentTaskGet(void)
 
 void OsCritSectBegin(void)
 {
-    HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_1_PIN, PIN_STATE_HIGH);
     KERNEL_REG_LOCK() {
         if(KernelReg.crit_sect_nest_counter < 0xFF) {
             KernelReg.crit_sect_nest_counter++;
@@ -598,7 +589,6 @@ void OsCritSectBegin(void)
 
 void OsCritSectEnd()
 {
-    HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_1_PIN, PIN_STATE_LOW);
     KERNEL_REG_LOCK() {
         if(KernelReg.crit_sect_nest_counter > 0) {
             KernelReg.crit_sect_nest_counter--;
@@ -737,8 +727,6 @@ static void ICoreTickCoop(void)
     PortGlobalIntDisable();//Disable OS timer interrupt to make sure OS ticks don't nest
     KCoreKernelModeEnter();
 
-    HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_0_PIN, PIN_STATE_TOGGLE);
-
     if(!KCoreFlagGet(CORE_FLAG_TICK)) {
         KCoreFlagSet(CORE_FLAG_TICK);
 
@@ -763,9 +751,7 @@ static void ICoreTickCoop(void)
 
         /* Scheduler will only run if all needed lists and the scheduler itself are unlocked. */
         if(!KernelReg.scheduler_lock && !ListIsLocked(&TcbWaitList) && !ListIsLocked(&TcbList) && !ListIsLocked(&EventList)) {
-            HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_2_PIN, PIN_STATE_HIGH);
             ICoreSchedulerCycle();
-            HalGpioPinStateSet(NULL, CONF_BOARD_GPIO_2_PIN, PIN_STATE_LOW);
         }
 
         if(ListSizeGet(&ExecutionQueue) > 0) {
