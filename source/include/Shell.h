@@ -9,7 +9,6 @@ extern "C" {
 
 Id_t ShellRxRingbuf;
 Id_t ShellTxRingbuf;
-Id_t TidShellExecute;
 
 #define SHELL_MAX_COMMAND_LENGTH 10 /* Maximum length of the command. */
 

@@ -7,6 +7,8 @@
 #include <Memory.h>
 
 #include "shellcmd/ShellCommandHelp.h"
+#include "shellcmd/ShellCommandRun.h"
+//#include "shellcmd/ShellCommandHelp.h"
 
 #include <string.h>
 #include <stdio.h>
@@ -26,9 +28,7 @@ const char SplitChars[SHELL_SPLIT_CHAR_COUNT] = {'-','='};
 const char IgnoreChars[SHELL_IGNORE_CHAR_COUNT] = {' ', '%'};
 const char LineTerminatorChar = '\n';
 
-char *Line;
-char **Tokens;
-U8_t TokenCount;
+//char TokenBuffer[SHELL_MAX_TOKEN_COUNT][SHELL_MAX_TOKEN_LENGTH];
 
 Id_t ShellPool = OS_ID_INVALID;
 struct ShellCommand ShellCommandSet[SHELL_MAX_COMMAND_COUNT];
@@ -43,10 +43,10 @@ static U8_t IShellSplitLine(char *line, char **args);
 S8_t IShellCommandTokensContainArgument(char **tokens, U8_t n_tokens, const char *argument);
 
 /* Shell Tasks. */
-void OsTaskShellReadParse(const void *p_arg, U32_t v_arg);
+void TaskShellReadParse(const void *p_arg, U32_t v_arg);
 Id_t TidShellReadParse;
 
-void OsTaskShellExecute(const void *p_arg, U32_t v_arg);
+void TaskShellExecute(const void *p_arg, U32_t v_arg);
 
 
 /* Built-in shell commands. */
@@ -62,53 +62,30 @@ struct ShellCommand ShellCommandShellConfig = {
 };
 
 
-OsResult_t ShellCommmandHelpLock(void);
-OsResult_t ShellCommandExecuteLock(char **tokens, U8_t n_tokens);
-struct ShellCommand ShellCommandLock = {
-    .cmd = "lock",
-    .callback_init = NULL,
-    .callback_help = ShellCommmandHelpLock,
-    .callback_execute = ShellCommandExecuteLock,
-    .min_tokens = 3,
-    .max_tokens = 3
-};
-
-
 RingbufBase_t ShellRxBuffer[SHELL_MAX_LINE_LENGTH];
 
 OsResult_t KShellInit(void)
 {
     OsResult_t result = OS_RES_OK;
-    TokenCount = 0;
 
-    ShellRxRingbuf = RingbufCreate(ShellRxBuffer, SHELL_MAX_LINE_LENGTH);
-    ShellTxRingbuf = RingbufCreate(NULL, 200);
-    // ShellPool = MemPoolCreate(200);
+    ShellRxRingbuf = RingbufCreate(ShellRxBuffer, SHELL_MAX_LINE_LENGTH * 2);
+    ShellTxRingbuf = RingbufCreate(NULL, 50);
+    ShellPool = MemPoolCreate(SHELL_MAX_TOKEN_COUNT * SHELL_MAX_TOKEN_COUNT * 2);
     if((ShellRxRingbuf == OS_ID_INVALID) || (ShellTxRingbuf == OS_ID_INVALID)) {
         RingbufDelete(&ShellRxRingbuf);
         RingbufDelete(&ShellTxRingbuf);
         result = OS_RES_ERROR;
     }
 
-    Line = (char *)malloc(sizeof(char) * SHELL_MAX_LINE_LENGTH);
-
-    Tokens = malloc(sizeof (*Tokens) * SHELL_MAX_TOKEN_COUNT);
-    if (Tokens != NULL) {
-        for (U8_t i = 0; i < SHELL_MAX_TOKEN_COUNT; i++) {
-            Tokens[i] = malloc(sizeof(*Tokens[i]) * SHELL_MAX_TOKEN_LENGTH);
-        }
-    }
-
-
     if(result == OS_RES_OK) {
         TotalShellCommands = 0;
         ShellCommandRegister(&ShellCommandShellConfig);
         ShellCommandRegister(&ShellCommandHelp);
-        // ShellCommandRegister(&ShellCommandRun);
+        ShellCommandRegister(&ShellCommandRun);
 
         if(result == OS_RES_OK) {
-            TidShellReadParse = KernelTaskCreate(OsTaskShellReadParse, 3, TASK_PARAM_NONE, 0, NULL, 0);
-            if(TidShellExecute == OS_ID_INVALID) {
+            TidShellReadParse = KernelTaskCreate(TaskShellReadParse, 3, TASK_PARAM_NONE, 0, NULL, 0);
+            if(TidShellReadParse == OS_ID_INVALID) {
                 result = OS_RES_ERROR;
             }
             if(result == OS_RES_OK) {
@@ -293,7 +270,7 @@ struct ShellCommand *ShellCommandFromName(char *name)
 
 /* Shell Tasks. */
 
-void OsTaskShellReadParse(const void* p_arg, U32_t v_arg)
+void TaskShellReadParse(const void* p_arg, U32_t v_arg)
 {
     OS_ARG_UNUSED(p_arg);
     OS_ARG_UNUSED(v_arg);
@@ -302,6 +279,8 @@ void OsTaskShellReadParse(const void* p_arg, U32_t v_arg)
     static Id_t evt_rx_data_available = OS_ID_INVALID;
 
     U32_t read_amount = 1;
+	
+	static char LineBuffer[SHELL_MAX_LINE_LENGTH] = {0};
 
     TASK_INIT_BEGIN() {
 
@@ -310,52 +289,63 @@ void OsTaskShellReadParse(const void* p_arg, U32_t v_arg)
 
     if(TaskPoll(ShellRxRingbuf, RINGBUF_EVENT_DATA_IN, 0, true) == OS_RES_EVENT) {
         read_amount = RingbufDataCountGet(ShellRxRingbuf);
-        RingbufRead(ShellRxRingbuf, (RingbufBase_t *)&Line[line_write_index], &read_amount, OS_TIMEOUT_INFINITE);
+        RingbufRead(ShellRxRingbuf, (RingbufBase_t *)&LineBuffer[line_write_index], &read_amount, OS_TIMEOUT_INFINITE);
         if(read_amount) {
             line_write_index+=(read_amount-1);
-            if(Line[line_write_index] == LineTerminatorChar) {
-                Line[line_write_index] = '\0';
-                TokenCount = IShellSplitLine(Line, Tokens);
-                TidShellExecute = TaskCreate(OsTaskShellExecute, TASK_CAT_LOW, 5, TASK_PARAM_NONE, 0, NULL, 0);
-                TaskResumeWithVarg(TidShellExecute, TokenCount);
+            if(LineBuffer[line_write_index] == LineTerminatorChar) {
+                LineBuffer[line_write_index] = '\0';
+				char **tokens = (char **)MemAlloc(ShellPool, SHELL_MAX_TOKEN_COUNT * SHELL_MAX_TOKEN_LENGTH);
+				if(tokens == NULL) {
+					ShellPut("No resources available to execute command.");
+				} else {
+					U8_t n_tokens = IShellSplitLine(LineBuffer, tokens);
+					if(TaskCreate(TaskShellExecute, TASK_CAT_LOW, 5, TASK_PARAM_START, 0, (void *)tokens, n_tokens) == OS_ID_INVALID) {
+						ShellPut("Failed to create task to execute command.");	
+					}
+				}
+				memset(LineBuffer, 0, SHELL_MAX_LINE_LENGTH);
             } else {
                 if(line_write_index < (SHELL_MAX_COMMAND_LENGTH - 1)) {
                     line_write_index+=read_amount;
-                }
+                } else {
+					ShellPut("Invalid command.");
+					memset(LineBuffer, 0, SHELL_MAX_LINE_LENGTH);
+				}
             }
         }
     }
 
 }
 
-void OsTaskShellExecute(const void* p_arg, U32_t v_arg)
+void TaskShellExecute(const void* p_arg, U32_t v_arg)
 {
     OS_ARG_UNUSED(p_arg);
     U8_t n_tokens = v_arg;
-
-    for(U8_t i = 0; i < TotalShellCommands; i++) {
-        if(strcmp(Tokens[0], ShellCommandSet[i].cmd) == 0) {
-            if((n_tokens <= ShellCommandSet[i].max_tokens) && (n_tokens >= ShellCommandSet[i].min_tokens)) {
+	char **tokens = (char **)p_arg;
+	Id_t tid = TaskIdGet();
+	
+    for(U8_t i = 0; i < TotalShellCommands; i++) { /* Loop through all available shell commands. */
+        if(strcmp(tokens[0], ShellCommandSet[i].cmd) == 0) { /* tokens[0] always contains the command name. */
+            if((n_tokens <= ShellCommandSet[i].max_tokens) && (n_tokens >= ShellCommandSet[i].min_tokens)) { /* Check token bounds. */
                 if(ShellCommandSet[i].callback_execute != NULL) {
-                    ShellCommandSet[i].callback_execute(Tokens, n_tokens);
+                    ShellCommandSet[i].callback_execute(tokens, n_tokens);
                     ShellPut("ok.");
                 } else {
                     ShellPut("error: no callback."); /* No callback defined. */
                 }
             } else {
-                IShellReplyInvalidNumberArgs(Tokens[0], n_tokens);
+                IShellReplyInvalidNumberArgs(tokens[0], n_tokens);
             }
             goto task_exit;
         }
     }
-
-    IShellReplyInvalidCommand(Tokens[0]);
+	
+    IShellReplyInvalidCommand(tokens[0]); /* Only called if no command was found. */
 
 task_exit:
-    TaskDelete(&TidShellExecute);
+	MemFree((void **)tokens);
+    TaskDelete(&tid);
 }
-
-/* Built-in Shell Command callbacks. */
 
 OsResult_t ShellCommandExecuteConfig(char **tokens, U8_t n_tokens)
 {
@@ -366,47 +356,4 @@ OsResult_t ShellCommmandHelpConfig(void)
 {
     ShellPut("Help for command 'cfg'");
     return OS_RES_OK;
-}
-
-
-
-
-OsResult_t ShellCommandExecuteLock(char **tokens, U8_t n_tokens)
-{
-    /* Example: lock -o=100a -l */
-    /* Token 0 will be the command itself. */
-
-    /* Token 1 : -o=ID object to lock. */
-    Id_t object = OS_ID_INVALID;
-    S8_t object_arg_index = IShellCommandTokensContainArgument(tokens, n_tokens, "o");
-    S8_t mode = -1; /* Not found = -1*/
-    if(object_arg_index != -1) {
-
-        // object = ConvertHexStringToId(tokens[object_arg_index]);
-
-        /* Token 2 : -l for locking -u for unlocking*/
-        mode = IShellCommandTokensContainArgument(tokens, n_tokens, "l");
-        if(mode == -1) {
-            mode = IShellCommandTokensContainArgument(tokens, n_tokens, "u");
-            if(mode != -1) {
-                /* Unlock. */
-
-            } else {
-                /* Invalid. */
-                ShellReplyInvalidArgs("lock");
-            }
-        } else {
-            /* Lock object. */
-
-        }
-
-        /* The object will always be locked in read mode to avoid blocking. */
-
-    } else {
-        ShellReplyInvalidArgs("lock");
-    }
-
-    return OS_RES_OK;
-
-
 }
