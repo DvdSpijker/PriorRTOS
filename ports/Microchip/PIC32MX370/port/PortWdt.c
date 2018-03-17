@@ -22,14 +22,10 @@
 
 void PortWdtDisable()
 {
-	char x = 0;
-	x++;
 }
 
 void PortWdtKick()
 {
-	char x = 0;
-	x++;
 }
 
 //ISR(WDT_vect)
