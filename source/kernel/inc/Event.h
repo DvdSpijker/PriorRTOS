@@ -55,7 +55,7 @@ extern "C" {
 #define     EVENT_FLAG_OCCURRED      0x04
 
 
-/* Extraction macro-expansions. */
+/* Macros. */
 #define    EVENT_COMPOSE(type, specifier, flags) (U32_t)( (24 << ((U32_t)flags & 0xFF000000)) | (16 << ((U32_t)type & 0x00FF0000)) | ((U32_t)specifier & 0x0000FFFF)))
 #define    EVENT_TYPE_GET(evt)  (U8_t)((evt & 0x00FF0000) >> 16)
 #define    EVENT_SPECIFIER_GET(evt) (U16_t)(evt & 0x0000FFFF);
