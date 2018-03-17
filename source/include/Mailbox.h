@@ -78,7 +78,7 @@ typedef U8_t MailboxBase_t; //Allowed to be modified by user
  * @retval:   INVALID_ID; if the creation failed.
  * @retval:   Other; valid ID if the mailbox was created.
  ******************************************************************************/
-Id_t       MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners);
+Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners);
 
 
 /******************************************************************************
