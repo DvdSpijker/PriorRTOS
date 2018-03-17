@@ -1,184 +1,90 @@
 
 #include "PortCore.h"
-#include <tc.h>
-//#include <Types.h>
 
-#include <intc.h>
+#include <xc.h>
+#include <sys/attribs.h>
 
-#include <sysclk.h>
+void PortSuperVisorModeEnable(void)
+{
+    
+}
 
-
-#define OS_TC_CHANNEL 0
-#define OS_TC (&AVR32_TC0)
-
-__attribute__((__interrupt__))
-static void os_timer_irq(void);
-
-//struct HalTimerInstance OsTimer = {
-//.channel = OS_TC,
-//.mode = 0,
-//.interval_us = 0,
-//.irq_priority = CONFIG_OS_TICK_IRQ_PRIORITY,
-//.irq = AVR32_TC0_IRQ0,
-//.irq_handler = os_timer_irq,
-//};
+void PortSuperVisorModeDisable(void)
+{
+    
+}
 
 void PortGlobalIntDisable(void)
 {
-    cpu_irq_disable();
+   __builtin_disable_interrupts();
 }
 
 void PortGlobalIntEnable(void)
 {
-    cpu_irq_enable();
+   __builtin_enable_interrupts();
 }
 
 void PortOsIntDisable(void)
 {
-    const tc_interrupt_t tc_interrupt = {
-        .etrgs = 0,
-        .ldrbs = 0,
-        .ldras = 0,
-        .cpcs  = 0, // Disable interrupt on RC compare alone
-        .cpbs  = 0,
-        .cpas  = 0,
-        .lovrs = 0,
-        .covfs = 0
-    };
-    tc_configure_interrupts(OS_TC, OS_TC_CHANNEL, &tc_interrupt);
+    IEC0bits.T2IE = 0;  /* Disable Timer 2 interrupt. */
 }
 
 void PortOsIntEnable(void)
 {
-    const tc_interrupt_t tc_interrupt = {
-        .etrgs = 0,
-        .ldrbs = 0,
-        .ldras = 0,
-        .cpcs  = 1, // Enable interrupt on RC compare alone
-        .cpbs  = 0,
-        .cpas  = 0,
-        .lovrs = 0,
-        .covfs = 0
-    };
-    tc_configure_interrupts(OS_TC, OS_TC_CHANNEL, &tc_interrupt);
+    IEC0bits.T2IE = 1;  /* Enable Timer 2 interrupt. */
 }
 
 void PortOsIntFlagClear(void)
 {
-    /* Read sr register => clear interrupt flag. */
-    tc_read_sr(OS_TC, OS_TC_CHANNEL);
+    // Reset interrupt flag
+    IFS0bits.T2IF = 0;
 }
 
 void PortOsTimerInit(uint16_t prescaler, uint16_t ovf)
 {
-    sysclk_enable_peripheral_clock(OS_TC);
-// Options for waveform generation.
-    const tc_waveform_opt_t waveform_opt = {
-// Channel selection.
-        .channel  = OS_TC_CHANNEL,
-// Software trigger effect on TIOB.
-        .bswtrg   = TC_EVT_EFFECT_NOOP,
-// External event effect on TIOB.
-        .beevt    = TC_EVT_EFFECT_NOOP,
-// RC compare effect on TIOB.
-        .bcpc     = TC_EVT_EFFECT_NOOP,
-// RB compare effect on TIOB.
-        .bcpb     = TC_EVT_EFFECT_NOOP,
-// Software trigger effect on TIOA.
-        .aswtrg   = TC_EVT_EFFECT_NOOP,
-// External event effect on TIOA.
-        .aeevt    = TC_EVT_EFFECT_NOOP,
-// RC compare effect on TIOA.
-        .acpc     = TC_EVT_EFFECT_NOOP,
-        /* RA compare effect on TIOA.
-        * (other possibilities are none, set and clear).
-        */
-        .acpa     = TC_EVT_EFFECT_NOOP,
-        /* Waveform selection: Up mode with automatic trigger(reset)
-        * on RC compare.
-        */
-        .wavsel   = TC_WAVEFORM_SEL_UP_MODE_RC_TRIGGER,
-// External event trigger enable.
-        .enetrg   = false,
-// External event selection.
-        .eevt     = 0,
-// External event edge selection.
-        .eevtedg  = TC_SEL_NO_EDGE,
-// Counter disable when RC compare.
-        .cpcdis   = false,
-// Counter clock stopped with RC compare.
-        .cpcstop  = false,
-// Burst signal selection.
-        .burst    = false,
-// Clock inversion.
-        .clki     = false,
-// Internal source clock 3, connected to fPBA / 8.
-        .tcclks   = TC_CLOCK_SOURCE_TC3,
-    };
-
-// Initialize the timer/counter.
-    tc_init_waveform(OS_TC, &waveform_opt);
-
-    /*
-    * Set the compare triggers.
-    * We configure it to count every 10 milliseconds.
-    * We want: (10 / (fPBA / 8)) * RC = 1 ms, hence RC = (fPBA / 8) / 10
-    * to get an interrupt every 1 ms.
-    */
-    tc_write_rc(OS_TC, OS_TC_CHANNEL, 2994);
+    PortOsTimerStop();
+    T2CONbits.TCKPS = 7;    /* pre-scale = 1:256 (T2CLKIN = 39062.5 Hz) */
+    PR2 = 390;              /* T2 period ~ 1mS */
+    PortOsTimerTicksReset();
 }
 
 
 void PortOsTimerStop(void)
 {
-    tc_stop(OS_TC, OS_TC_CHANNEL);
+    T2CONbits.TON = 0;      /* turn off Timer 2 */
 }
 
 void PortOsTimerStart(void)
 {
-    tc_start(OS_TC, OS_TC_CHANNEL);
+    T2CONbits.TON = 1; /* turn on Timer 2 */
 }
 
 uint32_t PortOsTimerTicksGet(void)
 {
-    int tc_val = tc_read_tc(OS_TC, OS_TC_CHANNEL);
-    return (uint32_t)tc_val;
+    return (uint32_t)TMR2;
 }
 
 void PortOsTimerTicksReset(void)
 {
-    /* Resetting TC values is not possible in AVR32. */
-    return;
+    TMR2 = 0; /* clear Timer 2 counter */
 }
 
 void PortOsTimerTicksSet(uint32_t ticks)
 {
-    Wr_bitfield(ticks, AVR32_TC_CV_MASK, OS_TC->channel[OS_TC_CHANNEL].cv);
+    TMR2 = ticks;
 }
 
-__attribute__((__interrupt__))
-static void os_timer_irq(void)
+void __ISR(_TIMER_2_VECTOR, IPL7SRS) T2Interrupt(void)
 {
     OsTick();
+    PortOsIntFlagClear();
 }
 
 void PortOsTickInit(IrqPriority_t os_tick_irq_prio)
 {
-// Options for enabling TC interrupts
-    const tc_interrupt_t tc_interrupt = {
-        .etrgs = 0,
-        .ldrbs = 0,
-        .ldras = 0,
-        .cpcs  = 1, // Enable interrupt on RC compare alone
-        .cpbs  = 0,
-        .cpas  = 0,
-        .lovrs = 0,
-        .covfs = 0,
-    };
-    tc_configure_interrupts(OS_TC, OS_TC_CHANNEL, &tc_interrupt);
-
-    INTC_register_interrupt(&os_timer_irq, AVR32_TC0_IRQ0, AVR32_INTC_IPR_INTLEVEL_INT0);
-
+    IPC2bits.T2IP = os_tick_irq_prio; /* Set priority. */
+    PortOsIntFlagClear();
+    INTCONSET = _INTCON_MVEC_MASK;    /* Set the interrupt controller for multi-vector mode */
 }
 
 

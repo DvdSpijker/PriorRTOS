@@ -2,8 +2,8 @@
 #define PORT_CORE_H
 
 #include <stdint.h>
+#include <Types.h>
 
-typedef uint8_t IrqPriority_t;
 
 /* SuperVisor mode Port. */
 void PortSuperVisorModeEnable(void);
