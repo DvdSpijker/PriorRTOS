@@ -158,6 +158,16 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
  ******************************************************************************/
 OsResult_t TaskDelete(Id_t *task_id);
 
+/******************************************************************************
+ * @func: Id_t TaskIdGet(void)
+ *
+ * @desc: Returns the ID of the calling task.
+ *
+ * @rettype:  (Id_t) Task ID
+ * @retval:   OS_ID_INVALID; Error occurred.
+ * @retval:   Other; valid task ID.
+ ******************************************************************************/
+Id_t TaskIdGet(void);
 
 /******************************************************************************
  * @func: OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)

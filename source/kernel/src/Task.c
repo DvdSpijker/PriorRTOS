@@ -210,6 +210,16 @@ void TaskGenericNameSet(Id_t task_id, const char* gen_name)
 
 #endif
 
+Id_t TaskIdGet(void)
+{
+    Id_t id = OS_ID_INVALID;
+    if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
+        id = ListNodeIdGet(&TcbRunning->list_node);
+        ListNodeUnlock(&TcbRunning->list_node);
+    }
+    return id;
+}
+
 
 OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)
 {
@@ -337,7 +347,7 @@ new_poll:
 }
 
 
-OsResult_t TaskJoin(Id_t task_id, U32 timeout)
+OsResult_t TaskJoin(Id_t task_id, U32_t timeout)
 {
     OsResult_t result = OS_RES_ERROR;
 
@@ -389,7 +399,7 @@ OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
             /* The priority stored in the TCB is a combined priority of the minor and category.
-             * The original minor priority can be extracted. */
+             * The original minor priority can be derived. */
             tcb->priority = KCalculatePriority(tcb->category, new_priority);
             result = OS_RES_OK;
             ListNodeUnlock(&tcb->list_node);
