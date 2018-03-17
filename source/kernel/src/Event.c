@@ -328,7 +328,7 @@ ListSize_t EventListSizeGet(LinkedList_t *event_list)
 pEvent_t EventListContainsEvent(LinkedList_t *event_list, Id_t source_id, U32_t event_code)
 {
     U16_t hash = EventToHash(source_id, event_code);
-    pEvent_t event = ListSearch(event_list, hash);
+    pEvent_t event = (pEvent_t)ListNodeChildGet(ListSearch(event_list, hash));
     return event;
 }
 
