@@ -280,7 +280,7 @@ bool OsTaskExists(Id_t task_id);
  * @desc: Returns the ID of the current running task.
  *
  * @rettype:  (Id_t) Task ID
- * @retval:   INVALID_ID; error occurred.
+ * @retval:   OS_ID_INVALID; error occurred.
  * @retval:   Other; valid current task ID.
  ******************************************************************************/
 Id_t OsCurrentTaskGet(void);
