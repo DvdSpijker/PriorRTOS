@@ -66,13 +66,17 @@ extern U32_t OsTickPeriodGet();
 
 OsResult_t KTimerInit(void)
 {
+    OsResult_t result = OS_RES_ERROR;
+    
     ListInit(&TimerList, (Id_t)ID_TYPE_TIMER);
 
-    KernelTaskIdTimerUpdate = KernelTaskCreate(KernelTaskTimerUpdate, 1, TASK_PARAM_ESSENTIAL, 0, NULL,
+    KTidTimerUpdate = KernelTaskCreate(KernelTaskTimerUpdate, 1, TASK_PARAM_ESSENTIAL, 0, NULL,
                               PRTOS_CONFIG_TIMER_INTERVAL_RESOLUTION_MS);
-
+    if(KTidTimerUpdate != OS_ID_INVALID) {
+        result = OS_RES_OK;
+    }
     //LOG_INFO_NEWLINE("TimerList: %p", &TimerList);
-    return OS_RES_OK;
+    return result;
 }
 
 void KTimerUpdateAll(U32_t t_us)
