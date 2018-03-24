@@ -336,8 +336,7 @@ OsResult_t TaskPollRemove(Id_t object_id, U32_t event);
  * times out and the task will be activated to handle the timeout.
  *
  * Arguments:
- * @argin: (Id_t) object_id; ID of the event generating object. If INVALID_ID
- *                            the task will be listened to all.
+ * @argin: (Id_t) object_id; ID of the event generating object. 
  * @argin: (U32_t) event; Event to listen to.
  * @argin: (U32_t) timeout_ms; Event timeout in milliseconds. If OS_TIMEOUT_INFINITE
  *                              is passed, the task will wait indefinitely.                            
