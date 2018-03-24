@@ -108,7 +108,7 @@ OsResult_t   KTaskInit(void);
 pTcb_t KTaskRunningGet(void);
 OsResult_t KTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to_list);
 void KTcbSwap(pTcb_t x, pTcb_t y, LinkedList_t* list);
-void KTcbDestroy(pTcb_t TCB, LinkedList_t* list);
+OsResult_t KTcbDestroy(pTcb_t TCB, LinkedList_t* list);
 LinkedList_t* KTcbLocationGet(pTcb_t tcb);
 void KTaskStateSet(pTcb_t tcb_pointer, TaskState_t new_state);
 pTcb_t KTcbFromId(Id_t task_id);
@@ -123,6 +123,8 @@ Prio_t KCalculatePriority(TaskCat_t Mj,Prio_t Mi);
 void KTaskRunTimeUpdate(void);
 void KTaskRunTimeReset(pTcb_t tcb);
 
+/* Request to activate a task. Returns OS_RES_FAIL if the request was denied. */
+OsResult_t KTaskActivateRequest(pTcb_t tcb);
 
 #ifdef __cplusplus
 }
