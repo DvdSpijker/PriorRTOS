@@ -162,14 +162,14 @@ OsResult_t ListMerge(LinkedList_t *list_x, LinkedList_t *list_y);
  * is returned if no node was found.
  * ListSearch takes advantage of sorted lists.
  * Worst case unsorted: O(N)
- * Worse case sorted:   O(N/2)
+ * Worst case sorted:   O(N/2)
  */
 ListNode_t *ListSearch(LinkedList_t *list, Id_t id);
 
 /* V T Searches the list in a exclusively linear fashion for the
  * ID. NULL is returned if no node was found.
  * ListSearch does NOT take advantage of sorted lists.
- * Worse case: O(N)
+ * Worst case: O(N)
  */
 ListNode_t *ListSearchLinear(LinkedList_t *list, Id_t id);
 
@@ -217,8 +217,12 @@ char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size);
 /* V T Initializes the node with specified child. */
 OsResult_t ListNodeInit(ListNode_t *node, void *child);
 
-/* V T De-initializes the node. If the node was still in a list, it is removed.*/
+/* V T De-initializes the node. If the node was still in a list, it is removed.
+ * If the node is already removed from its list, pass NULL for the list. */
 OsResult_t ListNodeDeinit(LinkedList_t *list, ListNode_t *node);
+
+/* V T Set the ID of a node. */
+OsResult_t ListNodeIdSet(ListNode_t *node, Id_t id);
 
 /* V T Lock the node in either read or write mode.
  * Read locks are recursive. Write lock exclusive. */
@@ -236,7 +240,7 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
  * position options: LIST_INSERT_BEFORE or LIST_INSERT_AFTER. */
 OsResult_t ListNodeAddAtNode(LinkedList_t *list, ListNode_t *node_y, ListNode_t *node_x, U8_t before_after);
 
-/* V Add an initialized node to the list in a sorted manner if
+/* V T Add an initialized node to the list in a sorted manner if
  * the list is in a sorted state. */
 OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node);
 
@@ -331,7 +335,7 @@ bool ListIteratorEnd(struct ListIterator *list_it);
  * macros is executed at every iteration of the
  * loop. */
 #define LIST_ITERATOR_BEGIN(p_it, p_list, it_direction)         \
-if(ListIteratorInit(p_it, p_list, it_direction) == OS_RES_OK) {     \
+if(ListIteratorInit(p_it, p_list, it_direction) == OS_RES_OK) { \
 do {                                                            \
 
 #define LIST_ITERATOR_BREAK_ON_CONDITION(cond)  \
@@ -344,8 +348,9 @@ goto p_it##_next;                       \
 
 #define LIST_ITERATOR_END(p_it)     \
 if(ListIteratorNext(p_it) == NULL)  \
-break;                              \
-} while (!ListIteratorEnd(p_it)); } \
+    break;                          \
+} while (!ListIteratorEnd(p_it));   \ 
+}                                   \
 
 
 #ifdef __cplusplus
