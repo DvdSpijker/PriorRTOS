@@ -69,15 +69,15 @@ Pmb_t PoolTable[N_POOLS];
 
 U8_t OsHeap[PRTOS_CONFIG_OS_HEAP_SIZE_BYTES];
 
-U16_t TotalHeapPools;
+Id_t TotalHeapPools;
 U32_t TotalHeapSize;
 U16_t HeapIndexEnd;
 
 Id_t KernelPoolId;
 Id_t ObjectPoolId;
 
-static U16_t IPoolIdFromIndex(U32_t index);
-static U16_t IPoolIdFromPointer(MemBase_t *ptr);
+static Id_t IPoolIdFromIndex(U32_t index);
+static Id_t IPoolIdFromPointer(MemBase_t *ptr);
 
 /************OS Memory Management************/
 
@@ -85,11 +85,11 @@ OsResult_t KMemInit()
 {
     OsResult_t result = OS_RES_ERROR;
 
-    TotalHeapPools = (U16_t)(N_POOLS);
+    TotalHeapPools = (Id_t)(N_POOLS);
     TotalHeapSize = (U32_t)sizeof(OsHeap);
     HeapIndexEnd = TotalHeapSize - 1;
 
-    for (U16_t i = 0; i < (TotalHeapPools); i++) {
+    for (Id_t i = 0; i < (TotalHeapPools); i++) {
         PoolTable[i].start_index = 0;
         PoolTable[i].end_index = 0;
         PoolTable[i].pool_size = 0;
@@ -132,8 +132,8 @@ Id_t MemPoolCreate(U32_t pool_size)
 
     OsCritSectBegin();
 
-    U16_t pool_id = 0;
-    U16_t tmp_pool_id = 0;
+    Id_t pool_id = 0;
+    Id_t tmp_pool_id = 0;
     pPmb_t pmb = NULL;
     U32_t mem_req = 0;
     U32_t mem_found = 0;
@@ -180,7 +180,7 @@ Id_t MemPoolCreate(U32_t pool_size)
 #endif
     } else {
         LOG_ERROR_NEWLINE("Not enough memory available (%u bytes) to create a new pool (%u bytes).", mem_found, mem_req);
-        pool_id = (U16_t)OS_ID_INVALID;    //No memory available for the requested pool size
+        pool_id = OS_ID_INVALID;    //No memory available for the requested pool size
     }
 
     OsCritSectEnd();
@@ -478,13 +478,13 @@ OsResult_t MemFree(void **ptr)
         for (U32_t i = 0; i < size; i++) {
             tmp_ptr[i] = 0;
         }
-        PoolTable[pool_id].mem_left += size;
-        PoolTable[pool_id].N--;
+        pool->mem_left += size;
+        pool->N--;
 
         *ptr = NULL; /* Set pointer to NULL, avoids reusing it in app by accident. */
     }
 
-    if(PoolTable[pool_id].mem_left > PoolTable[pool_id].pool_size) {
+    if(pool->mem_left > pool->pool_size) {
         while(1);
     }
     OsCritSectEnd();
@@ -504,7 +504,7 @@ U32_t MemAllocSizeGet(void *ptr)
     in a pool space or within the kernel pool.
     Operations that access the kernel pool may only
     be executed if kernel-mode flag is set. */
-    U16_t pool_id = IPoolIdFromPointer(tmp_ptr);
+    Id_t pool_id = IPoolIdFromPointer(tmp_ptr);
     if(pool_id == KernelPoolId && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         return 0;
     } else if(pool_id == OS_ID_INVALID) {
@@ -520,10 +520,10 @@ U32_t MemAllocSizeGet(void *ptr)
 /*******************************/
 
 
-static U16_t IPoolIdFromIndex(U32_t index)
+static Id_t IPoolIdFromIndex(U32_t index)
 {
-    U16_t id = (U16_t)OS_ID_INVALID;
-    for (U16_t i = 0; i < (TotalHeapPools); i++) {
+    Id_t id = OS_ID_INVALID;
+    for (Id_t i = 0; i < (TotalHeapPools); i++) {
         if(index >= PoolTable[i].start_index && index <= PoolTable[i].end_index && PoolTable[i].pool_size > 0) {
             id = i;
             break;
@@ -532,12 +532,12 @@ static U16_t IPoolIdFromIndex(U32_t index)
     return id;
 }
 
-static U16_t IPoolIdFromPointer(MemBase_t *ptr)
+static Id_t IPoolIdFromPointer(MemBase_t *ptr)
 {
-    U16_t id = (U16_t)OS_ID_INVALID;
+    Id_t id = OS_ID_INVALID;
     MemBase_t *start_addr = NULL;
     MemBase_t *end_addr = NULL;
-    for (U16_t i = 0; i < (TotalHeapPools); i++) {
+    for (Id_t i = 0; i < (TotalHeapPools); i++) {
         start_addr = ((MemBase_t *)&OsHeap[PoolTable[i].start_index]);
         end_addr =  ((MemBase_t *)&OsHeap[PoolTable[i].end_index]);
         if(ptr >= start_addr && ptr < end_addr) {
