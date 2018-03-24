@@ -94,7 +94,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
     OS_ARG_UNUSED(stack_size);
 #endif
 
-    if (priority < 1 || priority > 5) {
+    if (priority < OS_TASK_PRIO_LIMIT_LOW || priority > OS_TASK_PRIO_LIMIT_HIGH) {
         return OS_ID_INVALID;
     }
     if (category > TASK_CAT_OS) {
@@ -115,14 +115,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
 
     OsResult_t result;
     ListNodeInit(&new_TCB->list_node, (void*)new_TCB);
-    result = ListNodeAddSorted(&TcbList, &new_TCB->list_node);
 
-    if(result != OS_RES_OK) {
-        LOG_ERROR_NEWLINE("A task could not be added to the list.");
-        ListNodeDeinit(&TcbList, &new_TCB->list_node);
-        KMemFreeObject((void **)&new_TCB, NULL);
-        return OS_ID_INVALID;
-    }
     ListInit(&new_TCB->event_list, 0);
     new_TCB->handler = handler;
     new_TCB->priority = KCalculatePriority(category, priority);
@@ -136,6 +129,15 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
 
     new_TCB->flags = 0;
 
+    result = ListNodeAddSorted(&TcbList, &new_TCB->list_node);
+
+    if(result != OS_RES_OK) {
+        LOG_ERROR_NEWLINE("A task could not be added to the list.");
+        ListNodeDeinit(&TcbList, &new_TCB->list_node);
+        KMemFreeObject((void **)&new_TCB, NULL);
+        return OS_ID_INVALID;
+    }
+    
     /* Handle task creation parameters. */
     if(param != TASK_PARAM_NONE)  {
         if(param & TASK_PARAM_ESSENTIAL) {
@@ -383,7 +385,7 @@ OsResult_t TaskSleep(U32_t t_ms)
 OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
 {
     /* Validate priority range. */
-    if (new_priority < 1 || new_priority > 5) {
+    if (new_priority < OS_TASK_PRIO_LIMIT_LOW || new_priority > OS_TASK_PRIO_LIMIT_HIGH) {
         return OS_RES_OUT_OF_BOUNDS;
     }
 
@@ -515,6 +517,7 @@ static S8_t ITaskEventHandle(pEvent_t event)
 static OsResult_t ITaskResume(Id_t task_id)
 {
     /* TODO: Check if the task is blocked by a waiting event. */
+    /* This event is handled by the scheduler. The task will be scheduled. */
     OsResult_t result = EventEmit(task_id, TASK_EVENT_ACTIVATE, EVENT_FLAG_ADDRESSED);
     return result;
 }
@@ -618,17 +621,22 @@ void KTcbSwap(pTcb_t x, pTcb_t y, LinkedList_t *list)
 }
 
 
-void KTcbDestroy(pTcb_t tcb, LinkedList_t *list)
+OsResult_t KTcbDestroy(pTcb_t tcb, LinkedList_t *list)
 {
+    OsResult_t result = OS_RES_ERROR;
     ListNode_t *node = &tcb->list_node;
-    if(list == NULL) {
-        ListNodeAddSorted(&TcbList, node);
-    } else if(list != &TcbList) {
-        ListNodeMove(list, &TcbList, node);
+    
+    result = EventListDestroy(&tcb->event_list);
+    
+    if(result == OS_RES_OK) {
+        result = ListNodeDeinit(list, node);   
     }
-    EventListDestroy(&tcb->event_list);
-    ListNodeDeinit(&TcbList, node);
-    KMemFreeObject((void**)&tcb, NULL);
+    
+    if(result == OS_RES_OK) {
+        result = KMemFreeObject((void**)&tcb, NULL);
+    }
+    
+    return result;
 }
 
 
@@ -670,4 +678,14 @@ void KTaskRunTimeUpdate(void)
 void KTaskRunTimeReset(pTcb_t tcb)
 {
     tcb->run_time_us = 0;
+}
+
+OsResult_t KTaskActivateRequest(pTcb_t tcb)
+{
+	OsResult_t result = OS_RES_FAIL;
+	if(tcb->state == TASK_STATE_WAITING || tcb->state == TASK_STATE_IDLE) {
+		tcb->state = TASK_STATE_ACTIVE;
+		result = OS_RES_OK;
+	}
+	return result;
 }
