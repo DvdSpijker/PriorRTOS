@@ -12,7 +12,7 @@
 #include <Types.h>
 
 void KernelTaskIdle(const void* p_arg, U32_t v_arg);
-Id_t KernelTaskIdIdle;
+Id_t KTidIdle;
 
 
 #endif /* KERNEL_TASK_IDLE_H_ */

@@ -13,7 +13,7 @@
 #include <Types.h>
 
 void KernelTaskTimerUpdate(const void* p_arg, U32_t v_arg);
-Id_t KernelTaskIdTimerUpdate;
+Id_t KTidTimerUpdate;
 
 
 #endif /* KERNEL_TASK_TIMER_UPDATE_H_*/
