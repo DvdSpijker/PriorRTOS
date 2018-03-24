@@ -124,7 +124,6 @@ static int ILogPutChar(char c, FILE *stream)
 int _write(int file, char *ptr, int len);
 int _write(int file, char *ptr, int len)
 {
-#if 1
     char cr = '\r';
     int i;
 
@@ -139,9 +138,6 @@ int _write(int file, char *ptr, int len)
     }
     errno = EIO;
     return -1;
-#else
-    return len;
-#endif
 }
 
 #endif
