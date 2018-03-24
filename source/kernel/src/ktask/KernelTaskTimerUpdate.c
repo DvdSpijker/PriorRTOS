@@ -28,11 +28,12 @@ void KernelTaskTimerUpdate(const void *p_arg, U32_t v_arg)
         sleep_time = v_arg;
     }
     TASK_INIT_END();
-
-    U32_t t_accu_us = OsRunTimeMicrosDeltaGet(&micros);
+   
+    U32_t t_accu_us = OsRunTimeMicrosDelta(micros);
     if(t_accu_us == 0) {
         goto sleep;
     } 
+    micros = OsRunTimeMicrosGet();
     KTimerUpdateAll(t_accu_us);
 
 sleep:
