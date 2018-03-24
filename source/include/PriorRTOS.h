@@ -90,6 +90,7 @@ extern "C" {
 #include <Semaphore.h>
 #endif
 
+
 /******************************************************************************
  * @func: OsResult_t OsInit(OsResult_t *result_optional)
  *
@@ -114,6 +115,8 @@ OsResult_t OsInit(OsResult_t *result_optional);
  * @desc: Starts the OS tick and scheduler. The first task to be executed
  * can be specified by start_task_id. When an error occurs while loading the
  * specified start task, the Idle task is loaded instead.
+ * Note: This function only returns when OsStop is called or when a critical
+ * error occurred.
  *
  * Arguments:
  * @argin: (Id_t) start_task_id; ID of the first task to be executed. itialization.
@@ -129,26 +132,11 @@ void OsStart(Id_t start_task_id);
  * @desc: Stops the OS tick and scheduler. The currently executing task
  * will either finish execution (in cooperative mode) or be suspended
  * (in pre-emptive mode). All tasks and other objects will be deleted.
- *
+ * The OsStart function will return. 
+ * 
  * @rettype:   N/A
  ******************************************************************************/
 void OsStop(void);
-
-/******************************************************************************
- * @func: OsResult_t OsFrequencySet(U16_t os_frequency_hz)
- *
- * @desc: Sets a new OS tick frequency in Hz.
- *
- * Arguments:
- * @argin: (U16_t) os_frequency; New OS frequency.
- *
- * @rettype:  (OsResult_t) Sys call result
- * @retval:   OS_RES_OK; if the new frequency was set.
- * @retval:   OS_RES_ERROR; if no configuration could be matched to the requested
- *          frequency.
- ******************************************************************************/
-OsResult_t OsFrequencySet(U16_t OS_frequency);
-
 
 /******************************************************************************
  * @func: U16_t OsFrequencyGet(void)
@@ -166,7 +154,7 @@ U16_t OsFrequencyGet(void);
  * @func: OsVer_t OsVersionGet(void)
  *
  * @desc: Returns the OS version e.g. 0x0101 = V1.01. OsVer_t may be
- * converted to a string format using ConvertOsVersionToString.
+ * converted to a string using ConvertOsVersionToString.
  *
  * @rettype:  (OsVer_t) Current OS version
  * @retval:   0; if an error occurred.
@@ -175,39 +163,54 @@ U16_t OsFrequencyGet(void);
 OsVer_t OsVersionGet(void);
 
 
-
 /******************************************************************************
- * @func: OsResult_t OsRunTimeGet(U32_t *target)
+ * @func: OsResult_t OsRunTimeGet(OsRunTime_t runtime)
  *
- * @desc: Copies the current OS runtime to the target array. Target has to have
- * at least 2 nodes initialized at 0x00000000;
- *
+ * @desc: Copies the current OS runtime to the runtime array.
+ * runtime must be initialized with OS_RUN_TIME_INIT before
+ * calling this function.
+ * 
  * Arguments:
- *  @argout: (U32_t *) target; Target array to return the runtime.
- *                             target[0] = hours, target[1] = microseconds.
+ *  @argout: (OsRunTime_t) runtime; runtime[0] = hours, runtime[1] = microseconds. 
+ *                             
  *
  * @rettype:  (OsResult_t) Sys call result
  * @retval:   OS_RES_OK; if the operation was successful.
  * @retval:   OS_RES_ERROR; if the array did NOT comply with the requirements stated
  *          in the description.
  ******************************************************************************/
-OsResult_t OsRunTimeGet(U32_t* target);
+OsResult_t OsRunTimeGet(OsRunTime_t runtime);
 
 /******************************************************************************
- * @func: U32_t OsRunTimeMicrosDeltaGet(U32_t us)
+ * @func: U32_t OsRunTimeMicrosDelta(U32_t us)
  *
  * @desc: Returns the difference between us and the current micros.
  *
  * Arguments:
- *  @argin:   (U32_t *) us; Earlier moment in time in microseconds.
- *  @argout:   (U32_t *) us; Current time in microseconds.
+ *  @argin:   (U32_t ) us; Earlier moment in time in microseconds.
  *
  * @rettype:  (U32_t) Delta micros
  * @retval:   0; if the calculation could not be performed.
  * @retval:   Other; valid delta value.
  ******************************************************************************/
-U32_t OsRunTimeMicrosDeltaGet(U32_t *us);
+U32_t OsRunTimeMicrosDelta(U32_t us);
+
+/******************************************************************************
+ * @func: U32_t OsRunTimeMicrosGet(void)
+ *
+ * @desc: Returns the 'microseconds' component of the OS runtime.
+ *
+ * @rettype:  (U32_t) OS runtime microseconds.
+ ******************************************************************************/
 U32_t OsRunTimeMicrosGet(void);
+
+/******************************************************************************
+ * @func: U32_t OsRunTimeHoursGet(void)
+ *
+ * @desc: Returns the 'hours' component of the OS runtime.
+ *
+ * @rettype:  (U32_t) OS runtime hours.
+ ******************************************************************************/
 U32_t OsRuntimeHoursGet(void);
 
 
