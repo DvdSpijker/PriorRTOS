@@ -73,9 +73,17 @@ typedef     U16_t   MemBase_t;
 typedef     U32_t   MemBase_t;
 #endif
 
-typedef     U8_t                Prio_t;
-typedef     U16_t               OsVer_t;
+typedef     U8_t    Prio_t;
+#define     OS_TASK_PRIO_LIMIT_HIGH 5
+#define     OS_TASK_PRIO_LIMIT_LOW  1
+
+typedef     U16_t   OsVer_t;
 typedef     PRTOS_CONFIG_IRQ_PRIORITY_TYPE  IrqPriority_t;
+
+typedef		U32_t   OsRunTime_t[2];
+#define		OS_RUN_TIME_HOURS	0
+#define		OS_RUN_TIME_MICROS	1
+#define		OS_RUN_TIME_INIT(rt) (rt[0] = 0; rt[1] = 0;)  
 
 typedef enum {
     /* The system call was successful. */
@@ -131,6 +139,8 @@ typedef enum {
     /* TaskPoll or TaskWait will return this value if the
      * event has occurred.  */
     OS_RES_EVENT            = 12,
+	
+	OS_RES_NO_MEM			= 13,
 
 } OsResult_t;
 
@@ -151,6 +161,7 @@ typedef enum {
     ID_TYPE_SEMAPHORE   = 0x04000000,
     ID_TYPE_MAILBOX     = 0x05000000,
     ID_TYPE_RINGBUF     = 0x06000000,
+	ID_TYPE_OTHER       = 0xFF000000,
 } IdType_t;
 
 #define OS_ID_INVALID           0xFFFFFFFF /* Invalid ID definition. */
