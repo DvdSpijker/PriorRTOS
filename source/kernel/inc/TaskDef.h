@@ -68,7 +68,7 @@ typedef struct Tcb_t {
     U32_t               v_arg;
 
 #if PRTOS_CONFIG_ENABLE_TASKNAMES>0
-    char                generic_name[PRTOS_CONFIG_TASK_NAME_LENGTH];
+    char                generic_name[PRTOS_CONFIG_TASK_NAME_LENGTH_CHARS];
 #endif
 
     TaskFlags_t         flags;
