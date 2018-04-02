@@ -16,7 +16,7 @@ typedef OsResult_t	(*KmfGeneric_t)(void *context);
 typedef U32_t		(*KmfObjectToString_t)(void *obj, char *obj_str);   /* Converts the passed object (obj) to a string (obj_str), the lenght of the string is returned. */
 typedef OsResult_t	(*KmfHookError_t)(U32_t err_code);
 typedef void 		(*KmfHookTick_t)(void);
-typedef void		(*KmfOsFreqChange)(uint16_t old_freq, uint16_t new_freq);
+typedef void		(*KmfOsFreqChange_t)(uint16_t old_freq, uint16_t new_freq);
 
 struct KernelModule {
 	const char name[];
@@ -32,7 +32,7 @@ struct KernelModule {
 	KmfGeneric_t		deinit;
 	KmfHookError_t      on_error;
 	KmfHookTick_t 		on_tick;
-	KmfOsFreqChange		on_freq_change;
+	KmfOsFreqChange_t	on_freq_change;
 	KmfObjectToString_t object_to_string;
 };
 
