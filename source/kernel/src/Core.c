@@ -196,7 +196,11 @@ if(KernelReg.lock < 0xFF) {     \
 else { while (1); }             \
 
 OsResult_t OsInit(OsResult_t *status_optional)
-{
+ {
+	if(status_optional == NULL) {
+		return OS_RES_NULL_POINTER;
+	}
+
     OsCritSectBegin();
     OsResult_t status_kernel   = OS_RES_OK; //status tracker for essential kernel modules
     *status_optional = OS_RES_OK; //status tracker for optional modules
@@ -238,7 +242,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
     LOG_INFO_NEWLINE("Initializing OS Timer and Tick interrupt...");
     U16_t os_timer_ovf = ICoreCalculatePrescaler(PRTOS_CONFIG_F_OS_HZ);
     PortOsTimerInit(KernelReg.prescaler, os_timer_ovf);
-    PortOsTickInit(PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY);
+    PortOsTickInit((IrqPriority_t)PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY);
     LOG_INFO_APPEND("ok");
 
     LOG_INFO_NEWLINE("Initializing module:Memory Management...");
@@ -333,13 +337,13 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     /* Idle task is not created using KernelTask create since it is not an OS category task, it should be on the
     * lowest possible priority. However, the Idle task is essential and cannot be deleted. */
-    KernelTaskIdIdle = TaskCreate(KernelTaskIdle, TASK_CAT_LOW, 1, TASK_PARAM_ESSENTIAL, 0, NULL, 0);
-    if(KernelTaskIdIdle == OS_ID_INVALID) { //Create Idle task, check if successful
+    KTidIdle = TaskCreate(KernelTaskIdle, TASK_CAT_LOW, 1, TASK_PARAM_ESSENTIAL, 0, NULL, 0);
+    if(KTidIdle == OS_ID_INVALID) { //Create Idle task, check if successful
         status_kernel = OS_RES_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid ID returned while creating KernelTaskIdle");
         return status_kernel;
     } else {
-        TcbIdle = KTcbFromId(KernelTaskIdIdle); //Assign pointer to Idle TCB to TCB_idle
+        TcbIdle = KTcbFromId(KTidIdle); //Assign pointer to Idle TCB to TCB_idle
         if(TcbIdle == NULL) {
             status_kernel = OS_RES_CRIT_ERROR;
             LOG_ERROR_NEWLINE("KernelTaskIdle could not be found in the task list.");
@@ -450,22 +454,6 @@ void OsReset(void)
     /* TODO: Implementation. */
 }
 
-OsResult_t OsFrequencySet(U16_t OS_frequency)
-{
-    if(OS_frequency > 5250 || OS_frequency == 0) {
-        return OS_RES_FAIL;    //Check if frequency is within bounds
-    }
-
-    OsCritSectBegin();//Disable interrupts
-
-    PortOsTimerStop(); //Stop OS timer
-    U16_t sysTimerovf = ICoreCalculatePrescaler(OS_frequency); //Calculate new prescaler with new frequency
-    PortOsTimerInit(KernelReg.prescaler, sysTimerovf);  //Initialize timer with new ovf
-    PortOsTimerStart();
-    OsCritSectEnd(); //Enable interrupts
-    return OS_RES_OK; //Return status
-}
-
 U16_t OsFrequencyGet(void)
 {
     return KernelReg.f_os;
@@ -476,31 +464,31 @@ OsVer_t OsVersionGet(void)
     return ((OsVer_t)OS_VERSION);
 }
 
-U32_t OsRunTimeMicrosDeltaGet(U32_t *us)
+U32_t OsRunTimeMicrosDelta(U32_t us)
 {
     U32_t delta_us = 0;
     U32_t curr_us = OsRunTimeMicrosGet();
     if(curr_us != 0) {
-        if(curr_us >= *us) {
-            delta_us = curr_us - *us;
+        if(curr_us >= us) {
+            delta_us = curr_us - us;
         } else {
-            delta_us = *us - curr_us;
+            delta_us = us - curr_us;
         }
-        *us = curr_us;
+        us = curr_us;
     }
     return delta_us;
 }
 
-OsResult_t OsRunTimeGet(U32_t* target)
+OsResult_t OsRunTimeGet(OsRunTime_t runtime)
 {
     //Input check
-    if(target[0] != 0x00000000 || target[1] != 0x00000000) {
+    if(runtime[0] != 0 || runtime[1] != 0) {
         return OS_RES_FAIL;
     }
     OsResult_t result = OS_RES_LOCKED;
     KERNEL_REG_LOCK() {
-        target[0] = KernelReg.hours;
-        target[1] = KernelReg.micros;
+        runtime[0] = KernelReg.hours;
+        runtime[1] = KernelReg.micros;
         result = OS_RES_OK;
     }
     KERNEL_REG_UNLOCK();
@@ -839,7 +827,8 @@ static void ICoreEventBrokerCycle(LinkedList_t *activated_task_list)
     args.activated_task_list = activated_task_list;
 
     static U32_t micros = 0;
-    U32_t delta_us = OsRunTimeMicrosDeltaGet(&micros);
+    U32_t delta_us = OsRunTimeMicrosDelta(micros);
+    micros = OsRunTimeMicrosGet();
     args.delta_us = delta_us;
 
     LIST_ITERATOR_BEGIN(&it, &EventList, LIST_ITERATOR_DIRECTION_FORWARD);
@@ -1040,7 +1029,6 @@ static void ICoreSwitchTask(void)
     if(KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         return;
     }
-    KCoreFlagSet(CORE_FLAG_DISPATCH);
 
 #if PRTOS_CONFIG_ENABLE_TASKTRACE==1
     TtUpdate();
@@ -1059,7 +1047,9 @@ static void ICoreSwitchTask(void)
         ListNodeAddSorted(&TcbList, &TcbRunning->list_node);
     } else {  /* If task has to be deleted. */
         if(TcbRunning->category != TASK_CAT_OS || TcbRunning != TcbIdle) {
-            KTcbDestroy(TcbRunning, NULL);
+            if(KTcbDestroy(TcbRunning, NULL) != OS_RES_OK) {
+                /* TODO: Throw exception. */
+            }
         } else {
             /* Idle or other OS task cannot be deleted.
             * Move back to TcbList. */
@@ -1072,9 +1062,6 @@ static void ICoreSwitchTask(void)
 
     TcbRunning = NULL;
     ICoreLoadNewTask(NULL);
-
-    KCoreFlagClear(CORE_FLAG_DISPATCH);
-    KCoreFlagClear(CORE_FLAG_IDLE);
 }
 
 /* Loads a TCB as new running task. TCB has to be
