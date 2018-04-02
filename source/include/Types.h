@@ -83,7 +83,10 @@ typedef     PRTOS_CONFIG_IRQ_PRIORITY_TYPE  IrqPriority_t;
 typedef		U32_t   OsRunTime_t[2];
 #define		OS_RUN_TIME_HOURS	0
 #define		OS_RUN_TIME_MICROS	1
-#define		OS_RUN_TIME_INIT(rt) (rt[0] = 0; rt[1] = 0;)  
+#define		OS_RUN_TIME_INIT(rt) {	\
+			rt[0] = 0;				\
+			rt[1] = 0;				\
+}									\
 
 typedef enum {
     /* The system call was successful. */
