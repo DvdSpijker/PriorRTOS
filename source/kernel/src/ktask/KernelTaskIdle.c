@@ -5,7 +5,7 @@
  *  Author: Dorus
  */
 
-#include <KernelTaskIdle.h>
+#include "../../inc/ktask/KernelTaskIdle.h"
 #include <PriorRTOS.h>
 
 #include <List.h>
