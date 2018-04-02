@@ -26,7 +26,7 @@ extern OsResult_t OsRunTimeGet(U32_t* target);
 
 OsResult_t LogInit(void)
 {
-	PortDebugUartInit(PRTOS_CONFIG_LOGGER_UART_BAUD_RATE);
+	PortDebugUartInit(PRTOS_CONFIG_LOGGER_UART_BAUD_RATE_BPS);
 	
 #if PRTOS_CONFIG_USE_NEWLIB==0
     stdout = &mystdout;
@@ -99,13 +99,13 @@ void LogDebug(U8_t log_line_opt, const char *source, const int line_nr, const ch
 #if PRTOS_CONFIG_ENABLE_LOG_EVENT==1
 void KLogEvent(pEvent_t event)
 {
-    char src_buffer[10];
-    char msg_buffer[100];
-
-    snprintf(src_buffer, sizeof(src_buffer), "%04x", event->source_id);
-    snprintf(msg_buffer, sizeof(msg_buffer), "Event Code: 0x%08x | Occurrence Count: %u | Lifetime (set/cnt): %u/%u", event->event_code,
-             event->occurrence_cnt, event->life_time_us, event->life_time_us_cnt);
-    ILogFormat(LOG_LINE_NEW, "event", src_buffer, 0, msg_buffer, NULL);
+//    char src_buffer[10];
+//    char msg_buffer[100];
+//
+//    snprintf(src_buffer, sizeof(src_buffer), "%04x", event->source_id);
+//    snprintf(msg_buffer, sizeof(msg_buffer), "Event Code: 0x%08x | Occurrence Count: %u | Lifetime (set/cnt): %u/%u", event->event_code,
+//             event->occurrence_cnt, event->life_time_us, event->life_time_us_cnt);
+//    ILogFormat(LOG_LINE_NEW, "event", src_buffer, 0, msg_buffer, NULL);
 }
 #endif
 
