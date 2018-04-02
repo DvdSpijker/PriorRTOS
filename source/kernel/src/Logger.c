@@ -32,23 +32,24 @@ OsResult_t LogInit(void)
     stdout = &mystdout;
 #endif
 
-    LOG_INFO_APPEND("\nLOGGING FORMAT\n");
-    LOG_INFO_APPEND("[h:s:ms] [tag] [source:line nr] : message");
+    LOG_INFO_APPEND("\nLOGGING FORMATS\n");
+    LOG_INFO_APPEND("[h:s:ms] [tag] [<additional>] : message");
     return OS_RES_OK;
 }
 
 static void ILogFormat(U8_t log_line_opt, const char *tag, const char *source, const int line_nr, const char *message, va_list args)
 {
     if(log_line_opt == LOG_LINE_NEW) {
-        U32_t runtime[2] = {0, 0};
+        OsRunTime_t runtime;
+        OS_RUN_TIME_INIT(runtime);
         OsRunTimeGet(runtime);
-        U32_t runtime_h = runtime[0];
-        U32_t runtime_s = runtime[1] / 1e6;
+        U32_t runtime_h = runtime[OS_RUN_TIME_HOURS];
+        U32_t runtime_s = runtime[OS_RUN_TIME_MICROS] / 1e6;
         U32_t runtime_ms = (runtime[1] / 1e3) - (runtime_s * 1e3);
 
         printf("\n[%lu : ", runtime_h);
         printf("%lu : ", runtime_s);
-        printf("%lu]  ",  runtime_ms);
+        printf("%lu] ",  runtime_ms);
 
         if(!strcmp(tag, "info") ) {
             printf("[%s] : ", tag);
