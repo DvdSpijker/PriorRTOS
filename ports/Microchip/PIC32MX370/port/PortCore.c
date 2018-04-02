@@ -71,7 +71,7 @@ void PortOsTimerTicksReset(void)
 
 void PortOsTimerTicksSet(uint32_t ticks)
 {
-    TMR2 = ticks;
+    TMR2 = 390;
 }
 
 void __ISR(_TIMER_2_VECTOR, IPL7SRS) T2Interrupt(void)
