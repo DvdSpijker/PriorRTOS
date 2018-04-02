@@ -452,7 +452,7 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
 
 OsResult_t MemFree(void **ptr)
 {
-    if(*ptr == NULL) {
+    if(ptr == NULL) {
         return OS_RES_NULL_POINTER;
     }
 
