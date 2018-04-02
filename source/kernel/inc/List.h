@@ -349,7 +349,7 @@ goto p_it##_next;                       \
 #define LIST_ITERATOR_END(p_it)     \
 if(ListIteratorNext(p_it) == NULL)  \
     break;                          \
-} while (!ListIteratorEnd(p_it));   \ 
+} while (!ListIteratorEnd(p_it));	\
 }                                   \
 
 
