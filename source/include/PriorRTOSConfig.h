@@ -5,7 +5,7 @@
  *  File: PriorRTOSConfig.h
  *  Description: Prior Configuration header
 
- *  OS Version: V0.4
+ *  OS Version: V0.4.1
  *
  *  Author(s)
  *  -----------------
@@ -64,8 +64,9 @@
  *
  * @desc: Target CPU frequency in Hertz, e.g. 48000000 = 48MHz.
  *
- * @dtype:    (U32_t)
+ * @dtype:    uint32_t
  * @unit:     Hertz.
+ *
  ******************************************************************************/
 #define PRTOS_CONFIG_F_CPU_HZ                                     (uint32_t)72000000
 
@@ -76,24 +77,33 @@
  * @desc: Non-prescaled Clock frequency of the hardware timer used to generate the OS tick
  * interrupt.
  *
- * @dtype:    (U32_t)
+ * @dtype:    uint32_t
  * @unit:     Hertz.
+ *
  ******************************************************************************/
 #define PRTOS_CONFIG_F_OS_TIMER_HZ                               PRTOS_CONFIG_F_CPU_HZ
 
 
 /******************************************************************************
- * @macro: PRTOS_CONFIG_F_OS_TIMER_HZ
+ * @macro: PRTOS_CONFIG_F_OS_HZ
  *
  * @desc: The frequency of the OS tick interrupt in Hertz.
  * A higher frequency results in a more responsive system,
  * but also increases CPU load.
  *
- * @dtype:    (U16_t)
+ * @dtype:    uint16_t
  * @unit:     Hertz.
+ *
  ******************************************************************************/
 #define PRTOS_CONFIG_F_OS_HZ                                        (uint16_t)1000
 
+
+/******************************************************************************
+ * @macro: PRTOS_CONFIG_IRQ_PRIORITY_TYPE
+ *
+ * @desc: Defines the Interrupt Request priority type.
+ *
+ ******************************************************************************/
 #define PRTOS_CONFIG_IRQ_PRIORITY_TYPE                                  uint32_t                   
 
 /******************************************************************************
@@ -101,16 +111,17 @@
  *
  * @desc: OS tick interrupt priority.
  *
- * @dtype:    (IrqPriority_t)
+ * @dtype:    IrqPriority_t
+ *
  ******************************************************************************/
-#define PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY                                   7
+#define PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY                                   0
 
 
 /******************************************************************************
  * @macro: PRTOS_CONFIG_USE_SCHEDULER_COOP
  *
- * @desc: The OS will use a cooperative scheduler. Tasks have to yield volentarily
- * (by calling TASK_YIELD()) in order for the scheduler to switch tasks.
+ * @desc: The kernel will use the cooperative scheduler. Tasks must yield voluntarily
+ * (by calling TaskSuspendSelf) in order for the scheduler to switch tasks.
  *
  ******************************************************************************/
 #define PRTOS_CONFIG_USE_SCHEDULER_COOP
@@ -118,8 +129,10 @@
 /******************************************************************************
  * @macro: PRTOS_CONFIG_USE_SCHEDULER_PREEM
  *
- * @desc: The OS will use a cooperative scheduler. Tasks have to yield volentarily
- * (by calling TASK_YIELD()) in order for the scheduler to switch tasks.
+ * @desc: The kernel will use the pre-emptive scheduler. A task can be switched out
+ * by the scheduler when needed e.g. a higher priority task is ready.
+ * A task can also call TaskSuspendSelf to suspend execution or call TaskSuspend to
+ * suspend another task.
  *
  ******************************************************************************/
 /* #define PRTOS_CONFIG_USE_SCHEDULER_PREEM */ /* !!!NOT YET AVAILABLE IN V 0.4.X!!! */
@@ -127,7 +140,7 @@
 /******************************************************************************
  * @macro: PRTOS_CONFIG_USE_SYS_CALL_NO_BLOCK
  *
- * @desc: All system calls will be non-blocking even when using the pre-emptive
+ * @desc: All system calls will be implicitly non-blocking even when using the pre-emptive
  * scheduler, meaning that they will poll for events instead of waiting.
  *
  ******************************************************************************/
@@ -137,13 +150,13 @@
 /******************************************************************************
  * @macro: PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS 
  * 
- * @desc: Defines the amount of ticks
- * every emitted event lasts.
- * A higher number of ticks enables tasks to respond
- * to events that occurred further in the past.
+ * @desc: Defines the amount of ticks every emitted event lasts.
+ * A higher number of ticks enables tasks to respond to events that occurred
+ * further in the past.
  *
- * @dtype: (U8_t) Unsigned 8 bit integer
+ * @dtype: uint8_t
  * @unit: ticks
+ *
  ******************************************************************************/
 #define PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS                        (uint8_t)2
 
@@ -155,7 +168,8 @@
  * 
  * @desc: Enable the verification of all Lists existing within the
  * kernel. After every access the list's navigation is checked for any
- * corruptions.
+ * corruption.
+ *
  ******************************************************************************/
 #define PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION           1
 
@@ -176,25 +190,79 @@
 
 /************ Memory Settings ************/
 
-/* Memory width. */
+/******************************************************************************
+ * @macro: PRTOS_CONFIG_MEM_WIDTH_8_BITS
+ *
+ * @desc: Target memory is 8 bits wide.
+ *
+ * @unit: bits
+ *
+ ******************************************************************************/
 /*#define PRTOS_CONFIG_MEM_WIDTH_8_BITS */
+
+/******************************************************************************
+ * @macro: PRTOS_CONFIG_MEM_WIDTH_16_BITS
+ *
+ * @desc: Target memory is 16 bits wide.
+ *
+ * @unit: bits
+ *
+ ******************************************************************************/
 /*#define PRTOS_CONFIG_MEM_WIDTH_16_BITS */
+
+/******************************************************************************
+ * @macro: PRTOS_CONFIG_MEM_WIDTH_32_BITS
+ *
+ * @desc: Target memory is 32 bits wide.
+ *
+ * @unit: bits
+ *
+ ******************************************************************************/
 #define PRTOS_CONFIG_MEM_WIDTH_32_BITS
 
-/* Size (in bytes) of the statically allocated OS Heap. The OS Heap is split
+/******************************************************************************
+ * @macro: PRTOS_CONFIG_OS_HEAP_SIZE_BYTES
+ *
+ * @desc: Size (in bytes) of the statically allocated OS Heap. The OS Heap is split
  * into a part used by the kernel, and a part that can be used by the user.
- * The size of the user heap can be configured; PRTOS_CONFIG_USER_HEAP_SIZE. */
-#define PRTOS_CONFIG_OS_HEAP_SIZE_BYTES                           1280
+ * The size of the user heap is defined by @ref(PRTOS_CONFIG_USER_HEAP_SIZE_BYTES).
+ * Kernel heap size = OS heap size - user heap size.
+ *
+ * @dtype: uint32_t
+ * @unit: bytes
+ *
+ ******************************************************************************/
+#define PRTOS_CONFIG_OS_HEAP_SIZE_BYTES							4096
 
-/* Size (in bytes) of the User accessible part of the OS Heap. */
-#define PRTOS_CONFIG_USER_HEAP_SIZE_BYTES                         128
+/******************************************************************************
+ * @macro: PRTOS_CONFIG_OS_HEAP_SIZE_BYTES
+ *
+ * @desc: Size (in bytes) of the User accessible part of the OS Heap.
+ * Kernel heap size = OS heap size - user heap size.
+ *
+ * @dtype: uint32_t
+ * @unit: bytes
+ *
+ ******************************************************************************/
+#define PRTOS_CONFIG_USER_HEAP_SIZE_BYTES						128
 
-/* Number of pools available to the user to allocate blocks of memory.
- * Pools are statically allocated. */
-#define PRTOS_CONFIG_N_USER_POOLS                                 1
+/******************************************************************************
+ * @macro: PRTOS_CONFIG_N_USER_POOLS
+ *
+ * @desc: Number of pools available to the user to allocate blocks of memory.
+ * Pools are statically allocated.
+ *
+ ******************************************************************************/
+#define PRTOS_CONFIG_N_USER_POOLS								1
 
-/* Enables protection of each pool by means of padding and a checksum. */
-#define PRTOS_CONFIG_ENABLE_MEMORY_PROTECTION                     0
+
+/******************************************************************************
+ * @macro: PRTOS_CONFIG_ENABLE_MEMORY_PROTECTION
+ *
+ * @desc: Enables protection of each pool by means of padding and a checksum./
+ *
+ ******************************************************************************/
+#define PRTOS_CONFIG_ENABLE_MEMORY_PROTECTION					0 /* !!!NOT YET AVAILABLE IN V 0.4.X!!! */
 
 
 
