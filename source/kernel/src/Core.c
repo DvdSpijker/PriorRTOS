@@ -247,6 +247,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
     U16_t os_timer_ovf = ICoreCalculatePrescaler(PRTOS_CONFIG_F_OS_HZ);
     PortOsTimerInit(KernelReg.prescaler, os_timer_ovf);
     PortOsTickInit((IrqPriority_t)PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY);
+    PortOsIntDisable();
     LOG_INFO_APPEND("ok");
 
     LOG_INFO_NEWLINE("Initializing module:Memory Management...");
