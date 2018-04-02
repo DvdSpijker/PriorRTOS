@@ -107,6 +107,10 @@ OsResult_t KShellInit(void);
 
 /****************************/
 
+#if  defined(PRTOS_CONFIG_USE_SCHEDULER_COOP) && defined(PRTOS_CONFIG_USE_SCHEDULER_PREEM)
+#error "PriorRTOS: Multiple schedulers in use; Both PRTOS_CONFIG_USE_SCHEDULER_COOP and PRTOS_CONFIG_USE_SCHEDULER_PREEM are defined."
+#endif
+
 static void ICoreTickCoop(void);
 static void ICoreTickPreem(void);
 static void ICoreTickInvoke(U32_t tc);
@@ -694,12 +698,13 @@ static void ICoreRunTimeUpdate(void)
 
 void OsTick(void)
 {
+	if(TcbRunning != NULL) {
 #ifdef PRTOS_CONFIG_USE_SCHEDULER_COOP
-	ICoreTickCoop();
+		ICoreTickCoop();
 #else
 	ICoreTickPreem();
-#endif	
-
+#endif
+	}
 }
 
 static void ICoreTickPreem(void)
