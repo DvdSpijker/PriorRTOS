@@ -41,7 +41,7 @@ extern "C" {
 #endif
 
 #define PRIOR_RTOS
-#define OS_VERSION 0x0041
+#define OS_VERSION 0x0041 /* 0.4.1 */
 
 #include <stdlib.h>
 
