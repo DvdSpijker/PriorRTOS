@@ -21,8 +21,6 @@ extern "C" {
 #include <Logger.h>
 #include <Event.h>
 
-
-
 #if PRTOS_CONFIG_ENABLE_LOG_INFO==1
 void KLogInfo(U8_t log_line_opt, const char* message, ...);
 #define LOG_INFO_NEWLINE(message, ...) \
