@@ -5,7 +5,7 @@
  *  Author: Dorus
  */
 
-#include <KernelTaskTimerUpdate.h>
+#include "../../inc/ktask/KernelTaskTimerUpdate.h"
 #include <PriorRTOS.h>
 
 #include <List.h>
