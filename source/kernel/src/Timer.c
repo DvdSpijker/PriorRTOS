@@ -104,7 +104,7 @@ void KTimerUpdateAll(U32_t t_us)
 #endif
                         /* Timer overflow callback. */
                         if(timer->ovf_callback != NULL) {
-                            timer->ovf_callback(ListNodeIdGet(&timer->list_node));
+                            timer->ovf_callback(ListNodeIdGet(&timer->list_node), timer->context);
                         }
 
                         if(!(timer->parameter & TIMER_PARAMETER_PERIODIC)) { /* If timer is not Periodic. */
@@ -142,7 +142,7 @@ void KTimerUpdateAll(U32_t t_us)
 
 
 
-Id_t TimerCreate(U32_t interval, U8_t parameter, TimerOverflowCallback_t overflow_callback)
+Id_t TimerCreate(U32_t interval, U8_t parameter, TimerOverflowCallback_t overflow_callback, void *context)
 {
     if(interval == 0) {
         return OS_ID_INVALID;
@@ -159,6 +159,7 @@ Id_t TimerCreate(U32_t interval, U8_t parameter, TimerOverflowCallback_t overflo
     new_timer->T_us = interval;
     new_timer->parameter = parameter;
     new_timer->ovf_callback = overflow_callback;
+    new_timer->context = context;
     if (parameter & TIMER_PARAMETER_ON) { //ON bit
         TimerStart(new_timer_id);
     }

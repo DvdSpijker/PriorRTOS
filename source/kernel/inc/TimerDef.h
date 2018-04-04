@@ -20,6 +20,8 @@ typedef struct Timer_t {
     ListNode_t       list_node;
     
     TimerOverflowCallback_t ovf_callback;
+    void 				*context;
+
     TmrState_t          state;
     U8_t                parameter;
     U32_t               T_us;

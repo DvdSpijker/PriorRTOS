@@ -54,7 +54,7 @@ typedef enum {
 } TmrState_t;
 
 
-typedef void (*TimerOverflowCallback_t)(Id_t timer_id);
+typedef void (*TimerOverflowCallback_t)(Id_t timer_id, void *context);
 
 /* Timer Parameter macros */
 #define TIMER_PARAMETER_ON 0x01
@@ -106,12 +106,14 @@ typedef void (*TimerOverflowCallback_t)(Id_t timer_id);
  * @argin: (U32_t) interval_us; Timer interval in microseconds(us), 0xFFFFFFFF is illegal.
  * @argin: (U8_t) parameter; Timer parameter.
  * @argin: (TimerOverflowCallback_t) overflow_callback; Called when the timer overflows.
+ * @argin: (void *) context; Opaque context pointer, argument of the overflow_callback.
+ * Set NULL if unused.
  *
  * @rettype:  (Id_t) Timer ID
  * @retval:   INVALID_ID; if creation failed.
  * @retval:   Other; if the timer was created.
  ******************************************************************************/
-Id_t TimerCreate(U32_t interval_us, U8_t parameter, TimerOverflowCallback_t overflow_callback);
+Id_t TimerCreate(U32_t interval_us, U8_t parameter, TimerOverflowCallback_t overflow_callback, void *context);
 
 
 /******************************************************************************
