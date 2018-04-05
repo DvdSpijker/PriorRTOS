@@ -7,16 +7,26 @@ extern "C" {
 
 #include <Types.h>
 
-Id_t ShellRxRingbuf;
-Id_t ShellTxRingbuf;
-
 #define SHELL_MAX_COMMAND_LENGTH 10 /* Maximum length of the command. */
+
+/* Available shell commands:
+ * ------------------------------------------------------------------------------------ *
+ * command		| arguments		| optional	| description							  	*
+ * ------------------------------------------------------------------------------------ *
+ * help			| <command>		| 	X		| Shows all the available commands, or		*
+ * 											| shows the help msg of the specified		*
+ * 											| command.									*
+ * ------------------------------------------------------------------------------------ *
+ * run			| <task id hex> |			| Runs the specified task if able.			*
+ * ------------------------------------------------------------------------------------ *
+ *
+ *
+ * */
 
 typedef OsResult_t (*ShellCommandExecuteCallback_t)(char **tokens, U8_t n_tokens);
 typedef OsResult_t (*ShellCommandGenericCallback_t)(void);
 
-
-/* ShellCommand structure.
+/* ShellCommand struct.
  * Defines the command, callbacks and token counts.
  * All fields have to be initialized. Unused callbacks
  * should be set to NULL.
@@ -24,7 +34,7 @@ typedef OsResult_t (*ShellCommandGenericCallback_t)(void);
 struct ShellCommand {
     char cmd[SHELL_MAX_COMMAND_LENGTH];             /* Command string. */
     ShellCommandGenericCallback_t callback_init;    /* Additional initialization required for the command. */
-    ShellCommandGenericCallback_t callback_help;    /* Should print the help command.
+    ShellCommandGenericCallback_t callback_help;    /* Must print the help command.
                                                      * Called when help is called with the command's name.  */
     ShellCommandExecuteCallback_t callback_execute; /* Called when the command is called and the token count is within limits. */
     U8_t min_tokens;                                /* Minimum amount of tokens to parse the command as valid. */
