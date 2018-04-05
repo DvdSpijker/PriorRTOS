@@ -19,17 +19,19 @@
 #define SHELL_MAX_LINE_LENGTH       200 /* Maximum length of a single line. */
 #define SHELL_MAX_TOKEN_COUNT       10  /* Maximum number of arguments per command. Max. 127. */
 #define SHELL_MAX_TOKEN_LENGTH      10  /* Maximum length of each argument. */
-#define SHELL_SPLIT_CHAR_COUNT      2   /* Number of split characters. Split characters are defined by SplitChars array. */
+#define SHELL_SPLIT_CHAR_COUNT      1   /* Number of split characters. Split characters are defined by SplitChars array. */
 #define SHELL_MSG_START_LENGTH      5   /* Length of each message prefix. The message itself is defined by ShellMessageStart. */
-#define SHELL_IGNORE_CHAR_COUNT     2
+#define SHELL_IGNORE_CHAR_COUNT     1
 
 const char ShellMessageStart[SHELL_MSG_START_LENGTH+1] = {'\n', 'p', 's', 'h', '>', '\0'};
-const char SplitChars[SHELL_SPLIT_CHAR_COUNT] = {'-','='};
-const char IgnoreChars[SHELL_IGNORE_CHAR_COUNT] = {' ', '%'};
+const char SplitChars[SHELL_SPLIT_CHAR_COUNT] = {' '};
+const char IgnoreChars[SHELL_IGNORE_CHAR_COUNT] = {'='};
 const char LineTerminatorChar = '\n';
 
 //char TokenBuffer[SHELL_MAX_TOKEN_COUNT][SHELL_MAX_TOKEN_LENGTH];
 
+Id_t ShellRxRingbuf;
+Id_t ShellTxRingbuf;
 Id_t ShellPool = OS_ID_INVALID;
 struct ShellCommand ShellCommandSet[SHELL_MAX_COMMAND_COUNT];
 U8_t TotalShellCommands;
