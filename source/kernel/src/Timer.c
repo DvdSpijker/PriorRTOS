@@ -98,13 +98,20 @@ void KTimerUpdateAll(U32_t t_us)
                     if(timer->ticks >= timer->T_us) { /* Timer overflow. */
                         timer_id = ListNodeIdGet(&timer->list_node);
 
+                        timer->state = TIMER_STATE_WAITING; /* Timer waiting for reset. */
+
 #ifdef PRTOS_CONFIG_USE_EVENT_TIMER_OVERFLOW
-                        //LOG_DEBUG_NEWLINE("Timer (%04x) overflow event.", timer_id);
+                        //LOG_DEBUG_NEWLINE("Timer (%08x) overflow event.", timer_id);
                         EventEmit(timer_id, TIMER_EVENT_OVERFLOW, EVENT_FLAG_NONE);
 #endif
                         /* Timer overflow callback. */
                         if(timer->ovf_callback != NULL) {
                             timer->ovf_callback(ListNodeIdGet(&timer->list_node), timer->context);
+                        }
+
+                        /* Auto reset check. */
+                        if((timer->parameter & TIMER_PARAMETER_AR) && destroy == false) {
+                            timer->ticks = 0;
                         }
 
                         if(!(timer->parameter & TIMER_PARAMETER_PERIODIC)) { /* If timer is not Periodic. */
@@ -115,13 +122,6 @@ void KTimerUpdateAll(U32_t t_us)
                             } else { /* Load iterations back into timer parameter if timer will not be destroyed. */
                                 timer->parameter |= TIMER_PARAMETER_ITR_SET(iter);
                             }
-                        }
-
-                        /* Auto reset check. */
-                        if((timer->parameter & TIMER_PARAMETER_AR) && destroy == false) {
-                            timer->ticks = 0;
-                        } else {
-                            timer->state = TIMER_STATE_WAITING; /* Timer waiting for reset. */
                         }
 
                         /* Check destroy flag. */
