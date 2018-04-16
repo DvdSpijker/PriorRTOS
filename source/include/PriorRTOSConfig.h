@@ -158,7 +158,7 @@
  * @unit: ticks
  *
  ******************************************************************************/
-#define PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS                        (uint8_t)2
+#define PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS                        (uint8_t)3
 
 
 /***** List settings. *****/
@@ -308,14 +308,14 @@
 * A higher prescaler results in software timers with a lower resolution e.g.
 * Prescaler 5 => resolution: 5 * OS tick period. On the other hand it also reduces
 * CPU load. Prescaler 2 results in max resolution and CPU load. */
-#define PRTOS_CONFIG_TIMER_INTERVAL_RESOLUTION_MS                 (uint8_t)20
+#define PRTOS_CONFIG_TIMER_INTERVAL_RESOLUTION_MS                 (uint8_t)50
 
 #define PRTOS_CONFIG_USE_EVENT_TIMER_OVERFLOW
 #define PRTOS_CONFIG_USE_EVENT_TIMER_START_STOP_RESET
 /*************************/
 
 /* Mailbox Module Settings. */
-#define PRTOS_CONFIG_ENABLE_MAILBOXES                             0
+#define PRTOS_CONFIG_ENABLE_MAILBOXES                             1
 #define PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
 /*************************/
 
@@ -373,6 +373,7 @@
 
 /* #define PRTOS_CONFIG_USE_LOGGER_MODE_FILE */ /* !!!NOT YET AVAILABLE IN V 0.4.1!!! */
 #define PRTOS_CONFIG_USE_LOGGER_MODE_UART
+#define PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER
 
 /* Enable the Shell module. The shell provides a Command Line Interface. */
 /* TODO: Shell UART linkage. */
