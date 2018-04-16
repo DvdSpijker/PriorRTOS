@@ -112,6 +112,7 @@ void KTimerUpdateAll(U32_t t_us)
                         /* Auto reset check. */
                         if((timer->parameter & TIMER_PARAMETER_AR) && destroy == false) {
                             timer->ticks = 0;
+                            timer->state = TIMER_STATE_RUNNING;
                         }
 
                         if(!(timer->parameter & TIMER_PARAMETER_PERIODIC)) { /* If timer is not Periodic. */
