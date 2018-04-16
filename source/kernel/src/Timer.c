@@ -110,8 +110,12 @@ void KTimerUpdateAll(U32_t t_us)
                         }
 
                         /* Auto reset check. */
-                        if((timer->parameter & TIMER_PARAMETER_AR) && destroy == false) {
+                        if(timer->parameter & TIMER_PARAMETER_AR) {
                             timer->ticks = 0;
+                        }
+
+                        /* On check. */
+                        if(timer->parameter & TIMER_PARAMETER_ON) {
                             timer->state = TIMER_STATE_RUNNING;
                         }
 
@@ -200,7 +204,6 @@ OsResult_t TimerReset(Id_t timer_id)
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
         if(tmp_timer != NULL) {
             tmp_timer->ticks = 0;
-            tmp_timer->state = TIMER_STATE_RUNNING;
             result = OS_RES_OK;
         }
     }

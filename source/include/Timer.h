@@ -188,8 +188,7 @@ void TimerPause(Id_t timer_id);
 /******************************************************************************
  * @func: OsResult_t TimerReset(Id_t timer_id)
  *
- * @desc: Resets the timer's current ticks and transitions it to the
- * running state.
+ * @desc: Resets the timer's current ticks.
  *
  * Arguments:
  * @argin: (Id_t) timer_id; ID of the timer to reset.
