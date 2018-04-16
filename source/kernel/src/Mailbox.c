@@ -151,7 +151,11 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
             if(result == OS_RES_OK) {
                 if(mailbox->pend_counters[address] != 0) {
 #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
-                    SYSTEM_CALL_POLL_WAIT_EVENT(node, mailbox_id, MAILBOX_EVENT_PEND(address), &result, timeout);
+                	if(timeout != OS_TIMEOUT_NONE) {
+                		SYSTEM_CALL_POLL_WAIT_EVENT(node, mailbox_id, MAILBOX_EVENT_PEND(address), &result, timeout);
+                	} else {
+                		result = OS_RES_LOCKED;
+                	}
 #else
                     result = OS_RES_LOCKED;
 #endif
@@ -164,6 +168,7 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
                     mailbox->pend_counters[address] = mailbox->n_owners;
 #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
                     EventEmit(mailbox_id, MAILBOX_EVENT_POST(address), EVENT_FLAG_NONE);
+                    EventEmit(mailbox_id, MAILBOX_EVENT_POST_ALL, EVENT_FLAG_NONE);
 #endif
                 }
             }
