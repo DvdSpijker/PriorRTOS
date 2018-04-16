@@ -53,6 +53,7 @@ extern "C" {
 #ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
 #define MAILBOX_EVENT_POST(addr)     (EVENT_TYPE_ACCESS | 0x00001000 | (U8_t)addr)
 #define MAILBOX_EVENT_PEND(addr)     (EVENT_TYPE_ACCESS | 0x00002000 | (U8_t)addr)
+#define MAILBOX_EVENT_POST_ALL		 (EVENT_TYPE_ACCESS | 0x000020FF)
 #endif
 
 /* Mailbox width definition */
