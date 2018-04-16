@@ -10,6 +10,11 @@
 #include <PortLogger.h>
 #include <stdio.h>
 
+#ifdef PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER
+#include <Ringbuffer.h>
+#define LOGGER_RINGBUF_SIZE_BYTES 400
+#endif
+
 #if PRTOS_CONFIG_USE_NEWLIB==1
 #include <unistd.h>
 #include <errno.h>
@@ -26,7 +31,13 @@ extern OsResult_t OsRunTimeGet(U32_t* target);
 
 OsResult_t LogInit(void)
 {
+#ifdef PRTOS_CONFIG_USE_LOGGER_MODE_UART
 	PortDebugUartInit(PRTOS_CONFIG_LOGGER_UART_BAUD_RATE_BPS);
+#endif
+
+#ifdef PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER
+	LoggerRingbuf = RingbufCreate(NULL, LOGGER_RINGBUF_SIZE_BYTES);
+#endif
 	
 #if PRTOS_CONFIG_USE_NEWLIB==0
     stdout = &mystdout;
