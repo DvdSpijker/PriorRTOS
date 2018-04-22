@@ -806,11 +806,7 @@ static void ICoreSchedulerCycle(void)
     ListSize_t list_size;
     ICoreEventBrokerCycle(&ExecutionQueue);
     list_size = ListSizeGet(&ExecutionQueue);
-    if(list_size == 0) {
-        goto clear_scheduler_flag;
-    }
 
-clear_scheduler_flag:
     KCoreFlagClear(CORE_FLAG_SCHEDULER);
 }
 
