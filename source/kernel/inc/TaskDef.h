@@ -28,10 +28,14 @@ typedef enum {
     TASK_FLAG_NO_PREEM       = 0x10,
 } TaskFlags_t;
 
-union DynamicPrio {
-    U32_t  age_us;  /* Incremented every cycle that the task is not running.
-                         * The task will age and be boosted in priority to avoid starvation. */
-    U32_t deadline_us;
+union DynamicPrioParam {
+	/* Incremented every cycle that the task is not running.
+	 * The task will age and be boosted in priority to avoid starvation. */
+    U32_t  age_us;
+
+    /* Real-Time deadline in microseconds. The closer the deadline,
+     * the higher the priority of the task. */
+    U32_t rt_deadline_us;
 };
 
 /* Scheduling parameters.
@@ -40,11 +44,10 @@ union DynamicPrio {
  * in a scheduling queue i.e. redundant
  * for a considerable amount of time. */
 struct SchedParams {
-    LinkedList_t *queue;    /* Scheduling queue the task is in. */
-    U8_t   prio_sum;        /* All priorities added. */
-    Prio_t boosted_prio;    /* Priority boosted on top of base priority. */
-    Prio_t inherited_prio;  /* Possible inherited priority from other task. */
-    union DynamicPrio dyn_prio;
+    LinkedList_t *queue;	/* Scheduling queue the task is in. */
+    Prio_t   prio_sum;		/* Sum of priorities. */
+    Prio_t inherited_prio;	/* Possible inherited priority from another task. */
+    union DynamicPrioParam dyn_prio_param; /* Dynamic priority parameter. */
 };
 
 
