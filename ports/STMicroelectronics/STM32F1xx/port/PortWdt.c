@@ -8,33 +8,30 @@
 #include "PortWdt.h"
 
 #include "iwdg.h"
+#include "stm32f1xx_hal.h"
 
-void PortWdtInit(U8_t wdt_mode, IrqPriority_t wdt_irq_prio)
+U32_t WdtPrescaler;
+
+void PortWdtInit(U8_t wdt_mode)
 {
 	(void)wdt_mode;
-	MX_IWDG_Init();
 }
 
-//void PortWdtEnable(U8_t wdt_expire_opt)
-//{
-//PortGlobalIntDisable();
-//
-//PortGlobalIntEnable();
-//}
+void PortWdtEnable(U32_t timeout_ms)
+{
+	MX_IWDG_Init();
+	WdtPrescaler = hiwdg.Init.Prescaler;
+	hiwdg.Init.Reload = WdtPrescaler  * timeout_ms;
+	HAL_IWDG_Init(&hiwdg);
+}
 
 void PortWdtDisable()
 {
-	char x = 0;
-	x++;
+	/* Cannot be disabled. */
 }
 
 void PortWdtKick()
 {
-	char x = 0;
-	x++;
+	HAL_IWDG_Refresh(&hiwdg);
 }
 
-//ISR(WDT_vect)
-//{
-//CoreWdtIsr();
-//}

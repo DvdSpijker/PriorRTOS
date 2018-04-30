@@ -19,9 +19,9 @@
 
 /* Watchdog Timer Port. */
 
-void PortWdtInit(uint8_t wdt_mode, IrqPriority_t wdt_irq_prio);
+void PortWdtInit(U8_t wdt_mode);
 
-void PortWdtEnable(uint8_t wdt_expire_opt);
+void PortWdtEnable(U32_t timeout_ms);
 
 void PortWdtDisable(void);
 
