@@ -1,12 +1,11 @@
 /*
- * PortLogger.c
+ * PortDebug.c
  *
  * Created: 7-3-2018 22:24:37
  *  Author: Dorus
  */ 
 
-#include "PortLogger.h"
-
+#include "PortDebug.h"
 #include "usart.h"
 #include "stm32f1xx_hal_uart.h"
 
@@ -46,7 +45,7 @@ char PortDebugUartReadChar(void)
 {
 	char c = '\0';
 
-	HAL_UART_Receive(&huart1, &c, 1, 100);
+	HAL_UART_Receive(&huart1, (uint8_t *)&c, 1, 100);
 
 	return c;
 }

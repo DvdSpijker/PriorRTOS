@@ -1,13 +1,13 @@
 /*
- * PortLogger.h
+ * PortDebug.h
  *
  * Created: 4-3-2018 1:29:41
  *  Author: Dorus
  */ 
 
 
-#ifndef PORT_LOGGER_H_
-#define PORT_LOGGER_H_
+#ifndef PORT_DEBUG_H_
+#define PORT_DEBUG_H_
 
 #include <stdint.h>
 
@@ -17,10 +17,10 @@ int PortDebugUartInit(uint32_t baud_rate);
 
 int PortDebugUartWriteString(char *str);
 
-int PortDebugUartWriteChar(char *c);
+int PortDebugUartWriteChar(char c);
 
 char PortDebugUartReadChar();
 
 
 
-#endif /* LOGGER_PORT_H_ */
+#endif /* PORT_DEBUG_H_ */
