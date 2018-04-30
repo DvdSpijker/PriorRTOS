@@ -7,7 +7,7 @@
 
 #include <Logger.h>
 #include <LoggerDef.h>
-#include <PortLogger.h>
+#include "../../port/PortDebug.h"
 #include <stdio.h>
 
 #ifdef PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER
