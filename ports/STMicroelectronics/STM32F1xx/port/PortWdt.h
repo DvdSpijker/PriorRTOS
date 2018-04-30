@@ -15,6 +15,8 @@
 #define PORT_WDT_EXPIRE_120MS  3
 #define PORT_WDT_EXPIRE_8_S    4
 
+#include <Types.h>
+
 /* Watchdog Timer Port. */
 
 void PortWdtInit(uint8_t wdt_mode, IrqPriority_t wdt_irq_prio);

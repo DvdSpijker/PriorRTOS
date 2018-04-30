@@ -7,11 +7,13 @@
 
 #include "PortWdt.h"
 
-//void PortWdtInit(U8_t wdt_mode, IrqPriority_t wdt_irq_prio)
-//{
-//char x = 0;
-//x++;
-//}
+#include "iwdg.h"
+
+void PortWdtInit(U8_t wdt_mode, IrqPriority_t wdt_irq_prio)
+{
+	(void)wdt_mode;
+	MX_IWDG_Init();
+}
 
 //void PortWdtEnable(U8_t wdt_expire_opt)
 //{
