@@ -1,7 +1,7 @@
 
 #include "PortCore.h"
 
-#include "stm32f1xx_hal_cortex.h"
+#include "stm32f1xx_hal.h"
 #include "core_cm3.h"
 
 void PortSuperVisorModeEnable(void)
