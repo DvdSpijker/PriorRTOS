@@ -48,8 +48,8 @@
 #include <List.h>
 #include <Event.h>
 
-#include <PortCore.h>
-#include <CoreDef.h>
+#include "../../port/PortCore.h"
+#include "../inc/CoreDef.h"
 #include <TaskDef.h>
 #include <MemoryDef.h>
 
