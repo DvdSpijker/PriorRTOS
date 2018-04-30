@@ -2,16 +2,26 @@
 #include "PortCore.h"
 
 #include "stm32f1xx_hal_cortex.h"
-#include "core_cm0.h"
+#include "core_cm3.h"
+
+void PortSuperVisorModeEnable(void)
+{
+	/* Cortex M3 has no support for supervisor mode. */
+}
+
+void PortSuperVisorModeDisable(void)
+{
+	/* Cortex M3 has no support for supervisor mode. */
+}
 
 void PortGlobalIntDisable(void)
 {
-    cpu_irq_disable();
+	/* TODO: Implementation of PortGlobalIntDisable. */
 }
 
 void PortGlobalIntEnable(void)
 {
-
+	/* TODO: Implementation of PortGlobalIntEnable. */
 }
 
 void PortOsIntDisable(void)
@@ -34,6 +44,7 @@ void PortOsTimerInit(uint16_t prescaler, uint16_t ovf)
 	uint32_t ticks = (uint32_t)(prescaler * ovf);
 	HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 	HAL_SYSTICK_Config(ticks);
+	PortOsIntDisable();
 }
 
 
@@ -71,7 +82,7 @@ void HAL_SYSTICK_Callback(void)
 
 void PortOsTickInit(IrqPriority_t os_tick_irq_prio)
 {
-
+	NVIC_SetPriority (SysTick_IRQn, (1UL << os_tick_irq_prio) - 1UL); /* set Priority for Systick Interrupt */
 }
 
 
