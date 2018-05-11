@@ -40,7 +40,7 @@
 extern "C" {
 #endif
 
-#include <Types.h>
+#include <OsTypes.h>
 #include <List.h>
 #include <Task.h>
 

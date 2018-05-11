@@ -40,7 +40,6 @@
 /*********OS Task management*********/
 
 #include <LoggerDef.h>
-#include <Types.h>
 #include <Convert.h>
 #include <Task.h>
 #include <Event.h>
@@ -49,6 +48,7 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
+#include <OsTypes.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -153,7 +153,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
 #ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
     EventEmit(new_TCB->list_node.id, TASK_EVENT_CREATE, EVENT_FLAG_NONE);
 #endif
-    LOG_INFO_NEWLINE("Task created: %04x", new_TCB->list_node.id);
+    LOG_INFO_NEWLINE("Task created: %08x", new_TCB->list_node.id);
     return new_TCB->list_node.id;
 }
 
@@ -181,7 +181,7 @@ OsResult_t TaskDelete(Id_t *task_id)
         EventEmit(task_id, TASK_EVENT_DELETE, EVENT_FLAG_NONE);
 #endif
         result = OS_RES_OK;
-        LOG_INFO_NEWLINE("Deleted task %04x", tcb->list_node.id);
+        LOG_INFO_NEWLINE("Deleted task %08x", tcb->list_node.id);
     }
 
     return result;

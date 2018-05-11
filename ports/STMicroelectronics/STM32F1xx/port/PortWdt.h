@@ -15,7 +15,7 @@
 #define PORT_WDT_EXPIRE_120MS  3
 #define PORT_WDT_EXPIRE_8_S    4
 
-#include <Types.h>
+#include <OsTypes.h>
 
 /* Watchdog Timer Port. */
 

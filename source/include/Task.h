@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-#include <Types.h>
+#include <OsTypes.h>
 #include <EventDef.h>
 
 

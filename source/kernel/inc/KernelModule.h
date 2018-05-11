@@ -1,7 +1,7 @@
 #ifndef KERNEL_MODULE_H_
 #define KERNEL_MODULE_H_
 
-#include <Types.h>
+#include <OsTypes.h>
 
 /* KM = Kernel Module. */
 typedef enum {

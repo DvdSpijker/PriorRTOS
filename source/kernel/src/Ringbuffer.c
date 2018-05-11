@@ -39,7 +39,6 @@
 
 
 #include <Ringbuffer.h>
-#include <Types.h>
 #include <MemoryDef.h>
 #include <List.h>
 #include <Event.h>
@@ -47,6 +46,7 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
+#include <OsTypes.h>
 #include <stdio.h>
 
 static S8_t IRingbufLockWrite(Ringbuf_t *ringbuf);

@@ -1,4 +1,3 @@
-#include <Types.h>
 #include <Semaphore.h>
 #include <SemaphoreDef.h>
 #include <TaskDef.h>
@@ -8,6 +7,7 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
+#include <OsTypes.h>
 #include <stdio.h>
 
 LinkedList_t SemList;

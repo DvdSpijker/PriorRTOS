@@ -46,7 +46,7 @@ extern "C" {
 #include <stdlib.h>
 
 #include <PriorRTOSConfig.h>
-#include <Types.h>
+#include <OsTypes.h>
 
 /*Core API includes*/
 #include <Memory.h>

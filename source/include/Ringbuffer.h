@@ -42,7 +42,7 @@ extern "C" {
 #endif
 
 #include <List.h>
-#include <Types.h>
+#include <OsTypes.h>
 #include <PriorRTOSConfig.h>
 #include <EventDef.h>
 

@@ -9,7 +9,7 @@
 #ifndef SHELL_COMMAND_HELP_H_
 #define SHELL_COMMAND_HELP_H_
 
-#include <Types.h>
+#include <OsTypes.h>
 #include <Shell.h>
 #include <stdlib.h>
 

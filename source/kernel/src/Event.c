@@ -8,10 +8,10 @@
 #include <PriorRTOSConfig.h>
 #include <Logger.h>
 #include <LoggerDef.h>
-#include <Types.h>
 #include <Event.h>
 #include <Fletcher.h>
 #include <MemoryDef.h>
+#include <OsTypes.h>
 
 #include <stdlib.h>
 #include <stdio.h>

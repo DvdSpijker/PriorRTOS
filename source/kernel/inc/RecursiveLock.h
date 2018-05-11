@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include <Types.h>
+#include <OsTypes.h>
 #include <EventDef.h>
 
 #include <stdint.h>

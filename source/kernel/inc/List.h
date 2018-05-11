@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 #include <stdbool.h>
-#include <Types.h>
+#include <OsTypes.h>
 #include <CoreDef.h>
 
 #define LIST_ITERATOR_DIRECTION_FORWARD 0x00

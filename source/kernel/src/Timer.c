@@ -40,7 +40,6 @@
 //Timer parameter | bit 0: ON | bit 1: permanent | bit 2: auto-reset | bit 3-7 number of iterations (if bit 1 = 0) |
 
 
-#include <Types.h>
 #include <List.h>
 #include <Convert.h>
 #include <LoggerDef.h>
@@ -55,6 +54,7 @@
 
 #include <stdlib.h>
 #include <inttypes.h>
+#include <OsTypes.h>
 #include <stdbool.h>
 
 LOG_FILE_NAME("Timer.c")

@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-#include <Types.h>
+#include <OsTypes.h>
 #include <Event.h>
 #include <Task.h>
 

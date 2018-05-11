@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-#include <Types.h>
+#include <OsTypes.h>
 #include <Task.h>
 
 /* Creates a task in CAT_OS, this task has parameter TASK_PARAM_NO_PREEM and TASK_PARAM_INSTANT_WAKE by default. */

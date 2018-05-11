@@ -40,7 +40,6 @@
 
 /* Prior RTOS includes. */
 #include <PriorRTOS.h>
-#include <Types.h>
 #include <Logger.h>
 #include <LoggerDef.h>
 #include <Convert.h>
@@ -62,6 +61,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <math.h>
+#include <OsTypes.h>
 
 #define N_KERNEL_TIMERS  0	/* Number of Kernel timers. */
 #define KERNEL_HEAP_SIZE 20

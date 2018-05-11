@@ -1,10 +1,10 @@
 #include <Shell.h>
-#include <Types.h>
 #include <KernelTask.h>
 #include <Task.h>
 #include <TaskDef.h>
 #include <Ringbuffer.h>
 #include <Memory.h>
+#include <OsTypes.h>
 
 #include "shellcmd/ShellCommandHelp.h"
 #include "shellcmd/ShellCommandRun.h"

@@ -7,7 +7,7 @@ extern "C" {
 
 #include <stdlib.h>
 #include <stdbool.h>
-#include <Types.h>
+#include <OsTypes.h>
 
 /* Generates a 16-bits Fletcher checksum from given data.
  * Returns 0 if an error has occurred. */

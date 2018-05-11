@@ -10,10 +10,10 @@
 #define SYSTEM_CALL_H_
 
 #include <stdlib.h>
-#include <Types.h>
 #include <Event.h>
 #include <TaskDef.h>
 #include <List.h>
+#include <OsTypes.h>
 
 #include <PriorRTOSConfig.h>
 

@@ -42,17 +42,11 @@
 extern "C" {
 #endif
 
-#include <stdint.h>
+#include <StdTypes.h>
+#include <Id.h>
 #include <PriorRTOSConfig.h>
 
-typedef uint8_t     U8_t;
-typedef int8_t      S8_t;
-typedef uint16_t    U16_t;
-typedef int16_t     S16_t;
-typedef uint32_t    U32_t;
-typedef int32_t     S32_t;
-typedef uint64_t    U64_t;
-typedef int64_t     S64_t;
+
 
 #ifdef PRTOS_CONFIG_MEM_WIDTH_8_BITS
 #if (defined(PRTOS_CONFIG_MEM_WIDTH_16_BITS) || defined(PRTOS_CONFIG_MEM_WIDTH_32_BITS))
@@ -153,23 +147,6 @@ typedef enum {
 #define OS_TIMEOUT_INFINITE	0xFFFFFFFF /* Wait or Poll forever. */
 #define OS_TIMEOUT_NONE		0x00000000 /* Do not Wait or Poll. */
 
-/* Any OS object ID consists of 2 parts; an ID type and a unique ID. */
-typedef U32_t Id_t;
-
-typedef enum {
-    ID_TYPE_POOL        = 0x00000000,
-    ID_TYPE_TASK        = 0x01000000,
-    ID_TYPE_TIMER       = 0x02000000,
-    ID_TYPE_EVENTGROUP  = 0x03000000,
-    ID_TYPE_SEMAPHORE   = 0x04000000,
-    ID_TYPE_MAILBOX     = 0x05000000,
-    ID_TYPE_RINGBUF     = 0x06000000,
-	ID_TYPE_OTHER       = 0xFF000000,
-} IdType_t;
-
-#define OS_ID_INVALID           0xFFFFFFFF /* Invalid ID definition. */
-#define OS_ID_MASK_TYPE         0xFF000000 /* ID type mask. */
-#define OS_ID_MASK_UID          0x00FFFFFF /* Unique ID (UID) mask. */
 
 
 /* Task type definition */
