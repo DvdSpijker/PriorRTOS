@@ -1,8 +1,8 @@
 #ifndef PORT_CORE_H
 #define PORT_CORE_H
 
+#include <OsTypes.h>
 #include <stdint.h>
-#include <Types.h>
 
 /* SuperVisor mode Port. */
 void PortSuperVisorModeEnable(void);

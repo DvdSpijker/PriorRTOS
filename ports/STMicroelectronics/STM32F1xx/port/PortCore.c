@@ -4,6 +4,8 @@
 #include "stm32f1xx_hal.h"
 #include "core_cm3.h"
 
+uint16_t SysTickPrescaler;
+
 void PortSuperVisorModeEnable(void)
 {
 	/* Cortex M3 has no support for supervisor mode. */
@@ -16,12 +18,12 @@ void PortSuperVisorModeDisable(void)
 
 void PortGlobalIntDisable(void)
 {
-	/* TODO: Implementation of PortGlobalIntDisable. */
+	__disable_irq();
 }
 
 void PortGlobalIntEnable(void)
 {
-	/* TODO: Implementation of PortGlobalIntEnable. */
+	__enable_irq();
 }
 
 void PortOsIntDisable(void)
@@ -41,9 +43,11 @@ void PortOsIntFlagClear(void)
 
 void PortOsTimerInit(uint16_t prescaler, uint16_t ovf)
 {
-	uint32_t ticks = (uint32_t)(prescaler * ovf);
+	uint16_t SysTickPrescaler = prescaler;
+	uint32_t ticks = (uint32_t)(SysTickPrescaler * ovf);
 	HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 	HAL_SYSTICK_Config(ticks);
+	SysTick->CTRL &= ~(SysTick_CTRL_ENABLE_Msk);
 	PortOsIntDisable();
 }
 
@@ -71,6 +75,7 @@ void PortOsTimerTicksReset(void)
 
 void PortOsTimerTicksSet(uint32_t ticks)
 {
+	ticks *= SysTickPrescaler;
 	SysTick->VAL = ticks;
 }
 
