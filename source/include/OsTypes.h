@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 #include <StdTypes.h>
-#include <Id.h>
+#include <IdType.h>
 #include <PriorRTOSConfig.h>
 
 

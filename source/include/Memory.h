@@ -41,7 +41,7 @@
 extern "C" {
 #endif
 
-#include <Types.h>
+#include <OsTypes.h>
 
 /******************************************************************************
  * @func: Id_t MemPoolCreate(U32_t size)
