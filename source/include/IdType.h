@@ -12,23 +12,24 @@
 
 #define ID_LIST_SIZE_MAX 5
 
-#define OS_ID_INVALID           0xFFFFFFFF /* Invalid ID definition. */
-#define OS_ID_MASK_TYPE         0xFF000000 /* ID type mask. */
-#define OS_ID_MASK_UID          0x00FFFFFF /* Unique ID (UID) mask. */
+#define ID_INVALID           0xFFFFFFFF /* Invalid ID definition. */
 
-/* Any OS object ID consists of 2 parts; an ID type and a unique ID. */
+/* All OS resources are assigned a unique ID.
+ * An ID is requested using IdRequest.
+ * An ID consists of 2 parts: the ID group and the sequence number. */
 typedef U32_t Id_t;
 
 typedef enum {
-    ID_TYPE_POOL        = 0x00000000,
-    ID_TYPE_TASK        = 0x01000000,
-    ID_TYPE_TIMER       = 0x02000000,
-    ID_TYPE_EVENTGROUP  = 0x03000000,
-    ID_TYPE_SEMAPHORE   = 0x04000000,
-    ID_TYPE_MAILBOX     = 0x05000000,
-    ID_TYPE_RINGBUF     = 0x06000000,
-	ID_TYPE_OTHER       = 0xFF000000,
-} IdType_t;
+	ID_GROUP_POOL	= 0,
+	ID_GROUP_TASK,
+	ID_GROUP_TIMER,
+	ID_GROUP_EVENTGROUP,
+	ID_GROUP_SEMAPHORE,
+	ID_GROUP_MAILBOX,
+	ID_GROUP_RINGBUF,
+
+	ID_GROUP_NUM, /* Must be the last member of this enum. */
+} IdGroup_t;
 
 struct IdList {
 	Id_t ids[ID_LIST_SIZE_MAX];
@@ -53,5 +54,13 @@ if(p_id_list->n) {							\
 	*p_id = p_id_list->ids[n];				\
 	p_id_list->n--;							\
 }}											\
+
+
+/* Request an ID of a specific type. */
+Id_t IdRequest(IdGroup_t type);
+
+Id_t IdSequenceNumberGet(Id_t id);
+
+IdGroup_t IdGroupGet(Id_t id);
 
 #endif /* ID_TYPE_H_ */
