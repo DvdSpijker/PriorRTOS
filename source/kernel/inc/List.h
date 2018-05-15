@@ -106,7 +106,7 @@ typedef struct LinkedList_t {
     bool                    sorted;
 
     /* ID related fields. */
-    IdType_t                id_type;        /* ID Type of the list. */
+    IdGroup_t                id_type;        /* ID Type of the list. */
     Id_t                    free_id;        /* Free ID. Calculated at creation of the previous node. */
     bool                    id_rollover;	/* Incremental IDs have reached the limit. */
 } LinkedList_t;
@@ -136,7 +136,7 @@ typedef enum {
 /**** List API. ****/
 
 /* V T Initializes the list with specified ID type. V */
-void ListInit(LinkedList_t *list, IdType_t id_type);
+void ListInit(LinkedList_t *list, IdGroup_t id_type);
 
 /* V Destroys the specified list and all its nodes. */
 OsResult_t ListDestroy(LinkedList_t *list);

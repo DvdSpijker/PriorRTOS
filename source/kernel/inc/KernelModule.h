@@ -21,7 +21,7 @@ typedef void		(*KmfOsFreqChange_t)(uint16_t old_freq, uint16_t new_freq);
 struct KernelModule {
 	const char name[];
 	
-	IdType_t id_type;
+	IdGroup_t id_type;
 	KernelModuleState_t state;
 	
 	const struct KernelModule *dependencies[];
