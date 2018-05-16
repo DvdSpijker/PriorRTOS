@@ -68,11 +68,11 @@ OsResult_t KTimerInit(void)
 {
     OsResult_t result = OS_RES_ERROR;
     
-    ListInit(&TimerList, (Id_t)ID_TYPE_TIMER);
+    ListInit(&TimerList, ID_GROUP_TIMER);
 
     KTidTimerUpdate = KernelTaskCreate(KernelTaskTimerUpdate, 1, TASK_PARAM_ESSENTIAL, 0, NULL,
                               PRTOS_CONFIG_TIMER_INTERVAL_RESOLUTION_MS);
-    if(KTidTimerUpdate != OS_ID_INVALID) {
+    if(KTidTimerUpdate != ID_INVALID) {
         result = OS_RES_OK;
     }
     //LOG_INFO_NEWLINE("TimerList: %p", &TimerList);
@@ -150,13 +150,13 @@ void KTimerUpdateAll(U32_t t_us)
 Id_t TimerCreate(U32_t interval, U8_t parameter, TimerOverflowCallback_t overflow_callback, void *context)
 {
     if(interval == 0) {
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     pTimer_t new_timer = ITimerCreate();
 
     if(new_timer == NULL) {
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     Id_t new_timer_id = ListNodeIdGet(&new_timer->list_node);
@@ -176,10 +176,7 @@ Id_t TimerCreate(U32_t interval, U8_t parameter, TimerOverflowCallback_t overflo
 
 OsResult_t TimerDelete(Id_t *timer_id)
 {
-    if(*timer_id == OS_ID_INVALID) {
-        return OS_RES_ID_INVALID;
-    }
-    if((*timer_id & (Id_t)ID_TYPE_TIMER) == 0) {
+    if(*timer_id == ID_INVALID) {
         return OS_RES_ID_INVALID;
     }
 
@@ -188,7 +185,7 @@ OsResult_t TimerDelete(Id_t *timer_id)
         ListNodeDeinit(&TimerList, &rm_timer->list_node);
         KMemFreeObject((void **)&rm_timer, NULL);
         LOG_INFO_NEWLINE("Deleted timer %04x", *timer_id);
-        *timer_id = OS_ID_INVALID;
+        *timer_id = ID_INVALID;
         return OS_RES_OK;
     }
     LOG_ERROR_NEWLINE("Failed to delete timer %04x", *timer_id);

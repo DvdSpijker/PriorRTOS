@@ -16,7 +16,7 @@ static pSem_t ISemaphoreFromId(Id_t sem_id);
 
 OsResult_t KSemaphoreInit(void)
 {
-    ListInit(&SemList, ID_TYPE_SEMAPHORE);
+    ListInit(&SemList, ID_GROUP_SEMAPHORE);
 
     return OS_RES_OK;
 }
@@ -24,7 +24,7 @@ OsResult_t KSemaphoreInit(void)
 Id_t SemaphoreCreate(U8_t sem_type, U8_t max_count)
 {
     pSem_t new_sem = NULL;
-    Id_t sem_id = OS_ID_INVALID;
+    Id_t sem_id = ID_INVALID;
 
     void *new_sem_data = NULL;
     new_sem = (pSem_t)KMemAllocObject(sizeof(Sem_t), (sizeof(Id_t) * max_count), &new_sem_data); //malloc(sizeof(Sem_t));

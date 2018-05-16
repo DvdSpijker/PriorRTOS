@@ -106,9 +106,7 @@ typedef struct LinkedList_t {
     bool                    sorted;
 
     /* ID related fields. */
-    IdGroup_t                id_type;        /* ID Type of the list. */
-    Id_t                    free_id;        /* Free ID. Calculated at creation of the previous node. */
-    bool                    id_rollover;	/* Incremental IDs have reached the limit. */
+    IdGroup_t                id_group;        /* ID Group of the list. */
 } LinkedList_t;
 
 struct ListIterator {

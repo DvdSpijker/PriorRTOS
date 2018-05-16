@@ -101,7 +101,7 @@ OsResult_t KMemInit()
 
     LOG_INFO_NEWLINE("Creating Kernel pool...");
     KernelPoolId = MemPoolCreate(KERNEL_POOL_SIZE_BYTES);
-    if(KernelPoolId == OS_ID_INVALID) {
+    if(KernelPoolId == ID_INVALID) {
         result = OS_RES_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid pool ID returned");
         goto exit;
@@ -111,7 +111,7 @@ OsResult_t KMemInit()
 
     LOG_INFO_NEWLINE("Creating Object pool..");
     ObjectPoolId = MemPoolCreate(PRTOS_CONFIG_OS_HEAP_SIZE_BYTES - PRTOS_CONFIG_USER_HEAP_SIZE_BYTES);
-    if(ObjectPoolId == OS_ID_INVALID) {
+    if(ObjectPoolId == ID_INVALID) {
         result = OS_RES_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid pool ID returned");
         goto exit;
@@ -127,7 +127,7 @@ exit:
 Id_t MemPoolCreate(U32_t pool_size)
 {
     if((pool_size == 0) || (pool_size > TotalHeapSize)) {
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     OsCritSectBegin();
@@ -148,7 +148,7 @@ Id_t MemPoolCreate(U32_t pool_size)
     if(PoolTable[pool_id].pool_size != 0) {
         LOG_ERROR_NEWLINE("Pool ID %04x is invalid.");
         OsCritSectEnd();
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     pmb = &(PoolTable[pool_id]);
@@ -156,7 +156,7 @@ Id_t MemPoolCreate(U32_t pool_size)
 
     while(mem_found < mem_req && (index + index_offset) < HeapIndexEnd) {
         tmp_pool_id = IPoolIdFromIndex(index + index_offset);
-        if(tmp_pool_id == OS_ID_INVALID) {
+        if(tmp_pool_id == ID_INVALID) {
             index_offset += BLOCK_SIZE;
             mem_found += 1;
         } else {
@@ -180,7 +180,7 @@ Id_t MemPoolCreate(U32_t pool_size)
 #endif
     } else {
         LOG_ERROR_NEWLINE("Not enough memory available (%u bytes) to create a new pool (%u bytes).", mem_found, mem_req);
-        pool_id = OS_ID_INVALID;    //No memory available for the requested pool size
+        pool_id = ID_INVALID;    //No memory available for the requested pool size
     }
 
     OsCritSectEnd();
@@ -423,7 +423,7 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
         return OS_RES_RESTRICTED;
     }
 
-    if(new_pool_id == OS_ID_INVALID) {
+    if(new_pool_id == ID_INVALID) {
         new_pool_id = cur_pool_id;
     }
     OsCritSectBegin();
@@ -459,7 +459,7 @@ OsResult_t MemFree(void **ptr)
     U8_t *tmp_ptr = (U8_t*)(*ptr);
     Id_t pool_id = IPoolIdFromPointer((MemBase_t *)tmp_ptr);
 
-    if(pool_id == OS_ID_INVALID) { /* Pool not found. */
+    if(pool_id == ID_INVALID) { /* Pool not found. */
         return OS_RES_ID_INVALID;
     }
     if((pool_id == KernelPoolId || pool_id == ObjectPoolId) && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
@@ -507,7 +507,7 @@ U32_t MemAllocSizeGet(void *ptr)
     Id_t pool_id = IPoolIdFromPointer(tmp_ptr);
     if(pool_id == KernelPoolId && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         return 0;
-    } else if(pool_id == OS_ID_INVALID) {
+    } else if(pool_id == ID_INVALID) {
         return 0;
     }
     pPmb_t pool = &PoolTable[pool_id];
@@ -522,7 +522,7 @@ U32_t MemAllocSizeGet(void *ptr)
 
 static Id_t IPoolIdFromIndex(U32_t index)
 {
-    Id_t id = OS_ID_INVALID;
+    Id_t id = ID_INVALID;
     for (Id_t i = 0; i < (TotalHeapPools); i++) {
         if(index >= PoolTable[i].start_index && index <= PoolTable[i].end_index && PoolTable[i].pool_size > 0) {
             id = i;
@@ -534,7 +534,7 @@ static Id_t IPoolIdFromIndex(U32_t index)
 
 static Id_t IPoolIdFromPointer(MemBase_t *ptr)
 {
-    Id_t id = OS_ID_INVALID;
+    Id_t id = ID_INVALID;
     MemBase_t *start_addr = NULL;
     MemBase_t *end_addr = NULL;
     for (Id_t i = 0; i < (TotalHeapPools); i++) {

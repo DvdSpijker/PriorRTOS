@@ -64,7 +64,7 @@ LinkedList_t RingbufList;
 OsResult_t KRingbufInit(void)
 {
     //RingbufPool = MemPoolCreate(CONFIG_RINGBUFFER_MEMSIZE);
-    ListInit(&RingbufList, ID_TYPE_RINGBUF);
+    ListInit(&RingbufList, ID_GROUP_RINGBUF);
     return OS_RES_OK;
 }
 
@@ -79,7 +79,7 @@ Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size)
             new_ringbuf->buffer = (RingbufBase_t *)int_buffer;
             new_ringbuf->ext_buffer = false;
         } else {
-            return OS_ID_INVALID;
+            return ID_INVALID;
         }
     } else {
         new_ringbuf = (pRingbuf_t)KMemAllocObject(sizeof(Ringbuf_t), 0, NULL);
@@ -87,14 +87,14 @@ Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size)
             new_ringbuf->buffer = buffer;
             new_ringbuf->ext_buffer = true;
         } else {
-            return OS_ID_INVALID;
+            return ID_INVALID;
         }
     }
 
     ListNodeInit(&new_ringbuf->list_node, (void*)new_ringbuf);
     if(ListNodeAddSorted(&RingbufList, &new_ringbuf->list_node) != OS_RES_OK) {
         KMemFreeObject((void **)&new_ringbuf, &int_buffer);
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     new_ringbuf->size = size;
@@ -121,7 +121,7 @@ OsResult_t RingbufDelete(Id_t *ringbuf_id)
     }
     ListNodeDeinit(&RingbufList, &ringbuf->list_node);
     KMemFreeObject((void **)&ringbuf, buffer);
-    *ringbuf_id = OS_ID_INVALID;
+    *ringbuf_id = ID_INVALID;
 
     return result;
 }

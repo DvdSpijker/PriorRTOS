@@ -74,8 +74,8 @@ static OsResult_t ITaskResume(Id_t task_id);
 
 OsResult_t KTaskInit(void)
 {
-    ListInit(&TcbList, (Id_t)ID_TYPE_TASK);
-    ListInit(&TcbWaitList, (Id_t)ID_TYPE_TASK);
+    ListInit(&TcbList, ID_GROUP_TASK);
+    ListInit(&TcbWaitList, ID_GROUP_TASK);
 
     //LOG_INFO_NEWLINE("TcbList: %p", &TcbList);
     //LOG_INFO_NEWLINE("TcbWaitList: %p", &TcbWaitList);
@@ -95,13 +95,13 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
 #endif
 
     if (priority < OS_TASK_PRIO_LIMIT_LOW || priority > OS_TASK_PRIO_LIMIT_HIGH) {
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
     if (category > TASK_CAT_OS) {
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
     if (category == TASK_CAT_OS && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     volatile pTcb_t new_TCB;
@@ -110,7 +110,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
     new_TCB = (pTcb_t)KMemAllocObject(sizeof(Tcb_t), 0, NULL);
     if (new_TCB == NULL) {
         LOG_ERROR_NEWLINE("Failed to allocate memory for a task.");
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     OsResult_t result;
@@ -135,7 +135,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
         LOG_ERROR_NEWLINE("A task could not be added to the list.");
         ListNodeDeinit(&TcbList, &new_TCB->list_node);
         KMemFreeObject((void **)&new_TCB, NULL);
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
     
     /* Handle task creation parameters. */
@@ -171,7 +171,7 @@ OsResult_t TaskDelete(Id_t *task_id)
         } else {
             tcb = KTcbFromId(*task_id);
         }
-        *task_id = OS_ID_INVALID;
+        *task_id = ID_INVALID;
     }
 
     if(tcb != NULL) {
@@ -193,7 +193,7 @@ void TaskGenericNameSet(Id_t task_id, const char* gen_name)
     pTcb_t tcb = NULL;
     OsResult_t result = OS_RES_ERROR;
 
-    if (task_id == OS_ID_INVALID) {
+    if (task_id == ID_INVALID) {
         tcb = TcbRunning;
     } else {
         tcb = KTcbFromId(task_id);
@@ -214,7 +214,7 @@ void TaskGenericNameSet(Id_t task_id, const char* gen_name)
 
 Id_t TaskIdGet(void)
 {
-    Id_t id = OS_ID_INVALID;
+    Id_t id = ID_INVALID;
     if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
         id = ListNodeIdGet(&TcbRunning->list_node);
         ListNodeUnlock(&TcbRunning->list_node);
@@ -226,7 +226,7 @@ Id_t TaskIdGet(void)
 OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)
 {
     OsResult_t result = OS_RES_ERROR;
-    if(rt_task_id == OS_ID_INVALID) {
+    if(rt_task_id == ID_INVALID) {
         return OS_RES_ID_INVALID;
     }
     pTcb_t tcb = KTcbFromId(rt_task_id);
@@ -246,7 +246,7 @@ OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)
 
 OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg)
 {
-    if(task_id == OS_ID_INVALID) {
+    if(task_id == ID_INVALID) {
         return OS_RES_ID_INVALID;
     }
     OsResult_t result = OS_RES_ERROR;
@@ -260,7 +260,7 @@ OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg)
 
 OsResult_t TaskResume(Id_t task_id)
 {
-    if(task_id == OS_ID_INVALID) {
+    if(task_id == ID_INVALID) {
         return OS_RES_ID_INVALID;
     }
     OsResult_t result = ITaskResume(task_id);
@@ -283,12 +283,12 @@ OsResult_t TaskSuspend(Id_t task_id)
 Id_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms)
 {
     OsResult_t result = OS_RES_ERROR;
-    Id_t event_id = OS_ID_INVALID;
+    Id_t event_id = ID_INVALID;
     result = ITaskListen(TcbRunning, object_id, event, EVENT_FLAG_PERMANENT, timeout_ms, &event_id);
     if(result == OS_RES_OK) {
         return event_id;
     }
-    return OS_ID_INVALID;
+    return ID_INVALID;
 }
 
 OsResult_t TaskPollRemove(Id_t object_id, U32_t event)
@@ -373,7 +373,7 @@ OsResult_t TaskSleep(U32_t t_ms)
      * The timeout is the sleep-time. */
     OsResult_t result = OS_RES_OK;
     if(t_ms > 0) {
-        result = TaskPoll(OS_ID_INVALID, TASK_EVENT_SLEEP, t_ms, true);
+        result = TaskPoll(ID_INVALID, TASK_EVENT_SLEEP, t_ms, true);
     } else {
         result = OS_RES_OUT_OF_BOUNDS;
     }
@@ -392,7 +392,7 @@ OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
     pTcb_t tcb = NULL;
     OsResult_t result = OS_RES_ERROR;
 
-    if (task_id == OS_ID_INVALID) {
+    if (task_id == ID_INVALID) {
         tcb = TcbRunning;
     } else {
         tcb = KTcbFromId(task_id);
@@ -414,7 +414,7 @@ OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
 Prio_t TaskPriorityGet(Id_t task_id)
 {
     pTcb_t tcb = NULL;
-    if (task_id == OS_ID_INVALID) {
+    if (task_id == ID_INVALID) {
         tcb = TcbRunning;
     } else {
         tcb = KTcbFromId(task_id);
@@ -433,7 +433,7 @@ Prio_t TaskPriorityGet(Id_t task_id)
 TaskState_t TaskStateGet(Id_t task_id)
 {
     pTcb_t tcb = NULL;
-    if (task_id == OS_ID_INVALID) {
+    if (task_id == ID_INVALID) {
         tcb = TcbRunning;
     } else {
         tcb = KTcbFromId(task_id);

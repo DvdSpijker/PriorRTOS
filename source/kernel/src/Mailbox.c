@@ -58,7 +58,7 @@ LinkedList_t MailboxList;
 
 OsResult_t KMailboxInit(void)
 {
-    ListInit(&MailboxList, ID_TYPE_MAILBOX);
+    ListInit(&MailboxList, ID_GROUP_MAILBOX);
 
     return OS_RES_OK;
 }
@@ -68,27 +68,27 @@ Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners)
 
     //Check input boundaries
     if(n_owners > MAILBOX_CONFIG_MAX_OWNERS) {
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     void *buffer = NULL;
     pMailbox_t new_mailbox = (pMailbox_t)KMemAllocObject(sizeof(Mailbox_t), mailbox_size, &buffer); //Allocate memory for mailbox struct
     if(new_mailbox == NULL) {
-        return OS_ID_INVALID;    //Allocation error
+        return ID_INVALID;    //Allocation error
     }
 
     new_mailbox->buffer = (MailboxBase_t *)buffer;
     new_mailbox->pend_counters = (U8_t*)KMemAllocObject(sizeof(U8_t) * mailbox_size, 0, NULL); //Allocate memory for mailbox data
     if(new_mailbox->pend_counters == NULL) {
         KMemFreeObject((void **)&new_mailbox, &buffer);
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     ListNodeInit(&new_mailbox->list_node, (void*)new_mailbox);
     if(ListNodeAddSorted(&MailboxList, &new_mailbox->list_node) != OS_RES_OK) {
         KMemFreeObject((void **)&new_mailbox->pend_counters, NULL);
         KMemFreeObject((void **)&new_mailbox, &buffer);
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     new_mailbox->size = mailbox_size;
@@ -107,7 +107,7 @@ OsResult_t MailboxDelete(Id_t *mailbox_id)
         ListNodeDeinit(&MailboxList, &mailbox->list_node);
         KMemFreeObject((void **)&mailbox->pend_counters, NULL);
         KMemFreeObject((void **)&mailbox, (void **)&mailbox->buffer);
-        *mailbox_id = OS_ID_INVALID;
+        *mailbox_id = ID_INVALID;
         return OS_RES_OK;
     }
     return OS_RES_ERROR;

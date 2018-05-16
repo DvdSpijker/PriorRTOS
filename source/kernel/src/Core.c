@@ -46,6 +46,8 @@
 #include <KernelTask.h>
 #include <List.h>
 #include <Event.h>
+#include <OsTypes.h>
+#include <IdTypeDef.h>
 
 #include "../../port/PortCore.h"
 #include "../inc/CoreDef.h"
@@ -61,7 +63,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <math.h>
-#include <OsTypes.h>
+
 
 #define N_KERNEL_TIMERS  0	/* Number of Kernel timers. */
 #define KERNEL_HEAP_SIZE 20
@@ -218,8 +220,8 @@ OsResult_t OsInit(OsResult_t *status_optional)
         KernelReg.hours = 0;
         KernelReg.t_accu = 0;
         KernelReg.scheduler_lock = 0;
-        KernelReg.kernel_heap = OS_ID_INVALID;
-        KernelReg.object_heap = OS_ID_INVALID;
+        KernelReg.kernel_heap = ID_INVALID;
+        KernelReg.object_heap = ID_INVALID;
         KernelReg.object_count = 0;
     }
     KERNEL_REG_UNLOCK();
@@ -343,7 +345,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
     /* Idle task is not created using KernelTask create since it is not an OS category task, it should be on the
     * lowest possible priority. However, the Idle task is essential and cannot be deleted. */
     KTidIdle = TaskCreate(KernelTaskIdle, TASK_CAT_LOW, 1, TASK_PARAM_ESSENTIAL, 0, NULL, 0);
-    if(KTidIdle == OS_ID_INVALID) { //Create Idle task, check if successful
+    if(KTidIdle == ID_INVALID) { //Create Idle task, check if successful
         status_kernel = OS_RES_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid ID returned while creating KernelTaskIdle");
         return status_kernel;
@@ -383,7 +385,7 @@ void OsStart(Id_t start_task_id)
     KCoreKernelModeEnter(); //Disable kernel mode
 
     LOG_INFO_NEWLINE("Preparing first task for execution...");
-    if (start_task_id != OS_ID_INVALID) { //if Prior should not start with Idle task
+    if (start_task_id != ID_INVALID) { //if Prior should not start with Idle task
         TcbRunning = KTcbFromId(start_task_id); //Search for TCB
         if (TcbRunning == NULL) {
             LOG_ERROR_NEWLINE("Specified task not found! Starting with Idle instead.");
@@ -542,7 +544,7 @@ U32_t OsEventsTotalGet(void)
 
 bool OsTaskExists(Id_t task_id)
 {
-    if((task_id & OS_ID_MASK_TYPE) != (Id_t)ID_TYPE_TASK) {
+    if(IdIsInGroup(task_id, ID_GROUP_TASK) == 0) {
         return false;
     }
     pTcb_t tcb = KTcbFromId(task_id);
@@ -555,7 +557,7 @@ bool OsTaskExists(Id_t task_id)
 
 Id_t OsCurrentTaskGet(void)
 {
-    Id_t id = OS_ID_INVALID;
+    Id_t id = ID_INVALID;
     if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
         id = ListNodeIdGet(&TcbRunning->list_node);
         ListNodeUnlock(&TcbRunning->list_node);
@@ -782,7 +784,7 @@ static void ICoreTickInvoke(U32_t tc)
 
 static void ICoreSchedulerInit(void)
 {
-    ListInit(&ExecutionQueue, (Id_t)ID_TYPE_TASK);
+    ListInit(&ExecutionQueue, ID_GROUP_TASK);
     //LOG_INFO_NEWLINE("ExecutionQueue: %p", &ExecutionQueue);
     /* Add a mock event to the EventList.
     * This ensures that this list will never
@@ -790,7 +792,7 @@ static void ICoreSchedulerInit(void)
     * to keep the EventHandle cycle running, since
     * it also needs to update listened event
     * lifetimes. */
-    if(EventEmit(OS_ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_RES_OK) {
+    if(EventEmit(ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_RES_OK) {
         LOG_ERROR_NEWLINE("Failed to publish the mock event!");
         while(1); /* Trap. Wdt will overflow if enabled. */
     }

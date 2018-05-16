@@ -186,7 +186,7 @@ U8_t ConvertIntToString(U32_t integer, char *out_int_str)
 
 Id_t ConvertHexStringToId(char *hex_id_str)
 {
-	Id_t id = OS_ID_INVALID;
+	Id_t id = ID_INVALID;
 	sscanf(hex_id_str, "%08x", (unsigned int *)&id);
     return id;
 }

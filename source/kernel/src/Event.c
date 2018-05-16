@@ -114,7 +114,7 @@ OsResult_t EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t even
              * Also set the event_id pointer to invalid if !NULL. */
             KMemFreeObject((void **)&new_event, NULL);
             if(out_event_id != NULL) {
-                *out_event_id = OS_ID_INVALID;
+                *out_event_id = ID_INVALID;
             }
         }
         return result;
@@ -383,7 +383,7 @@ bool EventIsEqual(pEvent_t event_x, pEvent_t event_y)
 
 bool EventIsMock(pEvent_t event)
 {
-    return(event->source_id == OS_ID_INVALID && event->event_code == MOCK_EVENT);
+    return(event->source_id == ID_INVALID && event->event_code == MOCK_EVENT);
 }
 
 bool EventHasOccurred(pEvent_t event)

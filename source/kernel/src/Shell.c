@@ -32,7 +32,7 @@ const char LineTerminatorChar = '\n';
 
 Id_t ShellRxRingbuf;
 Id_t ShellTxRingbuf;
-Id_t ShellPool = OS_ID_INVALID;
+Id_t ShellPool = ID_INVALID;
 struct ShellCommand ShellCommandSet[SHELL_MAX_COMMAND_COUNT];
 U8_t TotalShellCommands;
 
@@ -73,7 +73,7 @@ OsResult_t KShellInit(void)
     ShellRxRingbuf = RingbufCreate(ShellRxBuffer, SHELL_MAX_LINE_LENGTH * 2);
     ShellTxRingbuf = RingbufCreate(NULL, 50);
     ShellPool = MemPoolCreate(SHELL_MAX_TOKEN_COUNT * SHELL_MAX_TOKEN_COUNT * 2);
-    if((ShellRxRingbuf == OS_ID_INVALID) || (ShellTxRingbuf == OS_ID_INVALID)) {
+    if((ShellRxRingbuf == ID_INVALID) || (ShellTxRingbuf == ID_INVALID)) {
         RingbufDelete(&ShellRxRingbuf);
         RingbufDelete(&ShellTxRingbuf);
         result = OS_RES_ERROR;
@@ -87,7 +87,7 @@ OsResult_t KShellInit(void)
 
         if(result == OS_RES_OK) {
             TidShellReadParse = KernelTaskCreate(TaskShellReadParse, 3, TASK_PARAM_NONE, 0, NULL, 0);
-            if(TidShellReadParse == OS_ID_INVALID) {
+            if(TidShellReadParse == ID_INVALID) {
                 result = OS_RES_ERROR;
             }
             if(result == OS_RES_OK) {
@@ -278,7 +278,7 @@ void TaskShellReadParse(const void* p_arg, U32_t v_arg)
     OS_ARG_UNUSED(v_arg);
 
     static U8_t line_write_index = 0;
-    static Id_t evt_rx_data_available = OS_ID_INVALID;
+    static Id_t evt_rx_data_available = ID_INVALID;
 
     U32_t read_amount = 1;
 	
@@ -301,7 +301,7 @@ void TaskShellReadParse(const void* p_arg, U32_t v_arg)
 					ShellPut("No resources available to execute command.");
 				} else {
 					U8_t n_tokens = IShellSplitLine(LineBuffer, tokens);
-					if(TaskCreate(TaskShellExecute, TASK_CAT_LOW, 5, TASK_PARAM_START, 0, (void *)tokens, n_tokens) == OS_ID_INVALID) {
+					if(TaskCreate(TaskShellExecute, TASK_CAT_LOW, 5, TASK_PARAM_START, 0, (void *)tokens, n_tokens) == ID_INVALID) {
 						ShellPut("Failed to create task to execute command.");	
 					}
 				}

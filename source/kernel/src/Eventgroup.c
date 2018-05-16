@@ -53,7 +53,7 @@
 
 OsResult_t KEventgroupInit (void)
 {
-    ListInit(&EventGroupList, ID_TYPE_EVENTGROUP);
+    ListInit(&EventGroupList, ID_GROUP_EVENTGROUP);
     return OS_RES_OK;
 }
 
@@ -65,13 +65,13 @@ Id_t EventgroupCreate(void)
     pEventGrp_t new_eventgrp = (pEventGrp_t)KMemAllocObject(sizeof(EventGrp_t), 0, NULL);
 
     if(new_eventgrp == NULL) {
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     ListNodeInit(&new_eventgrp->list_node, (void*)new_eventgrp);
     if(ListNodeAddSorted(&EventGroupList, &new_eventgrp->list_node) != OS_RES_OK) {
         KMemFreeObject((void **)&new_eventgrp, NULL);
-        return OS_ID_INVALID;
+        return ID_INVALID;
     }
 
     new_eventgrp->event_reg = 0;
@@ -81,10 +81,10 @@ Id_t EventgroupCreate(void)
 
 OsResult_t EventgroupDelete(Id_t *eventgroup_id)
 {
-    if(*eventgroup_id == OS_ID_INVALID) {
+    if(*eventgroup_id == ID_INVALID) {
         return OS_RES_ID_INVALID;
     }
-    if((*eventgroup_id & ID_TYPE_EVENTGROUP) == 0) {
+    if(IdIsInGroup(*eventgroup_id, ID_GROUP_EVENTGROUP) == 0) {
         return OS_RES_ID_INVALID;
     }
 
@@ -98,7 +98,7 @@ OsResult_t EventgroupDelete(Id_t *eventgroup_id)
     ListNodeDeinit(&EventGroupList, node);
     KMemFreeObject((void **)&eventgroup, NULL);
 
-    *eventgroup_id = OS_ID_INVALID;
+    *eventgroup_id = ID_INVALID;
 
     return OS_RES_OK;
 }

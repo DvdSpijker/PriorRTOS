@@ -7,6 +7,7 @@
 
 
 #include "IdType.h"
+#include "IdTypeDef.h"
 
 #include <stdbool.h>
 
@@ -24,7 +25,7 @@ struct IdPool{
 
 struct IdPool IdPools[ID_GROUP_NUM];
 
-void IdInit(void)
+void KIdInit(void)
 {
 	for(U8_t i = 0; i < ID_GROUP_NUM; i++) {
 		IdPools[i].free_id = 0 | (U32_t)(i << ID_SHIFT_AMOUNT_GROUP);
@@ -32,9 +33,9 @@ void IdInit(void)
 	}
 }
 
-Id_t IdRequest(IdGroup_t type)
+Id_t KIdRequest(IdGroup_t type)
 {
-	Id_t id = OS_ID_INVALID;
+	Id_t id = ID_INVALID;
 	U8_t i = 0;
 
 	if(type < ID_GROUP_NUM) { /* If type is within bounds. */
@@ -48,7 +49,7 @@ Id_t IdRequest(IdGroup_t type)
 			IdPools[i].free_id++;
 
 			/* Check if the maximum ID has been reached, if true set the roll-over field true. */
-			if((IdPools[i].free_id & ID_MASK_SEQ_NUM) == (OS_ID_INVALID & ID_MASK_SEQ_NUM)) {
+			if((IdPools[i].free_id & ID_MASK_SEQ_NUM) == (ID_INVALID & ID_MASK_SEQ_NUM)) {
 				IdPools[i].rollover = true;
 			}
 		}
