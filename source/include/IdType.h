@@ -55,12 +55,42 @@ if(p_id_list->n) {							\
 	p_id_list->n--;							\
 }}											\
 
-
-/* Request an ID of a specific type. */
-Id_t IdRequest(IdGroup_t type);
-
+/******************************************************************************
+ * @func: Id_t IdSequenceNumberGet(Id_t id)
+ *
+ * @desc: Returns the sequence number part of the ID.
+ *
+ * @argin: (Id_t) id; ID.
+ *
+ * @rettype:  (Id_t) Sequence number
+ * @retval:   0x00000000 - 0x00FFFFFF; if the ID is valid.
+ ******************************************************************************/
 Id_t IdSequenceNumberGet(Id_t id);
 
+/******************************************************************************
+ * @func: IdGroup_t IdGroupGet(Id_t id)
+ *
+ * @desc: Returns the ID group part of the ID.
+ *
+ * @argin: (Id_t) id; ID.
+ *
+ * @rettype:  (IdGroup_t) ID group
+ * @retval:   Valid IdGroup_t; if the ID is valid.
+ ******************************************************************************/
 IdGroup_t IdGroupGet(Id_t id);
+
+/******************************************************************************
+ * @func: U8_t IdIsInGroup(Id_t id, IdGroup_t group)
+ *
+ * @desc: Check whether the ID is a member of the specified group.
+ *
+ * @argin: (Id_t) id; ID to check.
+ * @argin: (IdGroup_t) group; Group to check.
+ *
+ * @rettype:  (U8_t) Check result.
+ * @retval:   0; ID is not a member of the group.
+ * @retval:   1; ID is a member of the group.
+ ******************************************************************************/
+U8_t IdIsInGroup(Id_t id, IdGroup_t group);
 
 #endif /* ID_TYPE_H_ */
