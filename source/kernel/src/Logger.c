@@ -29,7 +29,7 @@ static FILE mystdout = FDEV_SETUP_STREAM(ILogPutChar, NULL, _FDEV_SETUP_WRITE);
 
 extern OsResult_t OsRunTimeGet(U32_t* target);
 
-OsResult_t LogInit(void)
+OsResult_t KLogInit(void)
 {
 #ifdef PRTOS_CONFIG_USE_LOGGER_MODE_UART
 	PortDebugUartInit(PRTOS_CONFIG_LOGGER_UART_BAUD_RATE_BPS);

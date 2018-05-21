@@ -56,20 +56,6 @@ Id_t LoggerRingbuf;
 #define LOG_LINE_NEW    0x00
 #define LOG_LINE_APPEND 0x01
 
-/******************************************************************************
- * @func:  OsResult_t LogInit(U8_t log_mode_opt)
- *
- * @desc: Initializes the logger module.
- *
- * Arguments:
- * N/A
- *
- * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_RES_OK if the logging module was successfully initialized.
- * @retval:   OS_RES_ERROR if the initialization failed.
- ******************************************************************************/
-OsResult_t LogInit(void);
-
 #define LOG_FILE_NAME(filename) static const char SourceFileName[] = filename;
 
 #if PRTOS_CONFIG_ENABLE_LOG_ERROR==1
@@ -81,8 +67,6 @@ void LogError(U8_t log_line_opt, const char* source, const char* message, ...);
  *
  * @desc: Logs an error message on a new line. A new line includes the
  * timestamp, tag, function name and line number.
- *
- * @rettype: N/A
  ******************************************************************************/
 #define LOG_ERROR_NEWLINE(message, ...) \
 LogError(LOG_LINE_NEW, __FUNCTION__, message, ##__VA_ARGS__);\
@@ -93,8 +77,6 @@ LogError(LOG_LINE_NEW, __FUNCTION__, message, ##__VA_ARGS__);\
  * @desc: Appends the error message to the current logging line.
  * This appended message will NOT contain a timestamp, tag, function name
  * and line number.
- *
- * @rettype: N/A
  ******************************************************************************/
 #define LOG_ERROR_APPEND(message, ...) \
 LogError(LOG_LINE_APPEND, NULL, message, ##__VA_ARGS__);\
@@ -115,8 +97,6 @@ void LogDebug(U8_t log_line_opt, const char* source, const int line_nr, const ch
  *
  * @desc: Logs a debug message on a new line. A new line includes the
  * timestamp, tag, source and line number.
- *
- * @rettype: N/A
  ******************************************************************************/
 #define LOG_DEBUG_NEWLINE(message, ...) \
 LogDebug(LOG_LINE_NEW, SourceFileName, __LINE__, message, ##__VA_ARGS__);\
@@ -126,8 +106,6 @@ LogDebug(LOG_LINE_NEW, SourceFileName, __LINE__, message, ##__VA_ARGS__);\
  *
  * @desc: Appends the debug message to the current logging line.
  * This appended message will NOT contain a timestamp, tag, source and line number.
- *
- * @rettype: N/A
  ******************************************************************************/
 #define LOG_DEBUG_APPEND(message, ...) \
 LogDebug(LOG_LINE_APPEND, NULL, 0, message, ##__VA_ARGS__);\

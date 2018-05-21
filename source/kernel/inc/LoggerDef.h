@@ -21,6 +21,20 @@ extern "C" {
 #include <Logger.h>
 #include <Event.h>
 
+/******************************************************************************
+ * @func:  OsResult_t KLogInit(void)
+ *
+ * @desc: Initializes the logger module.
+ *
+ * Arguments:
+ * N/A
+ *
+ * @rettype:  (OsResult_t) sys call result
+ * @retval:   OS_RES_OK if the logging module was successfully initialized.
+ * @retval:   OS_RES_ERROR if the initialization failed.
+ ******************************************************************************/
+OsResult_t KLogInit(void);
+
 #if PRTOS_CONFIG_ENABLE_LOG_INFO==1
 void KLogInfo(U8_t log_line_opt, const char* message, ...);
 #define LOG_INFO_NEWLINE(message, ...) \
