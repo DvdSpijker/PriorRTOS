@@ -136,8 +136,9 @@ typedef enum {
     /* TaskPoll or TaskWait will return this value if the
      * event has occurred.  */
     OS_RES_EVENT            = 12,
-	
-	OS_RES_NO_MEM			= 13,
+
+	/* No memory available. */
+	OS_RES_NO_MEM			= 13
 
 } OsResult_t;
 

@@ -73,7 +73,7 @@ OsResult_t  EventAddToList(LinkedList_t *event_list, pEvent_t event)
     return result;
 }
 
-OsResult_t EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t event_code, U8_t flags, U32_t life_time_us, Id_t *out_event_id)
+OsResult_t EventRegister(LinkedList_t *task_event_list, Id_t object_id, U32_t event_code, U8_t flags, U32_t life_time_us, Id_t *out_event_id)
 {
     /* Generate a hash value from the event.
      * Then search for this hash value in the event list,

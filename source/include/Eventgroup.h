@@ -60,11 +60,11 @@ extern "C" {
 #define EVENTGROUP_EVENT_CREATE         EVENT_TYPE_CREATE
 #define EVENTGROUP_EVENT_DELETE         EVENT_TYPE_DELETE
 
-#ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_SET
+#ifdef PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_SET
 #define EVENTGROUP_EVENT_FLAG_SET(flag_mask)    (EVENT_TYPE_STATE_CHANGE | 0x00001000 | ((U8_t)flag_mask))
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_CLEAR
+#ifdef PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_CLEAR
 #define EVENTGROUP_EVENT_FLAG_CLEAR(flag_mask)  (EVENT_TYPE_STATE_CHANGE | 0x00002000 | ((U8_t)flag_mask))
 #endif
 
@@ -74,7 +74,7 @@ extern "C" {
  * @desc: Creates a new eventgroup. Each eventgroup register contains
  * 8 flags that can individually set or cleared.
  *
- * @rettype:  (Id_t) Eventgroup ID
+ * @rettype:  (Id_t); Eventgroup ID
  * @retval:   INVALID_ID; if an error occurred during creation.
  * @retval:   Other; if the eventgroup was successfully created.
  ******************************************************************************/
@@ -82,15 +82,14 @@ Id_t EventgroupCreate(void);
 
 
 /******************************************************************************
- * @func: Id_t EventgroupDelete(Id_t *evengroup_id)
+ * @func: Id_t EventgroupDelete(Id_t *eventgroup_id)
  *
  * @desc: Deletes an existing eventgroup. The evengroup_id will be set
  * to INVALID_ID if the operation is successful.
  *
- * Arguments:
  * @argin: (Id_t *) eventgroup_id; Eventgroup ID.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the eventgroup was successfully deleted.
  * @retval:   OS_RES_ERROR; if the eventgroup could not be found.
  ******************************************************************************/
@@ -100,17 +99,16 @@ OsResult_t EventgroupDelete(Id_t *eventgroup_id);
 
 /* TODO: Implementation OsResult_t in EventgroupFlagsSet. */
 /******************************************************************************
-* @func: void EventgroupFlagsSet(Id_t eventgroup_id, U8_t mask)
+ * @func: void EventgroupFlagsSet(Id_t eventgroup_id, U8_t mask)
  *
  * @desc: Sets the masked flags in the eventgroup register.
  * E.g. if mask = (EVENTGROUP_FLAG_MASK_3 |  EVENTGROUP_FLAG_MASK_7),
  * bit 3 and 7 will be set.
  *
- * Arguments:
  * @argin: (Id_t) eventgroup_id; Eventgroup ID.
  * @argin: (U8_t) mask; Event flag mask.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the eventgroup was successfully deleted.
  * @retval:   OS_RES_ERROR; if the eventgroup could not be found.
  ******************************************************************************/
@@ -118,17 +116,16 @@ void EventgroupFlagsSet(Id_t eventgroup_id, U8_t mask);
 
 /* TODO: Implementation OsResult_t in EventgroupFlagsClear. */
 /******************************************************************************
- * @func: OsResult_t EventgroupFlagsClear(Id_t *evengroup_id, U8_t mask)
+ * @func: OsResult_t EventgroupFlagsClear(Id_t evengroup_id, U8_t mask)
  *
  * @desc: Clears the masked flags in the eventgroup register.
  * E.g. if mask = (EVENTGROUP_FLAG_MASK_0 |  EVENTGROUP_FLAG_MASK_4),
  * bit 0 and 4 will be cleared.
  *
- * Arguments:
  * @argin: (Id_t) eventgroup_id; Eventgroup ID.
  * @argin: (U8_t) mask; Event flag mask.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the eventgroup was successfully deleted.
  * @retval:   OS_RES_ERROR; if the eventgroup could not be found.
  ******************************************************************************/
@@ -136,21 +133,20 @@ OsResult_t EventgroupFlagsClear(Id_t eventgroup_id, U8_t mask);
 
 
 /******************************************************************************
- * @func: U8_t EventgroupFlagsGet(Id_t *evengroup_id, U8_t mask)
+ * @func: U8_t EventgroupFlagsGet(Id_t evengroup_id, U8_t mask)
  *
  * @desc: Returns the eventgroup flags specified in the mask.
  *
- * Arguments:
  * @argin: (Id_t) eventgroup_id; Eventgroup ID.
  * @argin: (U8_t) mask; Event flag mask.
  *
- * @rettype:  (U8_t) Eventgroup flags.
+ * @rettype:  (U8_t); Eventgroup flags.
  ******************************************************************************/
-U8_t   EventgroupFlagsGet(Id_t eventgroup_id, U8_t mask);
+U8_t EventgroupFlagsGet(Id_t eventgroup_id, U8_t mask);
 
-OsResult_t  EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t timeout);
+OsResult_t EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t timeout);
 
-OsResult_t  EventgroupFlagsRequireSet(Id_t eventgroup_id, U8_t mask, U32_t timeout);
+OsResult_t EventgroupFlagsRequireSet(Id_t eventgroup_id, U8_t mask, U32_t timeout);
 
 #ifdef __cplusplus
 }

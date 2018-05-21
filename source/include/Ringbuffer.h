@@ -50,17 +50,17 @@ extern "C" {
 #define RINGBUF_EVENT_CREATE         EVENT_TYPE_CREATE
 #define RINGBUF_EVENT_DELETE         EVENT_TYPE_DELETE
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_DATA_IN_OUT
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_DATA_IN_OUT
 #define RINGBUF_EVENT_DATA_IN        (EVENT_TYPE_ACCESS | 0x00001000)
 #define RINGBUF_EVENT_DATA_OUT       (EVENT_TYPE_ACCESS | 0x00002000)
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_EMPTY_FULL
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_EMPTY_FULL
 #define RINGBUF_EVENT_EMPTY          (EVENT_TYPE_STATE_CHANGE | 0x00001000)
 #define RINGBUF_EVENT_FULL           (EVENT_TYPE_STATE_CHANGE | 0x00002000)
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_FLUSH
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_FLUSH
 #define RINGBUF_EVENT_FLUSHED        (EVENT_TYPE_STATE_CHANGE | 0x00003000)
 #endif
 
@@ -69,15 +69,17 @@ typedef volatile  U8_t RingbufBase_t;
 
 
 /******************************************************************************
- * @func: Id_t RingbufCreate(U32_t size)
+ * @func: Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size)
  *
  * @desc: Creates a ring-buffer of given size. Note that the width of
- * each node in the buffer is defined by RingbufBase_t (U8_t by default).
+ * each element in the buffer is defined by RingbufBase_t (U8_t by default).
+ * An external buffer can provided to store the data. If this buffer is not
+ * provided it will be allocated internally (dynamic allocation is used).
  *
- * Arguments:
- * @argin: (U32_t) size; Ring-buffer size in nodes.
+ * @argin: (RingbufBase_t *) buffer; External buffer. NULL for internal allocation.
+ * @argin: (U32_t) size; Ring-buffer size.
  *
- * @rettype:  (Id_t) Ring-buffer ID
+ * @rettype:  (Id_t); Ring-buffer ID
  * @retval:   INVALID_ID; if an error occurred during creation.
  * @retval:   Other; valid ID if the ring-buffer was created.
  ******************************************************************************/
@@ -90,10 +92,9 @@ Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size);
  * @desc: Deletes the specified ring-buffer. ringbuf_id is set to INVALID_ID if
  * the operation is successful.
  *
- * Arguments:
  * @argin: (Id_t *) ringbuf_id; ID of the ring-buffer to delete.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the ring-buffer was deleted.
  * @retval:   OS_RES_ERROR; if the ring-buffer could not be found.
  ******************************************************************************/
@@ -103,18 +104,18 @@ OsResult_t RingbufDelete(Id_t *ringbuf_id);
 
 /******************************************************************************
  * @func: OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data,
- *              U32_t *length)
+ *  U32_t *length, U32_t timeout)
  *
- * @desc: Writes a given number of data nodes to the ring-buffer. The
- * number of nodes actually written is returned.
+ * @desc: Writes data of given length to the ring-buffer. The
+ * amount actually written is returned.
  *
- * Arguments:
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
- * @argin: (RingbufBase_t) data; Array of data nodes.
- * @argin: (U32_t *) length; Length of data in nodes.
+ * @argin: (RingbufBase_t) data; Array of data.
+ * @argin: (U32_t *) length; Length of the data.
+ * @argin: (U32_t) timeout; Timeout is ms.
  * @argout: (U32_t *) length; Actual amount written.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if data was written.
  * @retval:   OS_RES_FAIL; if the buffer is empty.
  * @retval:   OS_RES_LOCKED; if the ringbuffer is already locked for writing.
@@ -125,22 +126,21 @@ OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32
 
 /******************************************************************************
  * @func: OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *data,
- *              U32_t *amount)
+ * U32_t *amount, U32_t timeout)
  *
  * @desc: Reads a given number of data nodes from the ring-buffer. The
- * number of nodes actually read is returned. Read data is copied to the
+ * amount actually read is returned. Read data is copied to the
  * provided target array. The target array has to comply with the pre-conditions
  * stated below.
  *
- * Arguments:
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
- * @argin: (RingbufBase_t) target; Target data array.
- *                        Pre-condition: target[0] = 0xFE, target[amount-1] = 0xEF
+ * @argin: (RingbufBase_t) target; Target data array.Pre-condition: target[0] = 0xFE,
+ * target[amount-1] = 0xEF
  * @argin: (U32_t *) amount; Amount of data to read.
+ * @argin: (U32_t) timeout; Timeout is ms.
  * @argout:(U32_t *) amount; Actual amount of data read.
  *
- *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if data was read.
  * @retval:   OS_RES_LOCKED; if the ringbuffer is already locked for reading.
  * @retval:   OS_RES_FAIL; if the buffer is empty.
@@ -154,18 +154,16 @@ OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U3
  * @func: U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t *target)
  *
  * @desc: Dumps all data present in the ring-buffer in the target array.
- * The number of nodes actually read is returned. The target array has to comply
+ * The amount actually read is returned. The target array has to comply
  * with the pre-conditions stated below.
  *
- * Arguments:
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
- * @argin: (RingbufBase_t) target; Target data array.
- *                        Pre-condition: target[0] = 0xFE,
- *                        target[ring-buffer size-1] = 0xEF
+ * @argin: (RingbufBase_t) target; Target data array. Pre-condition: target[0] = 0xFE,
+ * target[ring-buffer size-1] = 0xEF
  *
- *
- * @rettype:  (U32_t) Actual amount of nodes read from the ring-buffer. 0 if
- *                  pre-conditions were not compliant.
+ * @rettype:  (U32_t); Amount read.
+ * @retval: 0; if pre-conditions were not met.
+ * @retval: Other; valid amount.
  ******************************************************************************/
 U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target);
 
@@ -176,10 +174,9 @@ U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target);
  * @desc: Resets the ring-buffer's read and write locations as well as
  * its current data count resulting in all its initial space becoming available.
  *
- * Arguments:
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the ring-buffer was flushed.
  * @retval:   OS_RES_LOCKED; if the ring-buffer is locked for reading or writing.
  * @retval:   OS_RES_ERROR; if the ring-buffer could not be found.
@@ -189,17 +186,17 @@ OsResult_t RingbufFlush(Id_t ringbuf_id);
 
 /******************************************************************************
  * @func: U32_t RingbufSearch(Id_t ringbuf_id, RingbufBase_t *query,
- *              U32_t query_length)
+ *  U32_t query_length)
  *
  * @desc: Searched the ring-buffer for the given query of given length.
  * The number of occurrences of the query in the buffer is returned.
  *
- * Arguments:
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  * @argin: (RingbufBase_t) query; Search query.
  * @argin: (U32_t) query_length; Length of the search query.
  *
- * @rettype:  (U32_t) Number of occurrences.
+ * @rettype:  (U32_t); Number of occurrences.
+ * @retval: Any; valid amount.
  ******************************************************************************/
 U32_t RingbufSearch(Id_t ringbuf_id, RingbufBase_t *query, U32_t query_length);
 
@@ -210,13 +207,13 @@ U32_t RingbufSearchIndex(Id_t ringbuf_id, RingbufBase_t *query, U32_t query_leng
 /******************************************************************************
  * @func: U32_t RingbufDataCountGet(Id_t ringbuf_id)
  *
- * @desc: Returns the amount of data nodes are present in the ring-
+ * @desc: Returns the amount of data is present in the ring-
  * buffer.
  *
- * Arguments:
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  *
- * @rettype:  (U32_t) Number of data nodes.
+ * @rettype:  (U32_t); Number of data nodes.
+ * @retval: Any; valid amount.
  ******************************************************************************/
 U32_t RingbufDataCountGet(Id_t ringbuf_id);
 
@@ -229,7 +226,8 @@ U32_t RingbufDataCountGet(Id_t ringbuf_id);
  * Arguments:
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  *
- * @rettype:  (U32_t) Data space left.
+ * @rettype:  (U32_t); Data space left.
+ * @retval: Any; valid amount.
  ******************************************************************************/
 U32_t RingbufDataSpaceGet(Id_t ringbuf_id);
 

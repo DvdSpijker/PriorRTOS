@@ -53,10 +53,9 @@ extern "C" {
  *
  * @desc: Convert microseconds (us) to milliseconds (ms).
  *
- * Arguments:
  * @argin: (U32_t) us; Value in microseconds.
  *
- * @rettype:  (U32_t) Value in milliseconds.
+ * @rettype:  (U32_t); Value in milliseconds.
  * @retval:   0; Operation failed.
  * @retval:   Other; Valid value.
  ******************************************************************************/
@@ -67,10 +66,9 @@ U32_t ConvertUsToMs(U32_t us);
  *
  * @desc: Convert milliseconds (ms) to microseconds (us).
  *
- * Arguments:
  * @argin: (U32_t) ms; Value in milliseconds.
  *
- * @rettype:  (U32_t) Value in microseconds.
+ * @rettype:  (U32_t); Value in microseconds.
  * @retval:   0; Operation failed.
  * @retval:   Other; Valid value.
  ******************************************************************************/
@@ -78,18 +76,16 @@ U32_t ConvertMsToUs(U32_t ms);
 
 /******************************************************************************
  * @func: U8_t ConvertResultToString(OsResult_t result,
- *              char *out_result_str)
+ * char *out_result_str)
  *
  * @desc: Converts a result of type OsResult_t to a null-terminated
  * string.
  *
- * Arguments:
  * @argin: (OsResult_t) result; Result to convert.
  * @argout: (char *) out_result_str; Array containing the result string. The
- *                                   array should be at least of size
- *                                   CONVERT_BUFFER_SIZE_RESULT_TO_STRING.
+ * array should be at least of size CONVERT_BUFFER_SIZE_RESULT_TO_STRING.
  *
- * @rettype:  (U8_t) number of characters (excluding \0).
+ * @rettype:  (U8_t); number of characters (excluding NULL).
  * @retval:   0; Operation failed.
  * @retval:   Other; Valid number of characters.
  ******************************************************************************/
@@ -100,14 +96,12 @@ U8_t ConvertResultToString(OsResult_t result, char *out_result_str);
  *
  * @desc: Converts a integer value to a null-terminated string.
  *
- * Arguments:
  * @argin: (U32_t) integer; Integer value.
  * @argout: (char *) out_int_str; Array containing the integer string.
- *                                out_int_str[N-1] should be initialized at 0x20
- *                                (ASCII space) to prevent the conversion from
- *                                exceeding its bounds.
+ * out_int_str[N-1] should be initialized at 0x20 (ASCII space) to
+ * prevent the conversion from exceeding its bounds.
  *
- * @rettype:  (U8_t) number of characters (excluding \0).
+ * @rettype:  (U8_t); number of characters (excluding NULL).
  * @retval:   0; Operation failed.
  * @retval:   Other; Valid number of characters.
  ******************************************************************************/
@@ -121,20 +115,18 @@ U32_t ConvertHexStringToInt(char *hex_str);
 
 /******************************************************************************
  * @func: U8_t ConvertIntToBytes(U32_t integer, U8_t num_bytes,
- *              U8_t *out_bytes)
+ * U8_t *out_bytes)
  *
  * @desc: Convert an integer value into separate bytes. This allows
  * for easy splitting of for instance 32-bits value into 4 bytes.
  * The bytes will be stored with the LSB at 0.
  *
- * Arguments:
  * @argin: (U32_t) integer; Integer value.
  * @argin: (U8_t)  num_bytes; Number of bytes present in the integer value. 1-4.
  * @argout: (U8_t *) out_bytes; Array containing the bytes, should be at least of
- *                              size num_bytes.
- *                              out_bytes[0] = LSB. out_bytes[num_bytes-1] = MSB.
+ * size num_bytes. out_bytes[0] = LSB. out_bytes[num_bytes-1] = MSB.
  *
- * @rettype:  (U8_t) result.
+ * @rettype:  (U8_t); result.
  * @retval:   0; Number of bytes has an illegal value i.e. 0 or >4.
  * @retval:   1; Operation successful.
  ******************************************************************************/
@@ -148,22 +140,18 @@ U8_t ConvertCharToHex(char character);
 
 U8_t ConvertCharToDec(char character);
 
-/* Converts OS version to a null-terminated string of length 7.
- * Format: V<M>.<m>.<u> Major, minor, subversion. */
 /******************************************************************************
  * @func: U8_t ConvertOsVersionToString(OsVer_t os_version,
- *              char *out_os_version_str)
+ * char *out_os_version_str)
  *
  * @desc: Converts OS version to a null-terminated string of length 7 in the following
  * format: V<M>.<m>.<svn> Major, minor, subversion.
  *
- * Arguments:
  * @argin: (OsVer_t) os_version; OS Version to convert.
  * @argout: (char *) out_os_version_str; Array containing the OS version string.
- *                                       The array should be at least of size
- *                                       CONVERT_BUFFER_SIZE_OS_VERSION_TO_STRING.
+ * The array should be at least of size CONVERT_BUFFER_SIZE_OS_VERSION_TO_STRING.
  *
- * @rettype:  (U8_t) number of characters (excluding \0).
+ * @rettype:  (U8_t); number of characters (excluding NULL).
  * @retval:   0; Operation failed.
  * @retval:   Other; Valid number of characters.
  ******************************************************************************/
@@ -171,6 +159,17 @@ U8_t ConvertOsVersionToString(OsVer_t os_version, char *out_os_version_str);
 
 U8_t ConvertIdToString(Id_t id, char *out_id_str);
 
+/******************************************************************************
+ * @func:Id_t ConvertHexStringToId(char *hex_id_str)
+ *
+ * @desc: Converts a hexadecimal base string to an ID.
+ *
+ * @argin: (char *) hex_id_str; Hexadecimal base string. E.g 0100142A
+ *
+ * @rettype:  (Id_t); ID.
+ * @retval:   ID_INVALID; Invalid ID string.
+ * @retval:   Other; Valid ID.
+ ******************************************************************************/
 Id_t ConvertHexStringToId(char *hex_id_str);
 
 

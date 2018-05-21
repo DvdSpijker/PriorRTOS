@@ -298,7 +298,7 @@
 
 //#define PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
 //#define PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
-#define PRTOS_CONFIG_USE_EVENT_TASK_YIELD_SUSPEND
+#define PRTOS_CONFIG_USE_TASK_EVENT_SUSPEND
 /*************************/
 
 /* Timer Module Settings. */
@@ -310,31 +310,31 @@
 * CPU load. Prescaler 2 results in max resolution and CPU load. */
 #define PRTOS_CONFIG_TIMER_INTERVAL_RESOLUTION_MS                 (uint8_t)50
 
-#define PRTOS_CONFIG_USE_EVENT_TIMER_OVERFLOW
-#define PRTOS_CONFIG_USE_EVENT_TIMER_START_STOP_RESET
+#define PRTOS_CONFIG_USE_TIMER_EVENT_OVERFLOW
+#define PRTOS_CONFIG_USE_TIMER_EVENT_START_STOP_RESET
 /*************************/
 
 /* Mailbox Module Settings. */
 #define PRTOS_CONFIG_ENABLE_MAILBOXES                             1
-#define PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+#define PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
 /*************************/
 
 /* Semaphore Module Settings. */
 #define PRTOS_CONFIG_ENABLE_SEMAPHORES                            0
-#define PRTOS_CONFIG_USE_EVENT_SEM_ACQUIRE_RELEASE
+#define PRTOS_CONFIG_USE_SEM_EVENT_ACQUIRE_RELEASE
 /*************************/
 
 /* Eventgroup Module Settings. */
-#define PRTOS_CONFIG_ENABLE_EVENTGROUPS                           0
-#define PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_SET
-#define PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_CLEAR
+#define PRTOS_CONFIG_ENABLE_EVENTGROUPS                           1
+#define PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_SET
+#define PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_CLEAR
 /*************************/
 
 /* Ring-buffer Module Settings. */
 #define PRTOS_CONFIG_ENABLE_RINGBUFFERS                           1
-#define PRTOS_CONFIG_USE_EVENT_RINGBUF_DATA_IN_OUT
-#define PRTOS_CONFIG_USE_EVENT_RINGBUF_EMPTY_FULL
-#define PRTOS_CONFIG_USE_EVENT_RINGBUF_FLUSH
+#define PRTOS_CONFIG_USE_RINGBUFFER_EVENT_DATA_IN_OUT
+#define PRTOS_CONFIG_USE_RINGBUFFER_EVENT_EMPTY_FULL
+#define PRTOS_CONFIG_USE_RINGBUFFER_EVENT_FLUSH
 /*************************/
 
 

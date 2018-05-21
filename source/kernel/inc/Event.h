@@ -88,7 +88,7 @@ ListSize_t  EventListSizeGet(LinkedList_t *event_list);
 pEvent_t    EventListContainsEvent(LinkedList_t *event_list, Id_t source_id, U32_t event_code);
 
 OsResult_t  EventAddToList(LinkedList_t *event_list, pEvent_t event);
-OsResult_t  EventListen(LinkedList_t *task_event_list, Id_t object_id, U32_t event_code, U8_t flags, U32_t life_time_us, Id_t *out_event_id);
+OsResult_t  EventRegister(LinkedList_t *task_event_list, Id_t object_id, U32_t event_code, U8_t flags, U32_t life_time_us, Id_t *out_event_id);
 OsResult_t  EventEmit(Id_t source_id, U32_t event_code, U8_t flags);
 
 S8_t        EventLifeTimeIncrement(pEvent_t event, U32_t t_us);

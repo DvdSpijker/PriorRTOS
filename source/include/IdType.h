@@ -62,7 +62,7 @@ if(p_id_list->n) {							\
  *
  * @argin: (Id_t) id; ID.
  *
- * @rettype:  (Id_t) Sequence number
+ * @rettype:  (Id_t); Sequence number
  * @retval:   0x00000000 - 0x00FFFFFF; if the ID is valid.
  ******************************************************************************/
 Id_t IdSequenceNumberGet(Id_t id);
@@ -74,7 +74,7 @@ Id_t IdSequenceNumberGet(Id_t id);
  *
  * @argin: (Id_t) id; ID.
  *
- * @rettype:  (IdGroup_t) ID group
+ * @rettype:  (IdGroup_t); ID group
  * @retval:   Valid IdGroup_t; if the ID is valid.
  ******************************************************************************/
 IdGroup_t IdGroupGet(Id_t id);
@@ -87,7 +87,7 @@ IdGroup_t IdGroupGet(Id_t id);
  * @argin: (Id_t) id; ID to check.
  * @argin: (IdGroup_t) group; Group to check.
  *
- * @rettype:  (U8_t) Check result.
+ * @rettype:  (U8_t); Check result.
  * @retval:   0; ID is not a member of the group.
  * @retval:   1; ID is a member of the group.
  ******************************************************************************/

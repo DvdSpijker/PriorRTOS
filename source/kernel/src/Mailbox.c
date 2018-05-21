@@ -118,16 +118,14 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
 
     OsResult_t result = OS_RES_LOCKED;
 
-#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
-    SYSTEM_CALL_WAIT_HANDLE_EVENT;
-
-    SYSTEM_CALL_POLL_HANDLE_EVENT(mailbox_id, MAILBOX_EVENT_PEND(address), &result) {
+#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
+    SYS_CALL_EVENT_HANDLE(mailbox_id, MAILBOX_EVENT_PEND(address), &result) {
         /* Do nothing. Normal execution flow. */
     }
-    SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
+    SYS_CALL_EVENT_HANDLE_TIMEOUT(&result) {
         return result;
     }
-    SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
+    SYS_CALL_EVENT_HANDLE_POLL(&result) {
         return result;
     }
 #endif
@@ -150,9 +148,9 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
              * wait/poll for a pend event. */
             if(result == OS_RES_OK) {
                 if(mailbox->pend_counters[address] != 0) {
-#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
                 	if(timeout != OS_TIMEOUT_NONE) {
-                		SYSTEM_CALL_POLL_WAIT_EVENT(node, mailbox_id, MAILBOX_EVENT_PEND(address), &result, timeout);
+                		SYS_CALL_EVENT_REGISTER(node, mailbox_id, MAILBOX_EVENT_PEND(address), &result, timeout);
                 	} else {
                 		result = OS_RES_LOCKED;
                 	}
@@ -166,7 +164,7 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
                 if(result == OS_RES_OK) {
                     mailbox->buffer[address] = data;
                     mailbox->pend_counters[address] = mailbox->n_owners;
-#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
                     EventEmit(mailbox_id, MAILBOX_EVENT_POST(address), EVENT_FLAG_NONE);
                     EventEmit(mailbox_id, MAILBOX_EVENT_POST_ALL, EVENT_FLAG_NONE);
 #endif
@@ -184,21 +182,17 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
     pTcb_t task = TcbRunning;
     OsResult_t result = OS_RES_LOCKED;
 
-
-#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
-    SYSTEM_CALL_WAIT_HANDLE_EVENT;
-
-    SYSTEM_CALL_POLL_HANDLE_EVENT(mailbox_id, MAILBOX_EVENT_PEND(address), &result) {
+#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
+    SYS_CALL_EVENT_HANDLE(mailbox_id, MAILBOX_EVENT_PEND(address), &result) {
         /* Do nothing. Normal execution flow. */
     }
-    SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
+    SYS_CALL_EVENT_HANDLE_TIMEOUT(&result) {
         return result;
     }
-    SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
+    SYS_CALL_EVENT_HANDLE_POLL(&result) {
         return result;
     }
 #endif
-
 
     /* Lock in write because the pend counters are modified. */
     LIST_NODE_ACCESS_WRITE_BEGIN(&MailboxList, mailbox_id) {
@@ -222,8 +216,8 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
                 /* Check pend counter, if this is 0 there is nothing to pend and we can
                  * wait/poll for a post event. */
                 if(mailbox->pend_counters[address] == 0) {
-#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
-                    SYSTEM_CALL_POLL_WAIT_EVENT(node, mailbox_id, MAILBOX_EVENT_POST(address), &result, timeout);
+#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
+                    SYS_CALL_EVENT_REGISTER(node, mailbox_id, MAILBOX_EVENT_POST(address), &result, timeout);
 #else
                     result = OS_RES_LOCKED;
 #endif
@@ -233,7 +227,7 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
                  * After pending a pend event is emitted. */
                 if(result == OS_RES_OK) {
                     *data = mailbox->buffer[address];
-#ifdef PRTOS_CONFIG_USE_EVENT_MAILBOX_POST_PEND
+#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
                     EventEmit(mailbox_id, MAILBOX_EVENT_PEND(address), EVENT_FLAG_NONE);
 #endif
                 }

@@ -34,8 +34,8 @@
  *  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 **********************************************************************************************************************************************/
 
-#ifndef MM_H_
-#define MM_H_
+#ifndef MEMORY_H_
+#define MEMORY_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -53,7 +53,7 @@ extern "C" {
  * Arguments:
  * @argin: (U32_t) size; Size to allocate for the pool.
  *
- * @rettype:  (Id_t) Pool ID.
+ * @rettype:  (Id_t); Pool ID.
  * @retval:   INVALID_ID; if the pool was not created.
  * @retval:   Other; Valid ID if successful
  ******************************************************************************/
@@ -68,10 +68,10 @@ Id_t MemPoolCreate(U32_t size);
  * Arguments:
  * @argin: (Id_t) pool_id; Pool to delete.
  *
- * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_RES_OK if the pool was deleted.
- * @retval:   OS_RES_ID_INVALID if the pool ID does not exist.
- * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
+ * @rettype:  (OsResult_t); sys call result
+ * @retval:   OS_RES_OK; if the pool was deleted.
+ * @retval:   OS_RES_ID_INVALID; if the pool ID does not exist.
+ * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the correct privileges.
  ******************************************************************************/
 OsResult_t MemPoolDelete(Id_t pool_id);
 
@@ -81,13 +81,12 @@ OsResult_t MemPoolDelete(Id_t pool_id);
  *
  * @desc: Formats the pool. All data will be lost.
  *
- * Arguments:
  * @argin: (Id_t) pool_id; Pool to format.
  *
- * @rettype:  (OsResult_t) sys call result
- * @retval:   OS_RES_OK if the pool was formatted.
- * @retval:   OS_RES_ID_INVALID if the pool ID does not exist.
- * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
+ * @rettype:  (OsResult_t); sys call result
+ * @retval:   OS_RES_OK; if the pool was formatted.
+ * @retval:   OS_RES_ID_INVALID; if the pool ID does not exist.
+ * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the correct privileges.
  ******************************************************************************/
 OsResult_t MemPoolFormat(Id_t pool_id);
 
@@ -99,10 +98,7 @@ OsResult_t MemPoolFormat(Id_t pool_id);
  * pool, allowing for larger allocations.
  * NOTE: Pool Allocation table required.
  *
- * Arguments:
  * @argin: (Id_t) pool_id; Pool to de-fragment.
- *
- * @rettype:  N/A
  ******************************************************************************/
 //void MemPoolDefrag(Id_t pool_id);
 
@@ -115,13 +111,12 @@ OsResult_t MemPoolFormat(Id_t pool_id);
  * will be zeroed. Returns OS_RES_OK if operation was successful, OS_RES_FAIL if
  * the destination pool is too small.
  *
- * Arguments:
  * @argin: (Id_t) src_pool; To-move pool ID
  * @argin: (Id_t) dst_pool; Destination pool ID
  *
- * @rettype:  (OsResult_t) sys call status:
- * @retval:   OS_RES_OK if move was successful.
- * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
+ * @rettype:  (OsResult_t); sys call status:
+ * @retval:   OS_RES_OK; if move was successful.
+ * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the correct privileges.
  ******************************************************************************/
 //OsResult_t MemPoolMove(Id_t src_pool_id, Id_t dst_pool_id);
 
@@ -131,10 +126,9 @@ OsResult_t MemPoolFormat(Id_t pool_id);
  *
  * @desc: Returns the amount of space (in bytes) available in the pool.
  *
- * Arguments:
  * @argin: (Id_t) pool_id; Pool ID.
  *
- * @rettype:  (U32_t) Free pool space.
+ * @rettype:  (U32_t); Free pool space.
  ******************************************************************************/
 U32_t MemPoolFreeSpaceGet(Id_t pool_id);
 
@@ -147,7 +141,7 @@ U32_t MemPoolUsedSpaceGet(Id_t pool_id);
  * @desc: Returns the amount of space (in bytes) available on the
  * OS Heap.
  *
- * @rettype:  (U32_t) Free OS heap space.
+ * @rettype:  (U32_t); Free OS heap space.
  ******************************************************************************/
 U32_t MemOsHeapFreeSpaceGet(void);
 
@@ -159,11 +153,10 @@ U32_t MemOsHeapFreeSpaceGet(void);
  * Allocated memory may be freed or reallocated.
  * If allocation fails, MemAllocDynamic will return NULL.
  *
- * Arguments:
  * @argin: (Id_t) pool_id; ID of the pool where the memory will be allocated.
  * @argin: (U32_t) size; Size to allocate
  *
- * @rettype:  (void *) pointer to memory.
+ * @rettype:  (void *); pointer to memory.
  * @retval:   NULL; if allocation failed.
  * @retval:   Other; Valid pointer if successful
  ******************************************************************************/
@@ -171,7 +164,8 @@ void *MemAlloc(Id_t pool_id, U32_t size);
 
 
 /******************************************************************************
- * @func: OsResult_t MemReAlloc (Id_t pool_id, void **ptr, U32_t size)
+ * @func: OsResult_t MemReAlloc (Id_t cur_pool_id, Id_t new_pool_id,
+ * void **ptr, U32_t new_size)
  *
  * @desc: Re-Allocates memory in given
  * pool with specified size. The allocation may be
@@ -179,57 +173,49 @@ void *MemAlloc(Id_t pool_id, U32_t size);
  * fails, MemReAlloc returns OS_RES_FAIL. In this case the memory will
  * still remain allocated in the current pool.
  *
- * Arguments:
  * @argin: (Id_t) cur_pool_id; Current pool ID of the to-reallocate memory
  * @argin: (Id_t) new_pool_id; New pool ID of the to-reallocate memory.
+ * If moving the allocation across memory pools is not desired,
+ * either pass the same pool ID for new_pool_id as cur_pool_id or
+ * pass INVALID_ID as new_pool_id.
  * @argout: (void**) ptr; Pointer to existing allocation
  * @argin: (U32_t) new_size; Size to allocate
  *
- * NOTE: If moving the allocation across memory pools is not desired,
- * either pass the same pool ID for new_pool_id as cur_pool_id or
- * pass INVALID_ID as new_pool_id.
- *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if re-allocation was successful.
  * @retval:   OS_RES_FAIL; if the requested block was too large.
  * @retval:   OS_RES_OUT_OF_BOUNDS; if the pool ID is not part of
  *            the pool memory space.
- * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
+ * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the right privileges.
  ******************************************************************************/
 OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void** ptr, U32_t new_size);
 
-
-
 /******************************************************************************
- * @func: OsResult_t MemFree (Id_t pool_id, void **ptr)
+ * @func: OsResult_t MemFree (void **ptr)
  *
  * @desc: Frees the specified piece of allocated memory,returning it to
  * the pool. Freed memory will be set to 0. The pointer to the freed memory
  * will be implicitly set to NULL.
  *
- * Arguments:
- * @argin: (Id_t) pool_id; Pool ID of the allocated memory
- * INOUT:   (void**) ptr; Pointer to the allocation pointer
+ * @argin:  (void**) ptr; Pointer to the allocation pointer
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if freeing was successful.
  * @retval:   OS_RES_NULL_POINTER; if the memory pointer equals NULL
  * @retval:   OS_RES_OUT_OF_BOUNDS; if the pool ID is not part of
  *            the pool memory space.
- * @retval:   OS_RES_RESTRICTED if a pool was accessed without the right privileges.
+ * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the right privileges.
  ******************************************************************************/
 OsResult_t MemFree(void **ptr);
-
 
 /******************************************************************************
  * @func: U32_t MemAllocSizeGet(void *ptr)
  *
  * @desc: Returns the size of the allocated piece of memory.
  *
- * Arguments:
  * @argin: (void *) ptr; Pointer to allocated memory.
  *
- * @rettype:  (U32_t) allocation size.
+ * @rettype:  (U32_t); allocation size.
  * @retval:   0; if the operation failed.
  * @retval:   Other; Valid allocation size.
  ******************************************************************************/
@@ -239,4 +225,4 @@ U32_t MemAllocSizeGet(void *ptr);
 #ifdef __cplusplus
 }
 #endif
-#endif /* MM_H_ */
+#endif /* MEMORY_H_ */

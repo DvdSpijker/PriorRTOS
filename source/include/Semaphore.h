@@ -25,7 +25,7 @@ extern "C" {
 #define SEM_EVENT_CREATE         EVENT_TYPE_CREATE
 #define SEM_EVENT_DELETE         EVENT_TYPE_DELETE
 
-#ifdef PRTOS_CONFIG_USE_EVENT_SEM_ACQUIRE_RELEASE
+#ifdef PRTOS_CONFIG_USE_SEM_EVENT_ACQUIRE_RELEASE
 #define SEM_EVENT_ACQUIRE        (EVENT_TYPE_ACCESS | 0x00001000)
 #define SEM_EVENT_RELEASE        (EVENT_TYPE_ACCESS | 0x00002000)
 #endif
@@ -36,15 +36,14 @@ extern "C" {
  * @desc: Creates a semaphore of the specified type. If this type is not
  * SEM_TYPE_MUTEX_BINARY the maximum count will be set to max_count.
  *
- * Arguments:
  * @argin: (U8_t) sem_type; Semaphore type. Currently only SEM_TYPE_MUTEX_BINARY.
  * @argin: (U8_t) max_count; Maximum allowed recursive acquires.
  *
- * @rettype:  (Id_t) Semaphore ID.
+ * @rettype:  (Id_t); Semaphore ID.
  * @retval:   INVALID_ID; if the creation failed.
  * @retval:   Other; valid ID if the semaphore was created.
  ******************************************************************************/
-Id_t       SemaphoreCreate(U8_t sem_type, U8_t max_count);
+Id_t SemaphoreCreate(U8_t sem_type, U8_t max_count);
 
 
 /******************************************************************************
@@ -52,10 +51,9 @@ Id_t       SemaphoreCreate(U8_t sem_type, U8_t max_count);
  *
  * @desc: Deletes the semaphore and sets sem_id to INVALID_ID.
  *
- * Arguments:
  * @argin: (Id_t *) sem_id; Semaphore ID.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the semaphore was deleted.
  * @retval:   OS_RES_LOCKED; if the Semaphore is still acquired by one or multiple
  *            users.
@@ -64,14 +62,14 @@ Id_t       SemaphoreCreate(U8_t sem_type, U8_t max_count);
 OsResult_t SemaphoreDelete(Id_t *sem_id);
 
 /******************************************************************************
- * @func: OsResult_t SemaphoreAcquire(Id_t sem_id)
+ * @func: OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout)
  *
  * @desc: Attempts to acquire the semaphore.
  *
- * Arguments:
  * @argin: (Id_t ) sem_id; Semaphore ID.
+ * @argin: (U32_t) timeout; Timeout in ms.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the semaphore was acquired.
  * @retval:   OS_RES_LOCKED; if the Semaphore is still acquired by one or multiple
  *            users.
@@ -84,10 +82,9 @@ OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout);
  *
  * @desc: Releases the acquired semaphore.
  *
- * Arguments:
  * @argin: (Id_t ) sem_id; Semaphore ID.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the semaphore was released.
  * @retval:   OS_RES_LOCKED; if the semaphore was not acquired.
  * @retval:   OS_RES_ERROR; if the semaphore was not found.
@@ -99,11 +96,10 @@ OsResult_t SemaphoreRelease(Id_t sem_id);
  *
  * @desc: Sets a new maximum acquire count for the semaphore.
  *
- * Arguments:
  * @argin: (Id_t) sem_id; Semaphore ID.
  * @argin: (U8_t) count; New max. acquire count.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the new count was set.
  * @retval:   OS_RES_ERROR; if the semaphore was not found.
  ******************************************************************************/
@@ -117,9 +113,10 @@ OsResult_t SemaphoreCountSet(Id_t sem_id, U8_t count);
  * Arguments:
  * @argin: (Id_t) sem_id; Semaphore ID.
  *
- * @rettype:  (U8_t) acquire count
+ * @rettype:  (U8_t); acquire count
+ * @retval: Any; valid count.
  ******************************************************************************/
-U8_t       SemaphoreCountGet(Id_t sem_id);
+U8_t SemaphoreCountGet(Id_t sem_id);
 
 /******************************************************************************
  * @func: OsResult_t SemaphoreCountReset(Id_t sem_id)
@@ -128,10 +125,9 @@ U8_t       SemaphoreCountGet(Id_t sem_id);
  * acquire count to 0. Tasks that have acquired the semaphore at that moment
  * will be suspended.
  *
- * Arguments:
  * @argin: (Id_t) sem_id; Semaphore ID.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the count was reset.
  * @retval:   OS_RES_ERROR; if the semaphore was not found.
  ******************************************************************************/

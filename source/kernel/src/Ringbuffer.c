@@ -155,11 +155,11 @@ OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32
 
             }
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_DATA_IN_OUT
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_DATA_IN_OUT
             EventEmit(ringbuf_id, RINGBUF_EVENT_DATA_IN, EVENT_FLAG_NONE);
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_EMPTY_FULL
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_EMPTY_FULL
             if(ringbuf->dcount == ringbuf->size) {
                 EventEmit(ringbuf_id, RINGBUF_EVENT_FULL, EVENT_FLAG_NONE);
             }
@@ -204,11 +204,11 @@ OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U3
 
             }
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_DATA_IN_OUT
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_DATA_IN_OUT
             EventEmit(ringbuf_id, RINGBUF_EVENT_DATA_OUT, EVENT_FLAG_NONE);
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_EMPTY_FULL
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_EMPTY_FULL
             if(ringbuf->dcount == 0) {
                 EventEmit(ringbuf_id, RINGBUF_EVENT_EMPTY, EVENT_FLAG_NONE);
             }
@@ -250,7 +250,7 @@ OsResult_t RingbufFlush(Id_t ringbuf_id)
             ringbuf->dcount = 0;
             ringbuf->write_index = 0;
             ringbuf->read_index = ringbuf->size - 1;
-#ifdef PRTOS_CONFIG_USE_EVENT_RINGBUF_FLUSH
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_FLUSH
             result = EventEmit(ringbuf_id, RINGBUF_EVENT_FLUSHED, EVENT_FLAG_NONE);
 #endif
             IRingbufUnlockRead(ringbuf);

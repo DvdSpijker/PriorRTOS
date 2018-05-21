@@ -27,7 +27,7 @@ Id_t SemaphoreCreate(U8_t sem_type, U8_t max_count)
     Id_t sem_id = ID_INVALID;
 
     void *new_sem_data = NULL;
-    new_sem = (pSem_t)KMemAllocObject(sizeof(Sem_t), (sizeof(Id_t) * max_count), &new_sem_data); //malloc(sizeof(Sem_t));
+    new_sem = (pSem_t)KMemAllocObject(sizeof(Sem_t), (sizeof(Id_t) * max_count), &new_sem_data);
     if(new_sem != NULL) {
         if(ListNodeInit(&new_sem->list_node, new_sem) == OS_RES_OK) {
             if(ListNodeAddSorted(&SemList, &new_sem->list_node) == OS_RES_OK) {
@@ -57,17 +57,14 @@ OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout)
 {
     OsResult_t result = OS_RES_LOCKED;
 
-#ifdef PRTOS_CONFIG_USE_EVENT_SEM_ACQUIRE_RELEASE
-
-    SYSTEM_CALL_WAIT_HANDLE_EVENT;
-
-    SYSTEM_CALL_POLL_HANDLE_EVENT(sem_id, SEM_EVENT_RELEASE, &result) {
+#ifdef PRTOS_CONFIG_USE_SEM_EVENT_ACQUIRE_RELEASE
+    SYS_CALL_EVENT_HANDLE(sem_id, SEM_EVENT_RELEASE, &result) {
         /* Do nothing. Normal execution flow. */
     }
-    SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
+    SYS_CALL_EVENT_HANDLE_TIMEOUT(&result) {
         return result;
     }
-    SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
+    SYS_CALL_EVENT_HANDLE_POLL(&result) {
         return result;
     }
 
@@ -82,8 +79,8 @@ OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout)
                     *(sem->owner_task_ids) = TcbRunning->list_node.id;
                     result = OS_RES_OK;
                 } else {
-#ifdef PRTOS_CONFIG_USE_EVENT_SEM_ACQUIRE_RELEASE
-                    SYSTEM_CALL_POLL_WAIT_EVENT(node, sem_id, SEM_EVENT_RELEASE, &result, timeout);
+#ifdef PRTOS_CONFIG_USE_SEM_EVENT_ACQUIRE_RELEASE
+                    SYS_CALL_EVENT_REGISTER(node, sem_id, SEM_EVENT_RELEASE, &result, timeout);
 #else
                     result = OS_RES_LOCKED;
 #endif

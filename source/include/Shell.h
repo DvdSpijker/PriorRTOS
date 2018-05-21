@@ -48,15 +48,13 @@ struct ShellCommand {
  * @desc: Registers a Shell command making available for calling using
  * the CLI.
  *
- * Arguments:
  * @argin: (struct ShellCommand *) command; Initialized ShellCommand structure
- *                                  that defines the command, callbacks and
- *                                  token counts.
+ * that defines the command, callbacks and token counts.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the command was registered.
  * @retval:   OS_RES_FAIL; if the maximum amount of registered commands has been
- *                     reached.
+ * reached.
  ******************************************************************************/
 OsResult_t ShellCommandRegister(struct ShellCommand *command);
 
@@ -68,61 +66,66 @@ OsResult_t ShellCommandRegister(struct ShellCommand *command);
  * the arguments are invalid. The user will be informed with this message:
  * "Command '<command>' has invalid arguments".
  *
- * Arguments:
  * @argin: (char *command) command; Command in string form.
- *
- * @rettype:  N/A
  ******************************************************************************/
 void ShellReplyInvalidArgs(char *command);
 
 /******************************************************************************
- * @func: U16_t ShellPut(char *message, ...);
+ * @func: U16_t ShellPut(char *message, ...)
  *
  * @desc: Prints a message starting on a new line prefixed with 'psh>'.
  *
- * Arguments:
  * @argin: (char *) message; Message in string form.
  * @argin: (...) variable arguments; -
  *
- * @rettype:  (U16_t) Number of characters
+ * @rettype:  (U16_t); Number of characters
  * @retval:   0; if no characters were printed because the buffer could not
- *            process the requested amount.
+ * process the requested amount.
  * @retval:   Other; valid number of characters.
  ******************************************************************************/
 U16_t ShellPut(char *message, ...);
 
 /******************************************************************************
- * @func: U16_t ShellPutRaw(char *message, ...);
+ * @func: U16_t ShellPutRaw(char *message, ...)
  *
  * @desc: Prints the exact message.
  *
- * Arguments:
  * @argin: (char *) message; Message in string form.
  * @argin: (...) variable arguments; -
  *
- * @rettype:  (U16_t) Number of characters
+ * @rettype:  (U16_t); Number of characters
  * @retval:   0; if no characters were printed because the buffer could not
- *            process the requested amount.
+ * process the requested amount.
  * @retval:   Other; valid number of characters.
  ******************************************************************************/
 U16_t ShellPutRaw(char *message, ...);
 
 /******************************************************************************
- * @func: U16_t ShellPutRawNewline(char *message, ...);
+ * @func: U16_t ShellPutRawNewline(char *message, ...)
  *
  * @desc: Prints the exact message on a new line.
  *
- * Arguments:
  * @argin: (char *) message; Message in string form.
  * @argin: (...) variable arguments; -
  *
- * @rettype:  (U16_t) Number of characters
+ * @rettype:  (U16_t); Number of characters
  * @retval:   0; if no characters were printed because the buffer could not
- *            process the requested amount.
+ * process the requested amount.
  * @retval:   Other; valid number of characters.
  ******************************************************************************/
 U16_t ShellPutRawNewline(char *message, ...);
 
+/******************************************************************************
+ * @func: struct ShellCommand *ShellCommandFromName(char *name)
+ *
+ * @desc: Get the ShellCommand struct from the (NULL terminated) command name.
+ *
+ * @argin: (char *) name; NULL terminated command name.
+ *
+ * @rettype:  (struct ShellCommand); ShellCommand struct belonging to the name.
+ * @retval:  NULL; no ShellCommand matches the name.
+ * @retval:   Other; valid ShellCommand.
+ ******************************************************************************/
 struct ShellCommand *ShellCommandFromName(char *name);
 
 

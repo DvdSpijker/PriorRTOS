@@ -57,11 +57,21 @@ typedef enum {
 typedef void (*TimerOverflowCallback_t)(Id_t timer_id, void *context);
 
 /* Timer Parameter macros */
-#define TIMER_PARAMETER_ON 0x01
-#define TIMER_PARAMETER_PERIODIC  0x02
-#define TIMER_PARAMETER_AR 0x04
-#define TIMER_PARAMETER_ITR_SET(itr) (((U8_t)itr) << 3)
-#define TIMER_PARAMETER_ITR_GET(param) ((param & 0xF8) >> 3)
+
+/* The timer will be turned on after creation and after a reset. */
+#define TIMER_PARAMETER_ON			0x01
+
+/* The timer is periodic and has no iteration limit. */
+#define TIMER_PARAMETER_PERIODIC	0x02
+
+/* The timer will automatically reset its count to 0 upon overflow. */
+#define TIMER_PARAMETER_AR			0x04
+
+/* Use to set the amount of iterations a timer has. */
+#define TIMER_PARAMETER_ITR_SET(itr)	(((U8_t)itr) << 3)
+
+/* Use to get the amount of iterations a timer has from its parameter. */
+#define TIMER_PARAMETER_ITR_GET(param)	((param & 0xF8) >> 3)
 
 /* Illegal interval value. */
 #define TIMER_INTERVAL_ILLEGAL 0xFFFFFFFF
@@ -70,11 +80,11 @@ typedef void (*TimerOverflowCallback_t)(Id_t timer_id, void *context);
 #define TIMER_EVENT_CREATE   EVENT_TYPE_CREATE
 #define TIMER_EVENT_DELETE   EVENT_TYPE_DELETE
 
-#ifdef PRTOS_CONFIG_USE_EVENT_TIMER_OVERFLOW
+#ifdef PRTOS_CONFIG_USE_TIMER_EVENT_OVERFLOW
 #define TIMER_EVENT_OVERFLOW (EVENT_TYPE_STATE_CHANGE | 0x00000001)
 #endif
 
-#ifdef PRTOS_CONFIG_USE_EVENT_TIMER_START_STOP_RESET
+#ifdef PRTOS_CONFIG_USE_TIMER_EVENT_START_STOP_RESET
 #define TIMER_EVENT_START    (EVENT_TYPE_STATE_CHANGE | 0x00000002)
 #define TIMER_EVENT_STOP     (EVENT_TYPE_STATE_CHANGE | 0x00000003)
 #define TIMER_EVENT_RESET    (EVENT_TYPE_STATE_CHANGE | 0x00000004)
@@ -82,7 +92,7 @@ typedef void (*TimerOverflowCallback_t)(Id_t timer_id, void *context);
 
 /******************************************************************************
  * @func: Id_t TimerCreate(U32_t interval, U8_t parameter, 
- *                         TimerOverflowCallback_t overflow_callback)
+ * TimerOverflowCallback_t overflow_callback, void *context)
  *
  * @desc: Creates a timer that will overflow after the specified
  * interval. If the TIMER_PARAMETER_ON flag is set, the timer will start
@@ -93,23 +103,16 @@ typedef void (*TimerOverflowCallback_t)(Id_t timer_id, void *context);
  * - If overflow_callback != NULL: Call the overflow callback.
  * - If TIMER_PARAMETER_ON = 1: Restart the timer.
  * - If TIMER_PARAMETER_AR = 1: Automatically reset.
- * - If TIMER_PARAMETER_P = 0: Decrement the number of iterations left.
+ * - If TIMER_PARAMETER_PERIODIC = 0: Decrement the number of iterations left.
  * - If iterations left = 0: Delete the timer.
- * Timer parameter macros
- * TIMER_PARAMETER_AR (auto-reset)
- * TIMER_PARAMETER_ON 
- * TIMER_PARAMETER_PERIODIC
- * TIMER_PARAMETER_ITR_SET(itr) (sets iterations for parameter)
- * TIMER_PARAMETER_ITR_GET(param) (gets iterations from parameter)
  *
- * Arguments:
  * @argin: (U32_t) interval_us; Timer interval in microseconds(us), 0xFFFFFFFF is illegal.
  * @argin: (U8_t) parameter; Timer parameter.
  * @argin: (TimerOverflowCallback_t) overflow_callback; Called when the timer overflows.
  * @argin: (void *) context; Opaque context pointer, argument of the overflow_callback.
  * Set NULL if unused.
  *
- * @rettype:  (Id_t) Timer ID
+ * @rettype:  (Id_t); Timer ID
  * @retval:   INVALID_ID; if creation failed.
  * @retval:   Other; if the timer was created.
  ******************************************************************************/
@@ -122,10 +125,9 @@ Id_t TimerCreate(U32_t interval_us, U8_t parameter, TimerOverflowCallback_t over
  * @desc: Deletes the specified timer and sets timer_id to INVALID_ID if the
  * operation is successful.
  *
- * Arguments:
  * @argout: (Id_t *) timer_id; ID of the timer to delete. Will be set to INVALID_ID.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the timer was successfully deleted.
  * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
@@ -140,10 +142,9 @@ OsResult_t TimerDelete(Id_t *timer_id);
  * is called. The timer is transitioned to the stopped-state.
  * The current ticks on the timer are REMOVED, to save the ticks use TimerPause.
  *
- * Arguments:
  * @argin: (Id_t) timer_id; ID of the timer to stop.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the timer was successfully stopped.
  * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
@@ -156,10 +157,9 @@ void TimerStop(Id_t timer_id);
  *
  * @desc: Starts the specified timer.
  *
- * Arguments:
  * @argin: (Id_t) timer_id; ID of the timer to start.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the timer was successfully started.
  * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
@@ -178,7 +178,7 @@ void TimerStart(Id_t timer_id);
  * Arguments:
  * @argin: (Id_t) timer_id; ID of the timer to pause.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the timer was successfully paused.
  * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
@@ -190,24 +190,18 @@ void TimerPause(Id_t timer_id);
  *
  * @desc: Resets the timer's current ticks.
  *
- * Arguments:
  * @argin: (Id_t) timer_id; ID of the timer to reset.
  *
- * @rettype:  (OsResult_t) sys call result
+ * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the timer was successfully reset.
  * @retval:   OS_RES_ERROR; if the timer could not be found.
  ******************************************************************************/
 OsResult_t TimerReset(Id_t timer_id);
 
-
-
-
 /******************************************************************************
  * @func: void TimerStartAll(void)
  *
  * @desc: Starts all timers that exist at the time of the call.
- *
- * @rettype:  N/A
  ******************************************************************************/
 void TimerStartAll(void);
 
@@ -216,8 +210,6 @@ void TimerStartAll(void);
  * @func: void TimerStopAll(void)
  *
  * @desc: Stops all timers that exist at the time of the call.
- *
- * @rettype:  N/A
  ******************************************************************************/
 void TimerStopAll(void);
 
@@ -226,21 +218,18 @@ void TimerStopAll(void);
  * @func: void TimerResetAll(void)
  *
  * @desc: Reset all timers that exist at the time of the call.
- *
- * @rettype:  N/A
  ******************************************************************************/
 void TimerResetAll(void);
 
 
 /******************************************************************************
- * @func: TmrState_t TimerGetState (Id_t timer_id)
+ * @func: TmrState_t TimerStateGet(Id_t timer_id)
  *
  * @desc: Returns the current state of the timer.
  *
- * Arguments:
  * @argin: (Id_t) timer_id; Timer ID.
  *
- * @rettype:  (TmrState_t) current state
+ * @rettype:  (TmrState_t); current state
  * @retval:   TIMER_STATE_STOPPED;
  * @retval:   TIMER_STATE_WAITING;
  * @retval:   TIMER_STATE_RUNNING;
@@ -250,14 +239,13 @@ TmrState_t TimerStateGet(Id_t timer_id);
 
 
 /******************************************************************************
- * @func: U32_t TimerTicksGet (Id_t timer_id)
+ * @func: U32_t TimerTicksGet(Id_t timer_id)
  *
  * @desc: Returns the current value of the timer's counter.
  *
- * Arguments:
  * @argin: (Id_t) timer_id; Timer ID.
  *
- * @rettype:  (U32_t) counter value
+ * @rettype:  (U32_t); counter value
  * @retval:   TIMER_INTERVAL_ILLEGAL; if the timer could not be found.
  * @retval:   Other; valid counter value.
  ******************************************************************************/
@@ -272,26 +260,20 @@ U32_t TimerTicksGet(Id_t timer_id);
  * @desc: Sets a new interval for the timer. The timer is NOT implicitly
  * reset.
  *
- * Arguments:
  * @argin: (Id_t) timer_id; Timer ID.
- * @argin: (U32_t) new_interval_us; New Timer interval in microseconds(us),
- *                                   TIMER_INTERVAL_ILLEGAL (0xFFFFFFFF)
- *                                   is illegal.
- *
- * @rettype:  N/A
+ * @argin: (U32_t) new_interval_us; New Timer interval in microseconds(us).
  ******************************************************************************/
 void TimerIntervalSet(Id_t timer_id, U32_t new_interval_us);
 
 
 /******************************************************************************
- * @func: U32_t TimerIntervalGet (Id_t timer_id)
+ * @func: U32_t TimerIntervalGet(Id_t timer_id)
  *
  * @desc: Returns the current interval of the timer in us.
  *
- * Arguments:
  * @argin: (Id_t) timer_id; Timer ID.
  *
- * @rettype:  (U32_t) timer interval
+ * @rettype:  (U32_t); timer interval
  * @retval:   TIMER_INTERVAL_ILLEGAL; if the timer could not be found.
  * @retval:   Other; valid interval.
  ******************************************************************************/
@@ -303,10 +285,9 @@ U32_t TimerIntervalGet(Id_t timer_id);
  *
  * @desc: Returns the current amount of iterations left on the timer.
  *
- * Arguments:
  * @argin: (Id_t) timer_id; Timer ID.
  *
- * @rettype:  (U8_t) timer iterations
+ * @rettype:  (U8_t); timer iterations
  * @retval:   0; if the timer could not be found.
  * @retval:   1-31; for a valid number of iterations.
  ******************************************************************************/
@@ -319,11 +300,10 @@ U8_t TimerIterationsGet(Id_t timer_id);
  * @desc: Sets the amount of iterations left on the timer. The value
  * should be between 1 and 31.
  *
- * Arguments:
  * @argin: (Id_t) timer_id; Timer ID.
  * @argin: (U8_t) iterations; Number of iterations, 1-31.
  *
- * @rettype:  (OsResult_t) Sys call result:
+ * @rettype:  (OsResult_t); Sys call result:
  * @retval:   OS_RES_OK; if the operation was successful.
  * @retval:   OS_RES_ERROR; if the timer could not be found.
  * @retval:   OS_RES_OUT_OF_BOUNDS; if the iteration value was > 31 or 0.
@@ -332,15 +312,13 @@ OsResult_t TimerIterationsSet(Id_t timer_id, U8_t iterations);
 
 
 /******************************************************************************
- * @func: U8_t TimerParameterGet (Id_t timer_id)
+ * @func: U8_t TimerParameterGet(Id_t timer_id)
  *
  * @desc: Returns the current parameter of the timer.
- * Timer parameter bits | 7-3: iterations | 2: auto-reset | 1: periodic | 0: ON |
- * Arguments:
  *
  * @argin: (Id_t) timer_id; Timer ID.
  *
- * @rettype:  (U8_t) Sys call result:
+ * @rettype:  (U8_t); sys call result:
  * @retval:   0xFF; if the timer could not be found.
  * @retval:   Other; valid parameter.
  ******************************************************************************/
@@ -349,16 +327,12 @@ U8_t TimerParameterGet(Id_t timer_id);
 
 /* TODO: Implement OsResult_t in TimerParameterSet. */
 /******************************************************************************
- * @func: U8_t TimerParameterSet (Id_t timer_id)
+ * @func: U8_t TimerParameterSet(Id_t timer_id)
  *
  * @desc: Sets a new parameter for the timer.
- * Timer parameter bits | 7-3: iterations | 2: auto-reset | 1: periodic | 0: ON |
- * Arguments:
  *
  * @argin: (Id_t) timer_id; Timer ID.
  * @argin: (U8_t) parameter; New timer parameter. 0xFF is illegal.
- *
- * @rettype:  N/A
  ******************************************************************************/
 void TimerParameterSet(Id_t timer_id, U8_t parameter);
 

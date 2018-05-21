@@ -100,7 +100,7 @@ void KTimerUpdateAll(U32_t t_us)
 
                         timer->state = TIMER_STATE_WAITING; /* Timer waiting for reset. */
 
-#ifdef PRTOS_CONFIG_USE_EVENT_TIMER_OVERFLOW
+#ifdef PRTOS_CONFIG_USE_TIMER_EVENT_OVERFLOW
                         //LOG_DEBUG_NEWLINE("Timer (%08x) overflow event.", timer_id);
                         EventEmit(timer_id, TIMER_EVENT_OVERFLOW, EVENT_FLAG_NONE);
 #endif

@@ -110,7 +110,7 @@ void EventgroupFlagsSet(Id_t eventgroup_id, U8_t mask)
         if(eventgroup != NULL) {
             eventgroup->event_reg |= mask;
 
-#ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_SET
+#ifdef PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_SET
             U8_t bitmask = 0x80;
             for (S8_t i = 8; i > 0; i--) {
                 if(bitmask & mask) {
@@ -135,7 +135,7 @@ OsResult_t EventgroupFlagsClear(Id_t eventgroup_id, U8_t mask)
             result = OS_RES_OK;
             eventgroup->event_reg &= ~(mask);
 
-#ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_CLEAR
+#ifdef PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_CLEAR
             U8_t bitmask = 0x80;
             for (S8_t i = 8; i > 0; i--) {
                 if(bitmask & mask) {
@@ -169,24 +169,22 @@ OsResult_t EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t ti
 {
     OsResult_t result = OS_RES_ERROR;
 
-#ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_CLEAR
+#ifdef PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_CLEAR
 
-    SYSTEM_CALL_WAIT_HANDLE_EVENT;
-
-    SYSTEM_CALL_POLL_HANDLE_EVENT(eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), &result) {
-        /* Do nothing. Normal execution flow. */
-    }
-    SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
-        return result;
-    }
-    SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
-        return result;
-    }
+	SYS_CALL_EVENT_HANDLE(eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), &result) {
+		/* Do nothing. */
+	}
+	SYS_CALL_EVENT_HANDLE_TIMEOUT(&result) {
+		return result;
+	}
+	SYS_CALL_EVENT_HANDLE_POLL(&result) {
+		return result;
+	}
 
     LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
         U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
         if((flags & mask) != ~mask) { /* Not all flags have been cleared. */
-            SYSTEM_CALL_POLL_WAIT_EVENT(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), &result, timeout);
+            SYS_CALL_EVENT_REGISTER(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), &result, timeout);
         } else {
             result = OS_RES_OK;
         }
@@ -201,30 +199,28 @@ OsResult_t EventgroupFlagsRequireSet(Id_t eventgroup_id, U8_t mask, U32_t timeou
 {
     OsResult_t result = OS_RES_ERROR;
 
-#ifdef PRTOS_CONFIG_USE_EVENT_EVENTGROUP_FLAG_CLEAR
+#ifdef PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_SET
 
-    SYSTEM_CALL_WAIT_HANDLE_EVENT;
+	SYS_CALL_EVENT_HANDLE(eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result) {
+		/* Do nothing. */
+	}
+	SYS_CALL_EVENT_HANDLE_TIMEOUT(&result) {
+		return result;
+	}
+	SYS_CALL_EVENT_HANDLE_POLL(&result) {
+		return result;
+	}
 
-    SYSTEM_CALL_POLL_HANDLE_EVENT(eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result) {
-        /* Do nothing. Normal execution flow. */
-    }
-    SYSTEM_CALL_POLL_HANDLE_TIMEOUT(&result) {
-        return result;
-    }
-    SYSTEM_CALL_POLL_HANDLE_POLL(&result) {
-        return result;
-    }
-
-    LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
-        U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
-        if((flags & mask) != mask) { /* Not all flags have been set. */
-            SYSTEM_CALL_POLL_WAIT_EVENT(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result, timeout);
-        } else {
-            result = OS_RES_OK;
-        }
-    }
-    LIST_NODE_ACCESS_END();
-
+	LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
+		U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
+		if((flags & mask) != mask) { /* Not all flags have been set. */
+			SYS_CALL_EVENT_REGISTER(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result, timeout);
+		} else {
+			result = OS_RES_OK;
+		}
+	}
+	LIST_NODE_ACCESS_END();
 #endif
-    return result;
+
+	return result;
 }

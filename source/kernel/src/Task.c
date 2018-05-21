@@ -56,7 +56,7 @@ LOG_FILE_NAME("Task.c");
 
 
 #define TASK_EVENT_SLEEP (EVENT_TYPE_STATE_CHANGE | 0x00002000)
-static OsResult_t ITaskListen(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *event_id);
+static OsResult_t ITaskEventRegister(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *event_id);
 
 extern U32_t OsRunTimeMicrosGet(void);
 
@@ -150,7 +150,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
             TaskResumeWithVarg(new_TCB->list_node.id, v_arg);
         }
     }
-#ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
+#ifdef PRTOS_CONFIG_USE_TASK_EVENT_CREATE_DELETE
     EventEmit(new_TCB->list_node.id, TASK_EVENT_CREATE, EVENT_FLAG_NONE);
 #endif
     LOG_INFO_NEWLINE("Task created: %08x", new_TCB->list_node.id);
@@ -177,7 +177,7 @@ OsResult_t TaskDelete(Id_t *task_id)
     if(tcb != NULL) {
         KTaskFlagSet(tcb, TASK_FLAG_DELETE);
 
-#ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
+#ifdef PRTOS_CONFIG_USE_TASK_EVENT_CREATE_DELETE
         EventEmit(task_id, TASK_EVENT_DELETE, EVENT_FLAG_NONE);
 #endif
         result = OS_RES_OK;
@@ -284,7 +284,7 @@ Id_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms)
 {
     OsResult_t result = OS_RES_ERROR;
     Id_t event_id = ID_INVALID;
-    result = ITaskListen(TcbRunning, object_id, event, EVENT_FLAG_PERMANENT, timeout_ms, &event_id);
+    result = ITaskEventRegister(TcbRunning, object_id, event, EVENT_FLAG_PERMANENT, timeout_ms, &event_id);
     if(result == OS_RES_OK) {
         return event_id;
     }
@@ -340,7 +340,7 @@ OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll
 
 new_poll:
     /* Add a new poll and return. */
-    result = ITaskListen(TcbRunning, object_id, event, EVENT_FLAG_NONE, timeout_ms, NULL);
+    result = ITaskEventRegister(TcbRunning, object_id, event, EVENT_FLAG_NONE, timeout_ms, NULL);
     if(result == OS_RES_OK) {
         result = OS_RES_POLL;
     }
@@ -354,11 +354,11 @@ OsResult_t TaskJoin(Id_t task_id, U32_t timeout)
     OsResult_t result = OS_RES_ERROR;
 
 #ifdef PRTOS_CONFIG_USE_SCHEDULER_PREEM
-#ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
+#ifdef PRTOS_CONFIG_USE_TASK_EVENT_CREATE_DELETE
     result = TaskWait(task_id, TASK_EVENT_DELETE, timeout);
 #endif
 #else
-#ifdef PRTOS_CONFIG_USE_EVENT_TASK_CREATE_DELETE
+#ifdef PRTOS_CONFIG_USE_TASK_EVENT_CREATE_DELETE
     result = TaskPoll(task_id, TASK_EVENT_DELETE, timeout, true);
 #endif
 #endif
@@ -640,12 +640,12 @@ OsResult_t KTcbDestroy(pTcb_t tcb, LinkedList_t *list)
 }
 
 
-static OsResult_t ITaskListen(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *event_id)
+static OsResult_t ITaskEventRegister(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *event_id)
 {
     OsResult_t result = OS_RES_ERROR;
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
-            result = EventListen(&tcb->event_list, object_id, event, flags, ConvertMsToUs(timeout_ms), event_id);
+            result = EventRegister(&tcb->event_list, object_id, event, flags, ConvertMsToUs(timeout_ms), event_id);
             ListNodeUnlock(&tcb->list_node);
         }
     }
