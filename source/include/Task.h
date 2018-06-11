@@ -89,11 +89,11 @@ typedef enum {
     TASK_CAT_LOW        = 0x00  /* Scheduled according to a Shortest Job First policy. */
 } TaskCat_t;
 
-#define TASK_PARAM_NONE         0x00 /* This task has no parameters. */
-#define TASK_PARAM_START        0x01 /* This task is promoted to the active state after creation. */
-#define TASK_PARAM_ESSENTIAL    0x02 /* This task is essential, when it fails the system fails. System failure exception is raised. */
-#define TASK_PARAM_TIMESLICED   0x04 /* This task has a configurable time slice that can be set using TaskTimeSliceSet. */
-#define TASK_PARAM_NO_PREEM     0x08 /* Locks the scheduler by default when this task is executing. */
+#define TASK_PARAMETER_NONE         0x00 /* This task has no parameters. */
+#define TASK_PARAMETER_START        0x01 /* This task is promoted to the active state after creation. */
+#define TASK_PARAMETER_ESSENTIAL    0x02 /* This task is essential, when it fails the system fails. System failure exception is raised. */
+#define TASK_PARAMETER_TIMESLICED   0x04 /* This task has a configurable time slice that can be set using TaskTimeSliceSet. */
+#define TASK_PARAMETER_NO_PREEM     0x08 /* Locks the scheduler by default when this task is executing. */
 
 
 /* Task Event macros */
@@ -103,7 +103,7 @@ typedef enum {
 #endif
 
 #ifdef PRTOS_CONFIG_USE_TASK_EVENT_SUSPEND
-#define TASK_EVENT_YIELD_SUSPEND  (EVENT_TYPE_STATE_CHANGE | 0x00003000)
+#define TASK_EVENT_SUSPEND  (EVENT_TYPE_STATE_CHANGE | 0x00004000)
 #endif
 
 #ifdef PRTOS_CONFIG_USE_TASK_EVENT_EXECUTE_EXIT
@@ -124,8 +124,8 @@ typedef enum {
  * @argin: (TaskCat_t) category; Task category: TASK_CAT_LOW, TASK_CAT_MEDIUM,
  * TASK_CAT_HIGH, TASK_CAT_REALTIME.
  * @argin: (Prio_t) priority; Task priority: 1-5 (5 is highest).
- * @argin: (U8_t) param; Task creation parameter.
- * E.g. (TASK_PARAM_ESSENTIAL | TASK_PARAM_NO_PREEM). Use TASK_PARAM_NONE
+ * @argin: (U8_t) param; Task creation parameter, use TASK_PARAMETER_* macros.
+ * E.g. (TASK_PARAMETER_ESSENTIAL | TASK_PARAMETER_NO_PREEM). Use TASK_PARAMETER_NONE
  * to pass no parameters.
  * @argin: (U32_t) stack_size; Task stack size in bytes. Pass TASK_STD_STACK_SIZE to
  * get the configured standard stack size.
@@ -134,7 +134,7 @@ typedef enum {
  * @argin: (U32_t) v_arg; Value task argument. Passed to the task when executed.
  *
  * @rettype:  (Id_t); Task ID
- * @retval:   INVALID_ID; if an error occurred during task creation.
+ * @retval:   ID_INVALID; if an error occurred during task creation.
  * @retval:   Other; if successful.
  ******************************************************************************/
 Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
@@ -146,7 +146,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
  *
  * @desc: Deletes the Task matching the task_id.
  * The task cannot be scheduled anymore after calling this function.
- * Note: task_id will be set to INVALID_ID to avoid illegal use of the deleted task.
+ * Note: task_id will be set to ID_INVALID to avoid illegal use of the deleted task.
  *
  * @argin: (Id_t *) task_id; Task ID. NULL for current task.
  *
@@ -180,7 +180,7 @@ Id_t TaskIdGet(void);
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if operation was successful.
  * @retval:   OS_RES_ID_INVALID; if the given task was not a Real-Time task or if
- *            the task ID was an invalid ID (INVALID_ID).
+ *            the task ID was an invalid ID (ID_INVALID).
  * @retval:   OS_RES_ERROR; if the task handler was not found in any of the lists.
  ******************************************************************************/
 OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms);
@@ -191,7 +191,7 @@ OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms);
  *
  * @desc: Assigns a new priority level to the task.
  *
- * @argin: (Id_t) task_id; Task ID. INVALID_ID = Running task ID.
+ * @argin: (Id_t) task_id; Task ID. ID_INVALID = Running task ID.
  * @argin: (Prio_t) priority; New task priority: 1-5 (5 is highest).
  *
  * @rettype:  (OsResult_t); sys call result
@@ -207,7 +207,7 @@ OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority);
  *
  * @desc: Returns the priority level of the task.
  *
- * @argin: (Id_t) task_id; Task ID. INVALID_ID = Running task ID.
+ * @argin: (Id_t) task_id; Task ID. ID_INVALID = Running task ID.
  *
  * @rettype:  (Prio_t); task priority
  * @retval:   0; task could not be found.
@@ -221,7 +221,7 @@ Prio_t TaskPriorityGet(Id_t task_id);
  *
  * @desc: Returns the task's current state.
  *
- * @argin: (Id_t) task_id; Task ID. INVALID_ID = Running task ID.
+ * @argin: (Id_t) task_id; Task ID. ID_INVALID = Running task ID.
  *
  * @rettype:  (TaskState_t); task state
  * @retval: Any; valid state.
@@ -317,8 +317,36 @@ return;                     \
  ******************************************************************************/
 OsResult_t TaskSleep(U32_t t_ms);
 
+/******************************************************************************
+ * @func: OsResult_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms)
+ *
+ * @desc: Add an event to the calling task's polling list. The event poll is auto-
+ * matically re-added when the event occurs. To remove the event poll, call
+ * TaskPollRemove.
+ *
+ * @argin: (Id_t) object_id; ID of the event emitting object.
+ * @argin: (U32_t) event; Event to poll.
+ * @argin: (U32_t) timeout_ms; Event timeout in milliseconds. If OS_TIMEOUT_INFINITE
+ * is passed, the task will wait indefinitely.
+ *
+ * @rettype:  (OsResult_t); sys call result
+ * @retval:   OS_RES_OK; if the event is added to the polling list.
+ * @retval:   OS_RES_ERROR; if an error occurred.
+ ******************************************************************************/
+OsResult_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms);
 
-Id_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms);
+/******************************************************************************
+ * @func: OsResult_t TaskPollRemove(Id_t object_id, U32_t event)
+ *
+ * @desc: Remove an event from the calling task's polling list.
+ *
+ * @argin: (Id_t) object_id; ID of the event emitting object.
+ * @argin: (U32_t) event; Event to remove.
+ *
+ * @rettype:  (OsResult_t); sys call result
+ * @retval:   OS_RES_OK; if the event is removed from the polling list.
+ * @retval:   OS_RES_ERROR; if an error occurred.
+ ******************************************************************************/
 OsResult_t TaskPollRemove(Id_t object_id, U32_t event);
 
 /******************************************************************************
@@ -336,29 +364,27 @@ OsResult_t TaskPollRemove(Id_t object_id, U32_t event);
  * @argin: (U32_t) timeout_ms; Event timeout in milliseconds. If OS_TIMEOUT_INFINITE
  * is passed, the task will wait indefinitely.
  * @argin: (bool) add_poll; Add a new event poll is the event has occurred or is not yet
- * polling.
+ * being polled.
  *
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_POLL; if the event is being polled.
  * @retval:   OS_RES_EVENT; if the polled event has occurred.
  * @retval:   OS_RES_TIMEOUT; if the timeout expired.
- * @retval:   OS_RES_FAIL; if the task is not polling the event (and !add_poll).
+ * @retval:   OS_RES_FAIL; if the task is not polling the event (and add_poll=false).
  * @retval:   OS_RES_ERROR; if an error occurred.
  ******************************************************************************/
 OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll);
 
-
+#ifdef PRTOS_CONFIG_USE_SCHEDULER_PREEM
 /******************************************************************************
  * @func: OsResult_t TaskWait(Id_t object_id, U32_t event, U32_t timeout_ms)
  *
- * @desc: Listens the task to the specified event emitted by the
+ * @desc: The task will wait for the specified event to be emitted by the
  * specified object in a BLOCKING fashion.
- * When this event occurs the task will be activated.
- * If the event does not occur within the specified time, the event subscription
- * times out and the task will be activated to handle the timeout.
+ * This function will return when the event has occurred, the timeout expires
+ * or when an error occurred.
  *
- * Arguments:
- * @argin: (Id_t) object_id; ID of the event generating object. If INVALID_ID
+ * @argin: (Id_t) object_id; ID of the event generating object. If ID_INVALID
  * the task will be listened to all.
  * @argin: (U32_t) event; Event to listen to.
  * @argin: (U32_t) timeout_ms; Event timeout in milliseconds. If OS_TIMEOUT_INFNITE
@@ -370,7 +396,9 @@ OsResult_t TaskPoll(Id_t object_id, U32_t event, U32_t timeout_ms, bool add_poll
  * @retval:   OS_RES_ERROR; if an error occurred.
  ******************************************************************************/
 OsResult_t TaskWait(Id_t object_id, U32_t event, U32_t timeout_ms);
+#endif
 
+#ifdef PRTOS_CONFIG_USE_TASK_EVENT_EXECUTE_EXIT
 /******************************************************************************
  * @func: OsResult_t TaskJoin(Id_t task_id, U32_t timeout)
  *
@@ -386,6 +414,8 @@ OsResult_t TaskWait(Id_t object_id, U32_t event, U32_t timeout_ms);
  * @retval:   OS_RES_ERROR; if the task could not be found.
  ******************************************************************************/
 OsResult_t TaskJoin(Id_t task_id, U32_t timeout);
+#endif
+
 
 /******************************************************************************
  * @func: TASK_INIT_BEGIN()
