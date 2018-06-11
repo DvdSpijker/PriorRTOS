@@ -237,7 +237,7 @@ U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target)
     return count;
 }
 
-OsResult_t RingbufFlush(Id_t ringbuf_id)
+OsResult_t RingbufPurge(Id_t ringbuf_id)
 {
     OsResult_t result = OS_RES_OK;
     pRingbuf_t ringbuf = IRingbufFromId(ringbuf_id);
@@ -250,8 +250,8 @@ OsResult_t RingbufFlush(Id_t ringbuf_id)
             ringbuf->dcount = 0;
             ringbuf->write_index = 0;
             ringbuf->read_index = ringbuf->size - 1;
-#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_FLUSH
-            result = EventEmit(ringbuf_id, RINGBUF_EVENT_FLUSHED, EVENT_FLAG_NONE);
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_PURGE
+            result = EventEmit(ringbuf_id, RINGBUF_EVENT_PURGE, EVENT_FLAG_NONE);
 #endif
             IRingbufUnlockRead(ringbuf);
             IRingbufUnlockWrite(ringbuf);

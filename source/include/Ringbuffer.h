@@ -60,8 +60,8 @@ extern "C" {
 #define RINGBUF_EVENT_FULL           (EVENT_TYPE_STATE_CHANGE | 0x00002000)
 #endif
 
-#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_FLUSH
-#define RINGBUF_EVENT_FLUSHED        (EVENT_TYPE_STATE_CHANGE | 0x00003000)
+#ifdef PRTOS_CONFIG_USE_RINGBUFFER_EVENT_PURGE
+#define RINGBUF_EVENT_PURGE       (EVENT_TYPE_STATE_CHANGE | 0x00003000)
 #endif
 
 /* Ring-buffer Base Type. */
@@ -169,26 +169,26 @@ U32_t RingbufDump(Id_t ringbuf_id, RingbufBase_t* target);
 
 
 /******************************************************************************
- * @func: OsResult_t RingbufFlush(Id_t ringbuf_id)
+ * @func: OsResult_t RingbufPurge(Id_t ringbuf_id)
  *
- * @desc: Resets the ring-buffer's read and write locations as well as
- * its current data count resulting in all its initial space becoming available.
+ * @desc: Purges all data in the ring-buffer and resets the ring-buffer's read and
+ * write locations.
  *
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  *
  * @rettype:  (OsResult_t); sys call result
- * @retval:   OS_RES_OK; if the ring-buffer was flushed.
+ * @retval:   OS_RES_OK; if the ring-buffer was purged.
  * @retval:   OS_RES_LOCKED; if the ring-buffer is locked for reading or writing.
  * @retval:   OS_RES_ERROR; if the ring-buffer could not be found.
  ******************************************************************************/
-OsResult_t RingbufFlush(Id_t ringbuf_id);
+OsResult_t RingbufPurge(Id_t ringbuf_id);
 
 
 /******************************************************************************
  * @func: U32_t RingbufSearch(Id_t ringbuf_id, RingbufBase_t *query,
  *  U32_t query_length)
  *
- * @desc: Searched the ring-buffer for the given query of given length.
+ * @desc: Searches the ring-buffer for the given query of given length.
  * The number of occurrences of the query in the buffer is returned.
  *
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
@@ -200,7 +200,20 @@ OsResult_t RingbufFlush(Id_t ringbuf_id);
  ******************************************************************************/
 U32_t RingbufSearch(Id_t ringbuf_id, RingbufBase_t *query, U32_t query_length);
 
-/* Returns the index at which the query first occurs. */
+/******************************************************************************
+ * @func: U32_t RingbufSearchIndex(Id_t ringbuf_id, RingbufBase_t *query,
+ * U32_t query_length)
+ *
+ * @desc: Searches the ring-buffer for the given query of given length.
+ * The index of the first occurrence of the query in the buffer is returned.
+ *
+ * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
+ * @argin: (RingbufBase_t) query; Search query.
+ * @argin: (U32_t) query_length; Length of the search query.
+ *
+ * @rettype:  (U32_t); First occurrence of the query.
+ * @retval: Any; valid amount.
+ ******************************************************************************/
 U32_t RingbufSearchIndex(Id_t ringbuf_id, RingbufBase_t *query, U32_t query_length);
 
 
@@ -223,7 +236,6 @@ U32_t RingbufDataCountGet(Id_t ringbuf_id);
  *
  * @desc: Returns the amount of space left in the ring-buffer.
  *
- * Arguments:
  * @argin: (Id_t) ringbuf_id; Ring-buffer ID.
  *
  * @rettype:  (U32_t); Data space left.
