@@ -14,34 +14,32 @@
 #define UART_RTX_CHAR_TIMEOUT_MS 100
 #define UART_MAX_STRING_LENGTH 1000
 
-int PortDebugUartInit(uint32_t baud_rate)
+void PortDebugUartInit(U32_t baud_rate)
 {
 	 MX_USART1_UART_Init(baud_rate);
-
-	 return 0;
 }
 
-int PortDebugUartWriteString(char *str)
+U32_t PortDebugUartWriteString(char *str)
 {
 
 
-	size_t str_len = strnlen((const char *)str, UART_MAX_STRING_LENGTH + 1);
+	U32_t str_len = (U32_t)strnlen((const char *)str, UART_MAX_STRING_LENGTH + 1);
 
-	for(size_t i = 0; i < str_len; i++)
+	for(U32_t i = 0; i < str_len; i++)
 	{
 		if(PortDebugUartWriteChar(str[i]) == -1) {
 			break;
 		}
 	}
 
-	return (int)str_len;
+	return str_len;
 }
 
-int PortDebugUartWriteChar(char c)
+U8_t PortDebugUartWriteChar(char c)
 {
 	HAL_StatusTypeDef res =	HAL_UART_Transmit(&huart1, (uint8_t *)&c, 1, UART_RTX_CHAR_TIMEOUT_MS);
 
-	return (res == HAL_OK ? 0 : -1);
+	return (res == HAL_OK ? 0 : 1);
 }
 
 char PortDebugUartReadChar(void)

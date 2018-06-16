@@ -42,19 +42,19 @@ void PortOsIntFlagClear(void)
 
 void PortOsTimerInit(uint16_t prescaler, uint16_t ovf)
 {
-    PortOsTimerStop();
+    PortOsTimerDisable();
     T2CONbits.TCKPS = 7;    /* pre-scale = 1:256 (T2CLKIN = 39062.5 Hz) */
     PR2 = 390;              /* T2 period ~ 1mS */
     PortOsTimerTicksReset();
 }
 
 
-void PortOsTimerStop(void)
+void PortOsTimerDisable(void)
 {
     T2CONbits.TON = 0;      /* turn off Timer 2 */
 }
 
-void PortOsTimerStart(void)
+void PortOsTimerEnable(void)
 {
     T2CONbits.TON = 1; /* turn on Timer 2 */
 }
@@ -80,7 +80,7 @@ void __ISR(_TIMER_2_VECTOR, IPL7SRS) T2Interrupt(void)
     PortOsIntFlagClear();
 }
 
-void PortOsTickInit(IrqPriority_t os_tick_irq_prio)
+void PortOsIntInit(IrqPriority_t os_tick_irq_prio)
 {
     IPC2bits.T2IP = os_tick_irq_prio; /* Set priority. */
     PortOsIntFlagClear();
