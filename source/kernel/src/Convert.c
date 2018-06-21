@@ -36,14 +36,9 @@ U8_t ConvertResultToString(OsResult_t result, char *out_result_str)
         strncpy(out_result_str, "OS_RES_FAIL", strlen);
         break;
 
-        case OS_RES_NULL_POINTER:
-        strlen = 16;
-        strncpy(out_result_str, "OS_RES_NULL_PTR", strlen);
-        break;
-
-        case OS_RES_OUT_OF_BOUNDS:
-        strlen = 18;
-        strncpy(out_result_str, "OS_RES_OUT_OF_BOUNDS", strlen);
+        case OS_RES_INVALID_ARGUMENT:
+        strlen = 23;
+        strncpy(out_result_str, "OS_RES_INVALID_ARGUMENT", strlen);
         break;
 
         case OS_RES_LOCKED:
@@ -52,8 +47,8 @@ U8_t ConvertResultToString(OsResult_t result, char *out_result_str)
         break;
 
         default:
-        strlen = 11;
-        strncpy(out_result_str, "INVALID", strlen);
+        strlen = 7;
+        strncpy(out_result_str, "UNKNOWN", strlen);
         break;
     }
 

@@ -71,7 +71,7 @@ U8_t OsHeap[PRTOS_CONFIG_OS_HEAP_SIZE_BYTES];
 
 Id_t TotalHeapPools;
 U32_t TotalHeapSize;
-U16_t HeapIndexEnd;
+U32_t HeapIndexEnd;
 
 Id_t KernelPoolId;
 Id_t ObjectPoolId;
@@ -190,7 +190,7 @@ Id_t MemPoolCreate(U32_t pool_size)
 OsResult_t MemPoolDelete(Id_t pool_id)
 {
     if(pool_id >= N_POOLS) {
-        return OS_RES_ID_INVALID;
+        return OS_RES_INVALID_ID;
     }
     if(pool_id == KernelPoolId || pool_id == ObjectPoolId) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
@@ -209,7 +209,7 @@ OsResult_t MemPoolDelete(Id_t pool_id)
 OsResult_t MemPoolFormat(Id_t pool_id)
 {
     if(pool_id >= N_POOLS) {
-        return OS_RES_ID_INVALID;
+        return OS_RES_INVALID_ID;
     }
     if((pool_id == KernelPoolId || pool_id == ObjectPoolId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
@@ -412,7 +412,7 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
 {
 
     if(cur_pool_id > TotalHeapPools || new_pool_id > TotalHeapPools) {
-        return OS_RES_OUT_OF_BOUNDS;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
     if((cur_pool_id == KernelPoolId || new_pool_id == KernelPoolId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
@@ -432,7 +432,7 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
 
     if(tmp_ptr == NULL) {
         OsCritSectEnd();
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
 //for (U32_t i = 0; (i < size) && (i < new_size); i++) {
@@ -453,14 +453,14 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
 OsResult_t MemFree(void **ptr)
 {
     if(ptr == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
     U8_t *tmp_ptr = (U8_t*)(*ptr);
     Id_t pool_id = IPoolIdFromPointer((MemBase_t *)tmp_ptr);
 
     if(pool_id == ID_INVALID) { /* Pool not found. */
-        return OS_RES_ID_INVALID;
+        return OS_RES_INVALID_ID;
     }
     if((pool_id == KernelPoolId || pool_id == ObjectPoolId) && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");

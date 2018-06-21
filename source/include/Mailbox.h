@@ -75,7 +75,7 @@ typedef U8_t MailboxBase_t; //Allowed to be modified by user
  * @argin: (U8_t) n_owners; Number of owners in the owners list.
  *
  * @rettype:  (Id_t); Mailbox ID
- * @retval:   INVALID_ID; if the creation failed.
+ * @retval:   ID_INVALID; if the creation failed.
  * @retval:   Other; valid ID if the mailbox was created.
  ******************************************************************************/
 Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners);
@@ -84,7 +84,7 @@ Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners);
 /******************************************************************************
  * @func: OsResult_t MailboxDelete(Id_t *mailbox_id)
  *
- * @desc: Deletes the specified mailbox. mailbox_id is set to INVALID_ID.
+ * @desc: Deletes the specified mailbox. mailbox_id is set to ID_INVALID.
  *
  * @argout: (Id_t *) mailbox_id; ID of the mailbox to delete.
  *
@@ -112,7 +112,7 @@ OsResult_t MailboxDelete(Id_t *mailbox_id);
  * @retval:   OS_RES_ERROR; if the mailbox could not be found.
  * @retval:   OS_RES_LOCKED; if the pend counter of one of the addresses within
  *            the specified range is not 0.
- * @retval:   OS_RES_OUT_OF_BOUNDS; if the address is not part of the mailbox address range.
+ * @retval:   OS_RES_INVALID_ARGUMENT; if the address is not part of the mailbox address range.
  ******************************************************************************/
 OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout);
 
@@ -135,7 +135,7 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
  * @retval:   OS_RES_ERROR; if the mailbox could not be found.
  * @retval:   OS_RES_LOCKED; if the pend counter is already 0.
  * @retval:   OS_RES_RESTRICTED; if the pending task is not an owner.
- * @retval:   OS_RES_OUT_OF_BOUNDS; if the address is not part of the mailbox address range.
+ * @retval:   OS_RES_INVALID_ARGUMENT; if the address is not part of the mailbox address range.
  ******************************************************************************/
 OsResult_t MailboxPend(Id_t mailbox_id, U8_t address,  MailboxBase_t *data, U32_t timeout);
 

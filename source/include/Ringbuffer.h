@@ -80,7 +80,7 @@ typedef volatile  U8_t RingbufBase_t;
  * @argin: (U32_t) size; Ring-buffer size.
  *
  * @rettype:  (Id_t); Ring-buffer ID
- * @retval:   INVALID_ID; if an error occurred during creation.
+ * @retval:   ID_INVALID; if an error occurred during creation.
  * @retval:   Other; valid ID if the ring-buffer was created.
  ******************************************************************************/
 Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size);
@@ -89,7 +89,7 @@ Id_t RingbufCreate(RingbufBase_t *buffer, U32_t size);
 /******************************************************************************
  * @func: OsResult_t RingbufDelete (Id_t *ringbuf_id)
  *
- * @desc: Deletes the specified ring-buffer. ringbuf_id is set to INVALID_ID if
+ * @desc: Deletes the specified ring-buffer. ringbuf_id is set to ID_INVALID if
  * the operation is successful.
  *
  * @argin: (Id_t *) ringbuf_id; ID of the ring-buffer to delete.
@@ -144,7 +144,7 @@ OsResult_t RingbufWrite(Id_t ringbuf_id, RingbufBase_t *data, U32_t *length, U32
  * @retval:   OS_RES_OK; if data was read.
  * @retval:   OS_RES_LOCKED; if the ringbuffer is already locked for reading.
  * @retval:   OS_RES_FAIL; if the buffer is empty.
- * @retval:   OS_RES_OUT_OF_BOUNDS; if the target array was not compliant.
+ * @retval:   OS_RES_INVALID_ARGUMENT; if the target array was not compliant.
  * @retval:   OS_RES_ERROR; if the ringbuffer could not be found.
  ******************************************************************************/
 OsResult_t RingbufRead(Id_t ringbuf_id, RingbufBase_t *target, U32_t *amount, U32_t timeout);

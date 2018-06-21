@@ -9,6 +9,8 @@
 #include "../inc/List.h"
 #include <Convert.h>
 #include <Logger.h>
+#include <IdTypeDef.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
@@ -42,8 +44,8 @@ extern void OsCritSectBegin(void);
 extern void OsCritSectEnd(void);
 
 /* Internal functions. */
-static void IListIdInit(LinkedList_t *list, IdType_t id_type);
-static Id_t IListIdGet(LinkedList_t *list);
+static void IListIdInit(LinkedList_t *list, IdGroup_t id_group);
+static Id_t IListIdRequest(LinkedList_t *list);
 
 static OsResult_t UtilLock(volatile U8_t *lock, U8_t mode);
 static OsResult_t UtilUnlock(volatile U8_t *lock);
@@ -52,26 +54,25 @@ static OsResult_t UtilUnlock(volatile U8_t *lock);
 
 
 
-void ListInit(LinkedList_t *list, IdType_t id_type)
+void ListInit(LinkedList_t *list, IdGroup_t id_group)
 {
     list->head = list->tail = NULL;
     list->lock = 0;
     list->size = 0;
     list->sorted = false;
-    list->id_rollover =  false;
 
 #ifdef PRTOS_CONFIG_USE_SORTED_LISTS
     list->middle = NULL;
 #endif
 
-    IListIdInit(list, id_type);
+    IListIdInit(list, id_group);
 }
 
 OsResult_t ListDestroy(LinkedList_t *list)
 {
     if(list == NULL) {
         LOG_ERROR_NEWLINE("Argument is null");
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
     if(ListIsLocked(list)) {
@@ -93,8 +94,6 @@ OsResult_t ListDestroy(LinkedList_t *list)
 
     ListLock(list, LIST_LOCK_MODE_WRITE);
     list->head = list->tail = NULL;
-    list->free_id = 0;
-    list->id_type = 0;
     list->size = 0;
 
 
@@ -104,7 +103,7 @@ OsResult_t ListDestroy(LinkedList_t *list)
 OsResult_t ListLock(LinkedList_t *list, U8_t mode)
 {
     if(list == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
     OsResult_t result = UtilLock(&list->lock, mode);
@@ -119,7 +118,7 @@ OsResult_t ListLock(LinkedList_t *list, U8_t mode)
 OsResult_t ListUnlock(LinkedList_t *list)
 {
     if(list == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
     OsResult_t result = UtilUnlock(&list->lock);
     /* TODO: Catch OS_RES_LOCKED case and wait for it to unlock. */
@@ -150,7 +149,7 @@ OsResult_t ListMerge(LinkedList_t *list_x, LinkedList_t *list_y)
 {
 
     if(list_x == NULL || list_y == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
     if(ListSizeGet(list_x) == 0) {
         return OS_RES_FAIL;
@@ -230,7 +229,8 @@ ListNode_t *ListSearch(LinkedList_t *list, Id_t id)
             }
         }
 #endif
-        LIST_ITERATOR_BEGIN(&it, list, search_dir) {
+        LIST_ITERATOR_BEGIN(&it, list, search_dir) {                                    
+            LIST_ITERATOR_BREAK_ON_CONDITION(it.current_node == NULL);
             if (it.current_node->id == id) {
                 ListUnlock(list);
                 return it.current_node;
@@ -247,8 +247,8 @@ ListNode_t *ListSearch(LinkedList_t *list, Id_t id)
                 }
             }
 #endif
-        }
-        LIST_ITERATOR_END(&it);
+        
+        } LIST_ITERATOR_END(&it);
         ListUnlock(list);
     }
     return NULL;
@@ -259,33 +259,48 @@ OsResult_t ListNodeInit(ListNode_t *node, void *child)
 
     if(node == NULL) {
         LOG_ERROR_NEWLINE("Could not initialize node.");
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
     node->next_node = node->prev_node = NULL;
     node->child = child;
     node->lock = 0;
-    node->id = OS_ID_INVALID;
+    node->id = ID_INVALID;
     return OS_RES_OK;
 }
 
 OsResult_t ListNodeDeinit(LinkedList_t *list, ListNode_t *node)
 {
+    OsResult_t result = OS_RES_ERROR;
     ListNode_t *rm_node = node;
-
-    if((rm_node->next_node != NULL) || (rm_node->prev_node != NULL)) {
+   
+    if(list != NULL) {
         rm_node = ListNodeRemove(list, rm_node);
     }
-    rm_node->id = 0;
-    rm_node->child = NULL;
-    rm_node->next_node = rm_node->prev_node = NULL;
-    return OS_RES_OK;
+    if(rm_node != NULL) {
+        rm_node->id = 0;
+        rm_node->child = NULL;
+        rm_node->next_node = rm_node->prev_node = NULL;    
+        result = OS_RES_OK;
+    }
+
+    return result;
+}
+
+OsResult_t ListNodeIdSet(ListNode_t *node, Id_t id)
+{
+	if(node == NULL) {
+		return OS_RES_INVALID_ARGUMENT;
+	}
+	node->id = id;
+	
+	return OS_RES_OK;
 }
 
 OsResult_t ListNodeLock(ListNode_t *node, U8_t mode)
 {
     if(node == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
     OsResult_t result = UtilLock(&node->lock, mode);
     /* TODO: Catch OS_RES_LOCKED case and wait for it to unlock. */
@@ -298,7 +313,7 @@ OsResult_t ListNodeLock(ListNode_t *node, U8_t mode)
 OsResult_t ListNodeUnlock(ListNode_t *node)
 {
     if(node == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
     /* TODO: Catch OS_RES_LOCKED case and wait for it to unlock. */
     return (UtilUnlock(&node->lock));
@@ -322,11 +337,11 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
 
     OsResult_t result = OS_RES_ERROR;
     if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
-        if(node->id == OS_ID_INVALID) {
-            node->id = IListIdGet(list);
-            if(node->id == OS_ID_INVALID) {
+        if(node->id == ID_INVALID) {
+            node->id = IListIdRequest(list);
+            if(node->id == ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node, list);
-                result = OS_RES_ID_INVALID;
+                result = OS_RES_INVALID_ID;
                 goto unlock;
             }
         }
@@ -371,11 +386,11 @@ OsResult_t ListNodeAddAtNode(LinkedList_t *list, ListNode_t *node_y, ListNode_t 
     }
     OsResult_t result = OS_RES_ERROR;
     if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
-        if(node_y->id == OS_ID_INVALID) {
-            node_y->id = IListIdGet(list);
-            if(node_y->id == OS_ID_INVALID) {
+        if(node_y->id == ID_INVALID) {
+            node_y->id = IListIdRequest(list);
+            if(node_y->id == ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node_y, list);
-                result = OS_RES_ID_INVALID;
+                result = OS_RES_INVALID_ID;
                 goto unlock;
             }
         }
@@ -487,17 +502,19 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
         bool stop_loop = false;
 
         /* Acquire ID if necessary. */
-        if(node->id == OS_ID_INVALID) {
-            node->id = IListIdGet(list);
-            if(node->id == OS_ID_INVALID) {
+        if(node->id == ID_INVALID) {
+            node->id = IListIdRequest(list);
+            if(node->id == ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node, list);
-                result = OS_RES_ID_INVALID;
+                result = OS_RES_INVALID_ID;
                 goto unlock;
             }
         }
 
         /* Iterate through list. */
-        LIST_ITERATOR_BEGIN(&it, list, LIST_ITERATOR_DIRECTION_FORWARD) {
+        //LIST_ITERATOR_BEGIN(&it, list, LIST_ITERATOR_DIRECTION_FORWARD) {
+        if(ListIteratorInit(&it, list, LIST_ITERATOR_DIRECTION_FORWARD) == OS_RES_OK) { 
+        do {      
             if(it.current_node != NULL) {
                 if(node->id > it.current_node->id) {
                     if(it.next_node != NULL) {
@@ -531,13 +548,18 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
             }
 
             LIST_ITERATOR_BREAK_ON_CONDITION(stop_loop);
-        }
-        LIST_ITERATOR_END(&it);
+            if(ListIteratorNext(&it) == NULL)  
+                break;                          
+            } while (!ListIteratorEnd(&it));   
+            }                                           
+        //} LIST_ITERATOR_END(&it);
         if(result == OS_RES_OK) {
             /* If added node has higher ID and the list has a middle.
              * Move the middle node pointer 1 node forward.
              * If added node has lower ID and the list has a middle.
-             * Move the middle node pointer 1 node backward. */
+             * Move the middle node pointer 1 node backward. 
+             * If neither of these conditions are true, the middle node pointer
+             * has already got the correct position. */
             if(list->middle != NULL) {
                 if((node->id > list->middle->id) && (ListSizeGet(list) % 2)) {
                     list->middle = list->middle->next_node;
@@ -654,7 +676,7 @@ void *ListNodeChildFromId(LinkedList_t *list, Id_t id)
 OsResult_t ListNodeSwap(LinkedList_t *list, ListNode_t *node_x, ListNode_t *node_y)
 {
     if(list == NULL || node_x == NULL || node_y == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
     if(ListIsLocked(list)) {
@@ -777,7 +799,7 @@ void *ListNodeChildGet(ListNode_t *node)
 OsResult_t ListNodeChildSet(ListNode_t *node, void *child)
 {
     if (node == NULL || child == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
     if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
         node->child = child;
@@ -795,7 +817,7 @@ Id_t ListNodeIdGet(ListNode_t *node)
         return node->id;
     }
 
-    return OS_ID_INVALID;
+    return ID_INVALID;
 }
 
 bool ListNodeIsInList(LinkedList_t *list, ListNode_t *node)
@@ -898,13 +920,15 @@ ret:
 OsResult_t ListIteratorInit(struct ListIterator *list_it, LinkedList_t *list, U8_t it_direction)
 {
     if(list_it == NULL || list == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
     if(it_direction != LIST_ITERATOR_DIRECTION_FORWARD && it_direction != LIST_ITERATOR_DIRECTION_REVERSE) {
-        return OS_RES_INVALID_VALUE;
+        return OS_RES_INVALID_ARGUMENT;
     }
-
+    OsResult_t result = OS_RES_LOCKED;
+    
     if(ListLock(list, LIST_LOCK_MODE_READ) == OS_RES_OK) {
+        result = OS_RES_OK;
         list_it->list = list;
         list_it->direction = it_direction;
         if(it_direction == LIST_ITERATOR_DIRECTION_FORWARD) {
@@ -912,6 +936,9 @@ OsResult_t ListIteratorInit(struct ListIterator *list_it, LinkedList_t *list, U8
             if(list_it->current_node != NULL) {
                 list_it->next_node = list_it->current_node->next_node;
                 list_it->prev_node = list_it->current_node->prev_node;
+            } else {
+                list_it->next_node = NULL;
+                list_it->prev_node = NULL;   
             }
             list_it->current_position = 0;
         } else {
@@ -919,15 +946,18 @@ OsResult_t ListIteratorInit(struct ListIterator *list_it, LinkedList_t *list, U8
             if(list_it->current_node != NULL) {
                 list_it->next_node = list_it->current_node->prev_node;
                 list_it->prev_node = list_it->current_node->next_node;
+            } else {
+                list_it->next_node = NULL;
+                list_it->prev_node = NULL; 
             }
-            list_it->current_position = (list->size - 1);
+            if(list_it->current_position > 0) {
+                list_it->current_position = (list->size - 1);
+            }
         }
-
         ListUnlock(list);
-        return OS_RES_OK;
     }
 
-    return OS_RES_LOCKED;
+    return result;
 }
 
 ListNode_t *ListIteratorNext(struct ListIterator *list_it)
@@ -938,13 +968,21 @@ ListNode_t *ListIteratorNext(struct ListIterator *list_it)
             if(list_it->direction == LIST_ITERATOR_DIRECTION_FORWARD) { /* Move forward i.e. towards tail. */
                 list_it->prev_node = list_it->current_node;
                 list_it->current_node = list_it->next_node;
-                list_it->next_node = list_it->current_node->next_node;
+                if(list_it->current_node != NULL) {
+                    list_it->next_node = list_it->current_node->next_node;
+                } else {
+                    list_it->next_node = NULL;
+                }
                 node = list_it->current_node;
                 list_it->current_position++;
-            } else {
+            } else if(list_it->direction == LIST_ITERATOR_DIRECTION_REVERSE){
                 list_it->prev_node = list_it->current_node;
                 list_it->current_node = list_it->next_node;
-                list_it->next_node = list_it->current_node->prev_node;
+                if(list_it->current_node != NULL) {
+                    list_it->next_node = list_it->current_node->prev_node;
+                } else {
+                    list_it->next_node = NULL;
+                }
                 node = list_it->current_node;
                 list_it->current_position--;
             }
@@ -961,17 +999,24 @@ ListNode_t *ListIteratorPrev(struct ListIterator *list_it)
             if(list_it->direction == LIST_ITERATOR_DIRECTION_FORWARD) { /* Move forward i.e. towards head. */
                 list_it->next_node = list_it->current_node;
                 list_it->current_node = list_it->prev_node;
-                list_it->prev_node = list_it->current_node->prev_node;
+                if(list_it->current_node != NULL) {
+                    list_it->prev_node = list_it->current_node->prev_node;
+                } else {
+                    list_it->prev_node = NULL;
+                }
                 node = list_it->current_node;
                 list_it->current_position--;
-            } else {
+            } else if(list_it->direction == LIST_ITERATOR_DIRECTION_REVERSE){
                 list_it->next_node = list_it->current_node;
                 list_it->current_node = list_it->next_node;
-                list_it->prev_node = list_it->current_node->next_node;
+                if(list_it->current_node != NULL) {
+                    list_it->prev_node = list_it->current_node->next_node;
+                } else {
+                    list_it->prev_node = NULL;
+                }
                 node = list_it->current_node;
                 list_it->current_position++;
             }
-
         }
     }
     return node;
@@ -979,7 +1024,15 @@ ListNode_t *ListIteratorPrev(struct ListIterator *list_it)
 
 bool ListIteratorEnd(struct ListIterator *list_it)
 {
-    return ((list_it != NULL) ? ((list_it->current_node == NULL) ? true : false) : false);
+    bool res = true;
+    
+    if(list_it != NULL) {
+        if(list_it->current_node != NULL) {
+            res = false;
+        }
+    }
+    
+    return res;
 }
 
 
@@ -987,28 +1040,16 @@ bool ListIteratorEnd(struct ListIterator *list_it)
 /**** ID buffering API ****/
 
 
-static void IListIdInit(LinkedList_t *list, IdType_t id_type)
+static void IListIdInit(LinkedList_t *list, IdGroup_t id_group)
 {
-    list->id_type = id_type;
-    list->id_rollover = false;
-    list->free_id = (id_type | 0x0000);
+    list->id_group = id_group;
 }
 
-static Id_t IListIdGet(LinkedList_t *list)
+static Id_t IListIdRequest(LinkedList_t *list)
 {
-    Id_t free_id = OS_ID_INVALID;
+    Id_t free_id = ID_INVALID;
 
-    /* Check ID rollover, if false the last free ID can be incremented. */
-    if(list->id_rollover == false) {
-        free_id = list->free_id;
-        list->free_id++;
-        /* Check if last possible ID was assigned. */
-        if((list->free_id & 0x0FFF) == 0x0FFF) {
-            list->id_rollover = true;
-        }
-    } else {
-        /* In case of an ID rollover free IDs have to be searched. */
-    }
+    free_id = KIdRequest(list->id_group);
 
     return free_id;
 }

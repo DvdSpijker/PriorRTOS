@@ -4,6 +4,8 @@
 #include <xc.h>
 #include <sys/attribs.h>
 
+#include <stdio.h>
+
 void PortSuperVisorModeEnable(void)
 {
     
@@ -43,9 +45,14 @@ void PortOsIntFlagClear(void)
 void PortOsTimerInit(uint16_t prescaler, uint16_t ovf)
 {
     PortOsTimerDisable();
-    T2CONbits.TCKPS = 7;    /* pre-scale = 1:256 (T2CLKIN = 39062.5 Hz) */
-    PR2 = 390;              /* T2 period ~ 1mS */
     PortOsTimerTicksReset();
+    
+    T2CONbits.TCKPS = 0;    /* pre-scale = 1 */
+    PR2 = prescaler * ovf; 
+   
+    T2CONbits.TON = 0; //stop TIMER1
+    T2CONbits.TCS = 0;
+    T2CONbits.TGATE = 0; //use trigger flag as compare
 }
 
 
@@ -71,10 +78,10 @@ void PortOsTimerTicksReset(void)
 
 void PortOsTimerTicksSet(uint32_t ticks)
 {
-    TMR2 = 390;
+    TMR2 = ticks;
 }
 
-void __ISR(_TIMER_2_VECTOR, IPL7SRS) T2Interrupt(void)
+void __ISR(_TIMER_2_VECTOR, IPL7AUTO) T2Interrupt(void)
 {
     OsTick();
     PortOsIntFlagClear();
@@ -82,9 +89,10 @@ void __ISR(_TIMER_2_VECTOR, IPL7SRS) T2Interrupt(void)
 
 void PortOsIntInit(IrqPriority_t os_tick_irq_prio)
 {
-    IPC2bits.T2IP = os_tick_irq_prio; /* Set priority. */
-    PortOsIntFlagClear();
-    INTCONSET = _INTCON_MVEC_MASK;    /* Set the interrupt controller for multi-vector mode */
+    IPC2bits.T2IP = 7;//os_tick_irq_prio; /* Set priority. */
+    IFS0bits.T2IF = 0;
+    IPC2bits.T2IS = 1;
+    IEC0bits.T2IE = 1;
 }
 
 

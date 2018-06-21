@@ -139,14 +139,14 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
     }
     
     /* Handle task creation parameters. */
-    if(param != TASK_PARAM_NONE)  {
-        if(param & TASK_PARAM_ESSENTIAL) {
+    if(param != TASK_PARAMETER_NONE)  {
+        if(param & TASK_PARAMETER_ESSENTIAL) {
             KTaskFlagSet(new_TCB, TASK_FLAG_ESSENTIAL);
         }
-        if(param & TASK_PARAM_NO_PREEM) {
+        if(param & TASK_PARAMETER_NO_PREEM) {
             KTaskFlagSet(new_TCB, TASK_FLAG_NO_PREEM);
         }
-        if(param & TASK_PARAM_START) {
+        if(param & TASK_PARAMETER_START) {
             TaskResumeWithVarg(new_TCB->list_node.id, v_arg);
         }
     }
@@ -227,12 +227,12 @@ OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)
 {
     OsResult_t result = OS_RES_ERROR;
     if(rt_task_id == ID_INVALID) {
-        return OS_RES_ID_INVALID;
+        return OS_RES_INVALID_ID;
     }
     pTcb_t tcb = KTcbFromId(rt_task_id);
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
-            result = OS_RES_ID_INVALID;
+            result = OS_RES_INVALID_ID;
             if(tcb->category == TASK_CAT_REALTIME) {
                 tcb->deadline_time_us = t_ms;
                 result = OS_RES_OK;
@@ -247,7 +247,7 @@ OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)
 OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg)
 {
     if(task_id == ID_INVALID) {
-        return OS_RES_ID_INVALID;
+        return OS_RES_INVALID_ID;
     }
     OsResult_t result = OS_RES_ERROR;
     pTcb_t tcb = KTcbFromId(task_id);
@@ -261,7 +261,7 @@ OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg)
 OsResult_t TaskResume(Id_t task_id)
 {
     if(task_id == ID_INVALID) {
-        return OS_RES_ID_INVALID;
+        return OS_RES_INVALID_ID;
     }
     OsResult_t result = ITaskResume(task_id);
     return result;
@@ -280,15 +280,14 @@ OsResult_t TaskSuspend(Id_t task_id)
 
 
 
-Id_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms)
+OsResult_t TaskPollAdd(Id_t object_id, U32_t event, U32_t timeout_ms)
 {
     OsResult_t result = OS_RES_ERROR;
     Id_t event_id = ID_INVALID;
+
     result = ITaskEventRegister(TcbRunning, object_id, event, EVENT_FLAG_PERMANENT, timeout_ms, &event_id);
-    if(result == OS_RES_OK) {
-        return event_id;
-    }
-    return ID_INVALID;
+
+    return result;
 }
 
 OsResult_t TaskPollRemove(Id_t object_id, U32_t event)
@@ -348,7 +347,7 @@ new_poll:
     return result;
 }
 
-
+#ifdef PRTOS_CONFIG_USE_TASK_EVENT_EXECUTE_EXIT
 OsResult_t TaskJoin(Id_t task_id, U32_t timeout)
 {
     OsResult_t result = OS_RES_ERROR;
@@ -365,6 +364,7 @@ OsResult_t TaskJoin(Id_t task_id, U32_t timeout)
 
     return result;
 }
+#endif
 
 OsResult_t TaskSleep(U32_t t_ms)
 {
@@ -375,7 +375,7 @@ OsResult_t TaskSleep(U32_t t_ms)
     if(t_ms > 0) {
         result = TaskPoll(ID_INVALID, TASK_EVENT_SLEEP, t_ms, true);
     } else {
-        result = OS_RES_OUT_OF_BOUNDS;
+        result = OS_RES_INVALID_ARGUMENT;
     }
 
     return result;
@@ -386,7 +386,7 @@ OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
 {
     /* Validate priority range. */
     if (new_priority < OS_TASK_PRIO_LIMIT_LOW || new_priority > OS_TASK_PRIO_LIMIT_HIGH) {
-        return OS_RES_OUT_OF_BOUNDS;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
     pTcb_t tcb = NULL;
@@ -610,7 +610,7 @@ OsResult_t KTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to_li
     }
 
     if(to_move == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
     return ListNodeMove(from_list, to_list, &to_move->list_node);
 }

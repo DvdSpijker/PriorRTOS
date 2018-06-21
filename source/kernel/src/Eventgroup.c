@@ -45,6 +45,7 @@
 #include <List.h>
 #include <Task.h>
 #include <SystemCall.h>
+#include <IdType.h>
 
 #include <stdlib.h>
 #include <inttypes.h>
@@ -82,10 +83,10 @@ Id_t EventgroupCreate(void)
 OsResult_t EventgroupDelete(Id_t *eventgroup_id)
 {
     if(*eventgroup_id == ID_INVALID) {
-        return OS_RES_ID_INVALID;
+        return OS_RES_INVALID_ID;
     }
     if(IdIsInGroup(*eventgroup_id, ID_GROUP_EVENTGROUP) == 0) {
-        return OS_RES_ID_INVALID;
+        return OS_RES_INVALID_ID;
     }
 
     if(EventGroupList.lock != 0) {

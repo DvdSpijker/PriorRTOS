@@ -7,7 +7,7 @@
 
 #include <Logger.h>
 #include <LoggerDef.h>
-#include "../../port/PortDebug.h"
+#include "port/PortDebug.h"
 #include <stdio.h>
 
 #ifdef PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER
@@ -15,14 +15,14 @@
 #define LOGGER_RINGBUF_SIZE_BYTES 400
 #endif
 
-#if PRTOS_CONFIG_USE_NEWLIB==1
+#ifdef PRTOS_CONFIG_USE_NEWLIB
 #include <unistd.h>
 #include <errno.h>
 #endif
 
 static void ILogFormat(U8_t log_line_opt, const char *tag, const char *source, const int line_nr, const char *message, va_list args);
 
-#if PRTOS_CONFIG_USE_NEWLIB==0
+#ifndef PRTOS_CONFIG_USE_NEWLIB
 static int ILogPutChar(char c, FILE *stream);
 static FILE mystdout = FDEV_SETUP_STREAM(ILogPutChar, NULL, _FDEV_SETUP_WRITE);
 #endif
@@ -31,15 +31,15 @@ extern OsResult_t OsRunTimeGet(U32_t* target);
 
 OsResult_t KLogInit(void)
 {
-#ifdef PRTOS_CONFIG_USE_LOGGER_MODE_UART
-	PortDebugUartInit(PRTOS_CONFIG_LOGGER_UART_BAUD_RATE_BPS);
+#ifdef PRTOS_CONFIG_USE_LOGGER_MODE_SERIAL
+	PortDebugUartInit(PRTOS_CONFIG_DEBUG_SERIAL_BAUD_RATE_BPS);
 #endif
 
-#ifdef PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER
-	LoggerRingbuf = RingbufCreate(NULL, LOGGER_RINGBUF_SIZE_BYTES);
-#endif
+//#ifdef PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER
+//	LoggerRingbuf = RingbufCreate(NULL, LOGGER_RINGBUF_SIZE_BYTES);
+//#endif
 	
-#if PRTOS_CONFIG_USE_NEWLIB==0
+#ifndef PRTOS_CONFIG_USE_NEWLIB
     stdout = &mystdout;
 #endif
 
@@ -122,7 +122,7 @@ void KLogEvent(pEvent_t event)
 #endif
 
 
-#if PRTOS_CONFIG_USE_NEWLIB==0
+#ifndef PRTOS_CONFIG_USE_NEWLIB
 static int ILogPutChar(char c, FILE *stream)
 {
     PortDebugUartWriteChar(c);
@@ -130,7 +130,6 @@ static int ILogPutChar(char c, FILE *stream)
 }
 
 #else
-
 
 /* Newlib hooks to redirect printf to UART. */
 int _write(int file, char *ptr, int len);

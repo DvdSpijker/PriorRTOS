@@ -40,7 +40,7 @@ extern "C" {
  * @argin: (U8_t) max_count; Maximum allowed recursive acquires.
  *
  * @rettype:  (Id_t); Semaphore ID.
- * @retval:   INVALID_ID; if the creation failed.
+ * @retval:   ID_INVALID; if the creation failed.
  * @retval:   Other; valid ID if the semaphore was created.
  ******************************************************************************/
 Id_t SemaphoreCreate(U8_t sem_type, U8_t max_count);
@@ -49,7 +49,7 @@ Id_t SemaphoreCreate(U8_t sem_type, U8_t max_count);
 /******************************************************************************
  * @func: OsResult_t SemaphoreDelete(Id_t *sem_id)
  *
- * @desc: Deletes the semaphore and sets sem_id to INVALID_ID.
+ * @desc: Deletes the semaphore and sets sem_id to ID_INVALID.
  *
  * @argin: (Id_t *) sem_id; Semaphore ID.
  *

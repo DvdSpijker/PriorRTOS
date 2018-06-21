@@ -179,7 +179,7 @@ Id_t TaskIdGet(void);
  *
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if operation was successful.
- * @retval:   OS_RES_ID_INVALID; if the given task was not a Real-Time task or if
+ * @retval:   OS_RES_INVALID_ID; if the given task was not a Real-Time task or if
  *            the task ID was an invalid ID (ID_INVALID).
  * @retval:   OS_RES_ERROR; if the task handler was not found in any of the lists.
  ******************************************************************************/
@@ -196,7 +196,7 @@ OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms);
  *
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if operation was successful.
- * @retval:   OS_RES_OUT_OF_BOUNDS; if the new priority was not within bounds (1-5).
+ * @retval:   OS_RES_INVALID_ARGUMENT; if the new priority was not within bounds (1-5).
  * @retval:   OS_RES_ERROR; if the task handler was not found in any of the lists.
  ******************************************************************************/
 OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority);

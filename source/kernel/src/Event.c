@@ -65,7 +65,7 @@ OsResult_t  EventAddToList(LinkedList_t *event_list, pEvent_t event)
 {
     OsResult_t result = OS_RES_OK;
     if(event_list == NULL || event == NULL) {
-        result = OS_RES_NULL_POINTER;
+        result = OS_RES_INVALID_ARGUMENT;
     }
     if(result == OS_RES_OK) {
         result = ListNodeAddAtPosition(event_list, &event->list_node, LIST_POSITION_TAIL);
@@ -283,7 +283,7 @@ pEvent_t EventHandleFifo(LinkedList_t *list)
 OsResult_t EventListDestroy(LinkedList_t *list)
 {
     if(list == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     } else if(list == &EventList) {
         return OS_RES_RESTRICTED;
     }
@@ -306,7 +306,7 @@ OsResult_t EventDestroy(LinkedList_t *list, pEvent_t event)
 {
 
     if(event == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
     if(list == NULL) {
         list = &EventList;
@@ -338,7 +338,7 @@ pEvent_t EventListContainsEvent(LinkedList_t *event_list, Id_t source_id, U32_t 
 OsResult_t  EventFlagSet(pEvent_t event, U8_t event_flag)
 {
     if(event == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
     EVENT_FLAG_SET(event->event_code, event_flag);
@@ -350,7 +350,7 @@ OsResult_t  EventFlagSet(pEvent_t event, U8_t event_flag)
 OsResult_t  EventFlagClear(pEvent_t event, U8_t event_flag)
 {
     if(event == NULL) {
-        return OS_RES_NULL_POINTER;
+        return OS_RES_INVALID_ARGUMENT;
     }
 
     EVENT_FLAG_CLEAR(event->event_code, event_flag);

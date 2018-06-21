@@ -86,7 +86,7 @@ OsResult_t KShellInit(void)
         ShellCommandRegister(&ShellCommandRun);
 
         if(result == OS_RES_OK) {
-            TidShellReadParse = KernelTaskCreate(TaskShellReadParse, 3, TASK_PARAM_NONE, 0, NULL, 0);
+            TidShellReadParse = KernelTaskCreate(TaskShellReadParse, 3, TASK_PARAMETER_NONE, 0, NULL, 0);
             if(TidShellReadParse == ID_INVALID) {
                 result = OS_RES_ERROR;
             }
@@ -301,7 +301,7 @@ void TaskShellReadParse(const void* p_arg, U32_t v_arg)
 					ShellPut("No resources available to execute command.");
 				} else {
 					U8_t n_tokens = IShellSplitLine(LineBuffer, tokens);
-					if(TaskCreate(TaskShellExecute, TASK_CAT_LOW, 5, TASK_PARAM_START, 0, (void *)tokens, n_tokens) == ID_INVALID) {
+					if(TaskCreate(TaskShellExecute, TASK_CAT_LOW, 5, TASK_PARAMETER_START, 0, (void *)tokens, n_tokens) == ID_INVALID) {
 						ShellPut("Failed to create task to execute command.");	
 					}
 				}

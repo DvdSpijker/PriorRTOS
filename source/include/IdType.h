@@ -31,29 +31,10 @@ typedef enum {
 	ID_GROUP_NUM, /* Must be the last member of this enum. */
 } IdGroup_t;
 
-struct IdList {
+typedef struct {
 	Id_t ids[ID_LIST_SIZE_MAX];
-	U8_t n;
-};
-
-#define ID_LIST_INIT(p_id_list) {				\
-p_id_list->n = 0;								\
-for(U8_t i = 0; i < ID_LIST_SIZE_MAX; i++) {	\
-	p_id_list->ids[i] = OS_ID_INVALID;			\
-}}												\
-
-#define ID_LIST_ID_ADD(p_id_list, id) { \
-if(p_id_list->n < ID_LIST_SIZE_MAX) {	\
-	p_id_list->ids[n] = id;				\
-	p_id_list->n++;						\
-}}										\
-
-#define ID_LIST_ID_REMOVE(p_id_list, p_id) {\
-*p_id = OS_ID_INVALID;						\
-if(p_id_list->n) {							\
-	*p_id = p_id_list->ids[n];				\
-	p_id_list->n--;							\
-}}											\
+	S8_t n;
+}IdList_t;
 
 /******************************************************************************
  * @func: Id_t IdSequenceNumberGet(Id_t id)
@@ -92,5 +73,12 @@ IdGroup_t IdGroupGet(Id_t id);
  * @retval:   1; ID is a member of the group.
  ******************************************************************************/
 U8_t IdIsInGroup(Id_t id, IdGroup_t group);
+
+
+void IdListInit(IdList_t *list);
+void IdListIdAdd(IdList_t *list, Id_t id);
+Id_t IdListIdRemove(IdList_t *list);
+S8_t IdListCount(IdList_t *list);
+void IdListCopy(IdList_t *list_to, IdList_t *list_from);
 
 #endif /* ID_TYPE_H_ */

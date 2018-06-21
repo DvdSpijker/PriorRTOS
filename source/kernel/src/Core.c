@@ -48,14 +48,15 @@
 #include <Event.h>
 #include <OsTypes.h>
 #include <IdTypeDef.h>
+#include <IdType.h>
 
-#include "../../port/PortCore.h"
-#include "../inc/CoreDef.h"
+#include "port/PortCore.h"
+#include "CoreDef.h"
 #include <TaskDef.h>
 #include <MemoryDef.h>
 
 /* Kernel Tasks. */
-#include <../inc/ktask/KernelTaskIdle.h>
+#include "ktask/KernelTaskIdle.h"
 
 
 /*Include standard libraries*/
@@ -204,7 +205,7 @@ else { while (1); }             \
 OsResult_t OsInit(OsResult_t *status_optional)
  {
 	if(status_optional == NULL) {
-		return OS_RES_NULL_POINTER;
+		return OS_RES_INVALID_ARGUMENT;
 	}
 
     OsCritSectBegin();
@@ -230,7 +231,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
     KCoreKernelModeEnter(); //Enable kernel mode
 
 #if ( PRTOS_CONFIG_ENABLE_LOG_DEBUG == 1 || PRTOS_CONFIG_ENABLE_LOG_ERROR == 1 || PRTOS_CONFIG_ENABLE_LOG_INFO == 1 || PRTOS_CONFIG_ENABLE_LOG_EVENT == 1 )
-    LogInit();
+    KLogInit();
 #endif
 
     char os_version_buf[CONVERT_BUFFER_SIZE_OSVERSION_TO_STRING];
@@ -248,10 +249,14 @@ OsResult_t OsInit(OsResult_t *status_optional)
     LOG_INFO_NEWLINE("Initializing OS Timer and Tick interrupt...");
     U16_t os_timer_ovf = ICoreCalculatePrescaler(PRTOS_CONFIG_F_OS_HZ);
     PortOsTimerInit(KernelReg.prescaler, os_timer_ovf);
-    PortOsTickInit((IrqPriority_t)PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY);
+    PortOsIntInit((IrqPriority_t)PRTOS_CONFIG_OS_TICK_IRQ_PRIORITY);
     PortOsIntDisable();
     LOG_INFO_APPEND("ok");
-
+    
+    LOG_INFO_NEWLINE("Initializing IDs...");
+    KIdInit();
+    LOG_INFO_APPEND("ok");
+    
     LOG_INFO_NEWLINE("Initializing module:Memory Management...");
     status_kernel = KMemInit(); //Initiate memory management
     if(status_kernel == OS_RES_CRIT_ERROR) {
@@ -344,7 +349,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     /* Idle task is not created using KernelTask create since it is not an OS category task, it should be on the
     * lowest possible priority. However, the Idle task is essential and cannot be deleted. */
-    KTidIdle = TaskCreate(KernelTaskIdle, TASK_CAT_LOW, 1, TASK_PARAM_ESSENTIAL, 0, NULL, 0);
+    KTidIdle = TaskCreate(KernelTaskIdle, TASK_CAT_LOW, 1, TASK_PARAMETER_ESSENTIAL, 0, NULL, 0);
     if(KTidIdle == ID_INVALID) { //Create Idle task, check if successful
         status_kernel = OS_RES_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid ID returned while creating KernelTaskIdle");
@@ -411,7 +416,7 @@ void OsStart(Id_t start_task_id)
 
     OsCritSectEnd();
 
-    PortOsTimerStart();
+    PortOsTimerEnable();
     LOG_INFO_APPEND("running");
 
 #if PRTOS_CONFIG_ENABLE_WATCHDOG==1
@@ -570,6 +575,8 @@ void OsCritSectBegin(void)
     KERNEL_REG_LOCK() {
         if(KernelReg.crit_sect_nest_counter < 0xFF) {
             KernelReg.crit_sect_nest_counter++;
+        } else {
+            LOG_ERROR_NEWLINE("Critical section nest-count overflow.");
         }
 
         if(KernelReg.crit_sect_nest_counter == 1) {
@@ -587,6 +594,8 @@ void OsCritSectEnd()
     KERNEL_REG_LOCK() {
         if(KernelReg.crit_sect_nest_counter > 0) {
             KernelReg.crit_sect_nest_counter--;
+        }  else {
+            LOG_ERROR_NEWLINE("Critical section nest-count underflow.");
         }
 
         if(KernelReg.crit_sect_nest_counter == 0) {
@@ -1223,7 +1232,7 @@ static U16_t ICoreCalculatePrescaler(U16_t f_os)
         }
     }
 
-    ovf = (U16_t)(floor(tmp_ovf));
+    ovf = (U16_t)(floor(tmp_ovf) - 1);
     KernelReg.tick_period_us = (U32_t)(tick_t * (U32_t)1000000);
     KernelReg.ovf = ovf;
     return ovf;

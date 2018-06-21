@@ -5,7 +5,7 @@
  *  Author: Dorus
  */
 
-#include "../../inc/ktask/KernelTaskTimerUpdate.h"
+#include "../inc/ktask/KernelTaskTimerUpdate.h"
 #include <PriorRTOS.h>
 
 #include <List.h>
@@ -19,6 +19,8 @@
  */
 void KernelTaskTimerUpdate(const void *p_arg, U32_t v_arg)
 {
+    OS_ARG_UNUSED(p_arg);
+    
     static U32_t sleep_time = 0;
     static U32_t micros = 0;
 

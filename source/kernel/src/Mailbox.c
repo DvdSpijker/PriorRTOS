@@ -44,12 +44,9 @@
 #include <CoreDef.h>
 #include <MemoryDef.h>
 #include <TaskDef.h>
-#include <Memory.h>
 #include <SystemCall.h>
 
 #include <stdlib.h>
-#include <inttypes.h>
-#include <stdio.h>
 #include <stdbool.h>
 
 static bool ITaskIsOwner(pMailbox_t mailbox, pTcb_t tcb);
@@ -141,7 +138,7 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
 
             /* Validate address range. */
             if(address > (mailbox->size - 1)) {
-                result = OS_RES_OUT_OF_BOUNDS;
+                result = OS_RES_INVALID_ARGUMENT;
             }
 
             /* Check pend counter, if this is !0 then posting at this address is not allowed.
@@ -208,7 +205,7 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
 
             /* Validate address range. */
             if(address > (mailbox->size - 1)) {
-                result = OS_RES_OUT_OF_BOUNDS;
+                result = OS_RES_INVALID_ARGUMENT;
             }
 
             if(result == OS_RES_OK) {

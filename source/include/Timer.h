@@ -44,6 +44,7 @@ extern "C" {
 
 #include <OsTypes.h>
 #include <EventDef.h>
+#include "include/PriorRTOSConfig.h"
 
 /* Timer States */
 typedef enum {
@@ -113,7 +114,7 @@ typedef void (*TimerOverflowCallback_t)(Id_t timer_id, void *context);
  * Set NULL if unused.
  *
  * @rettype:  (Id_t); Timer ID
- * @retval:   INVALID_ID; if creation failed.
+ * @retval:   ID_INVALID; if creation failed.
  * @retval:   Other; if the timer was created.
  ******************************************************************************/
 Id_t TimerCreate(U32_t interval_us, U8_t parameter, TimerOverflowCallback_t overflow_callback, void *context);
@@ -122,10 +123,10 @@ Id_t TimerCreate(U32_t interval_us, U8_t parameter, TimerOverflowCallback_t over
 /******************************************************************************
  * @func: OsResult_t TimerDelete(Id_t *timer_id)
  *
- * @desc: Deletes the specified timer and sets timer_id to INVALID_ID if the
+ * @desc: Deletes the specified timer and sets timer_id to ID_INVALID if the
  * operation is successful.
  *
- * @argout: (Id_t *) timer_id; ID of the timer to delete. Will be set to INVALID_ID.
+ * @argout: (Id_t *) timer_id; ID of the timer to delete. Will be set to ID_INVALID.
  *
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the timer was successfully deleted.
@@ -306,7 +307,7 @@ U8_t TimerIterationsGet(Id_t timer_id);
  * @rettype:  (OsResult_t); Sys call result:
  * @retval:   OS_RES_OK; if the operation was successful.
  * @retval:   OS_RES_ERROR; if the timer could not be found.
- * @retval:   OS_RES_OUT_OF_BOUNDS; if the iteration value was > 31 or 0.
+ * @retval:   OS_RES_INVALID_ARGUMENT; if the iteration value was > 31 or 0.
  ******************************************************************************/
 OsResult_t TimerIterationsSet(Id_t timer_id, U8_t iterations);
 

@@ -75,7 +75,7 @@ extern "C" {
  * 8 flags that can individually set or cleared.
  *
  * @rettype:  (Id_t); Eventgroup ID
- * @retval:   INVALID_ID; if an error occurred during creation.
+ * @retval:   ID_INVALID; if an error occurred during creation.
  * @retval:   Other; if the eventgroup was successfully created.
  ******************************************************************************/
 Id_t EventgroupCreate(void);
@@ -85,7 +85,7 @@ Id_t EventgroupCreate(void);
  * @func: Id_t EventgroupDelete(Id_t *eventgroup_id)
  *
  * @desc: Deletes an existing eventgroup. The evengroup_id will be set
- * to INVALID_ID if the operation is successful.
+ * to ID_INVALID if the operation is successful.
  *
  * @argin: (Id_t *) eventgroup_id; Eventgroup ID.
  *

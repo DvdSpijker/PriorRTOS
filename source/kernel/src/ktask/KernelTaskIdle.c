@@ -12,8 +12,6 @@
 #include <TaskDef.h>
 #include <CoreDef.h>
 
-#include <RecursiveLock.h>
-
 void KernelTaskIdle(const void* p_arg, U32_t v_arg)
 {
     OS_ARG_UNUSED(p_arg);
