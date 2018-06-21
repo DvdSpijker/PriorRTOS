@@ -1,6 +1,6 @@
 # README #
 
-![Optional Text](../master/logos/prior_logo_small2.png)
+![alt text](prior_logo.png)
 
 Summary:
 Prior is an embedded Real-Time Operating System with a small footprint 
