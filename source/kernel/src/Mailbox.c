@@ -50,6 +50,7 @@
 #include <stdbool.h>
 
 static bool ITaskIsOwner(pMailbox_t mailbox, pTcb_t tcb);
+static OsResult_t IMailboxWrite(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout, bool force);
 
 LinkedList_t MailboxList;
 
@@ -112,65 +113,13 @@ OsResult_t MailboxDelete(Id_t *mailbox_id)
 
 OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout)
 {
+	return IMailboxWrite(mailbox_id, address, data, timeout, false);
 
-    OsResult_t result = OS_RES_LOCKED;
+}
 
-#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
-    SYS_CALL_EVENT_HANDLE(mailbox_id, MAILBOX_EVENT_PEND(address), &result) {
-        /* Do nothing. Normal execution flow. */
-    }
-    SYS_CALL_EVENT_HANDLE_TIMEOUT(&result) {
-        return result;
-    }
-    SYS_CALL_EVENT_HANDLE_POLL(&result) {
-        return result;
-    }
-#endif
-
-    LIST_NODE_ACCESS_WRITE_BEGIN(&MailboxList, mailbox_id) {
-        result = OS_RES_OK;
-        pMailbox_t mailbox = ListNodeChildGet(node);
-        if(mailbox == NULL) {
-            result = OS_RES_ERROR;    //Search error
-        }
-
-        if(result == OS_RES_OK) {
-
-            /* Validate address range. */
-            if(address > (mailbox->size - 1)) {
-                result = OS_RES_INVALID_ARGUMENT;
-            }
-
-            /* Check pend counter, if this is !0 then posting at this address is not allowed.
-             * wait/poll for a pend event. */
-            if(result == OS_RES_OK) {
-                if(mailbox->pend_counters[address] != 0) {
-#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
-                	if(timeout != OS_TIMEOUT_NONE) {
-                		SYS_CALL_EVENT_REGISTER(node, mailbox_id, MAILBOX_EVENT_PEND(address), &result, timeout);
-                	} else {
-                		result = OS_RES_LOCKED;
-                	}
-#else
-                    result = OS_RES_LOCKED;
-#endif
-                }
-
-                /* If the pend counter is 0 the address can be accessed.
-                 * After posting a post event is emitted. */
-                if(result == OS_RES_OK) {
-                    mailbox->buffer[address] = data;
-                    mailbox->pend_counters[address] = mailbox->n_owners;
-#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
-                    EventEmit(mailbox_id, MAILBOX_EVENT_POST(address), EVENT_FLAG_NONE);
-                    EventEmit(mailbox_id, MAILBOX_EVENT_POST_ALL, EVENT_FLAG_NONE);
-#endif
-                }
-            }
-        }
-    }
-    LIST_NODE_ACCESS_END();
-    return result;
+OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout)
+{
+	return IMailboxWrite(mailbox_id, address, data, timeout, true);
 }
 
 OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t timeout)
@@ -214,7 +163,11 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
                  * wait/poll for a post event. */
                 if(mailbox->pend_counters[address] == 0) {
 #ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
+                	if(timeout != OS_TIMEOUT_NONE) {
                     SYS_CALL_EVENT_REGISTER(node, mailbox_id, MAILBOX_EVENT_POST(address), &result, timeout);
+                	} else {
+                		result = OS_RES_LOCKED;
+                	}
 #else
                     result = OS_RES_LOCKED;
 #endif
@@ -268,3 +221,68 @@ static bool ITaskIsOwner(pMailbox_t mailbox, pTcb_t tcb)
 
     return is_owner;
 }
+
+static OsResult_t IMailboxWrite(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout, bool force)
+{
+	OsResult_t result = OS_RES_LOCKED;
+	 pMailbox_t mailbox = NULL;
+
+	#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
+	SYS_CALL_EVENT_HANDLE(mailbox_id, MAILBOX_EVENT_PEND(address), &result) {
+	    /* Do nothing. Normal execution flow. */
+	}
+	SYS_CALL_EVENT_HANDLE_TIMEOUT(&result) {
+	    return result;
+	}
+	SYS_CALL_EVENT_HANDLE_POLL(&result) {
+	    return result;
+	}
+	#endif
+
+	LIST_NODE_ACCESS_WRITE_BEGIN(&MailboxList, mailbox_id) {
+	    result = OS_RES_OK;
+	    mailbox = ListNodeChildGet(node);
+	    if(mailbox == NULL) {
+	        result = OS_RES_ERROR;    //Search error
+	    }
+
+	    if(result == OS_RES_OK) {
+
+	        /* Validate address range. */
+	        if(address > (mailbox->size - 1)) {
+	            result = OS_RES_INVALID_ARGUMENT;
+	        }
+
+	        /* Check pend counter, if this is !0 then posting at this address is not allowed.
+	         * wait/poll for a pend event. */
+	        if(result == OS_RES_OK) {
+	            if(mailbox->pend_counters[address] != 0 && force == false) {
+	#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
+	            	if(timeout != OS_TIMEOUT_NONE) {
+	            		SYS_CALL_EVENT_REGISTER(node, mailbox_id, MAILBOX_EVENT_PEND(address), &result, timeout);
+	            	} else {
+	            		result = OS_RES_LOCKED;
+	            	}
+	#else
+	                result = OS_RES_LOCKED;
+	#endif
+	            }
+
+	            /* If the pend counter is 0 the address can be accessed.
+	             * After posting a post event is emitted. */
+	            if(result == OS_RES_OK) {
+	                mailbox->buffer[address] = data;
+	                mailbox->pend_counters[address] = mailbox->n_owners;
+	#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
+	                EventEmit(mailbox_id, MAILBOX_EVENT_POST(address), EVENT_FLAG_NONE);
+	                EventEmit(mailbox_id, MAILBOX_EVENT_POST_ALL, EVENT_FLAG_NONE);
+	#endif
+	            }
+	        }
+	    }
+	}
+	LIST_NODE_ACCESS_END();
+
+	return result;
+}
+

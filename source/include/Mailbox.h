@@ -106,16 +106,35 @@ OsResult_t MailboxDelete(Id_t *mailbox_id);
  * @argin: (Id_t) mailbox_id; ID of the mailbox to post in.
  * @argin: (U8_t) address; Address where data will be posted.
  * @argin: (MailboxBase_t) data; Data to be posted.
+ * @argin: (U32_t) timeout; Timeout in milliseconds.
  *
  * @rettype:  (OsResult_t); sys call result
- * @retval:   OS_RES_OK; if the mailbox was deleted.
+ * @retval:   OS_RES_OK; if the data was posted.
  * @retval:   OS_RES_ERROR; if the mailbox could not be found.
- * @retval:   OS_RES_LOCKED; if the pend counter of one of the addresses within
- *            the specified range is not 0.
+ * @retval:   OS_RES_LOCKED; if the pend counter is not 0 or the mailbox is being accessed
+ * by another task.
  * @retval:   OS_RES_INVALID_ARGUMENT; if the address is not part of the mailbox address range.
  ******************************************************************************/
 OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout);
 
+
+/******************************************************************************
+ * @func: OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, MailboxBase_t data,
+ * U32_t timeout)
+ *
+ * @desc: Update the current data in the mailbox at the specified address. The pend
+ * counter will be reset.
+ *
+ * @argin: (Id_t) mailbox_id; ID of the mailbox to post in.
+ * @argin: (U8_t) address; Address where data will be posted.
+ * @argin: (MailboxBase_t) data; Data to be posted.
+ * @argin: (U32_t) timeout; Timeout in milliseconds.
+ * @rettype:  (OsResult_t); sys call result
+ * @retval:   OS_RES_OK; if the mailbox was updated.
+ * @retval:   OS_RES_ERROR; if the mailbox could not be found.
+ * @retval:   OS_RES_INVALID_ARGUMENT; if the address is not part of the mailbox address range.
+ ******************************************************************************/
+OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout);
 
 /******************************************************************************
  * @func: OsResult_t MailboxPend(Id_t mailbox_id, U8_t base_address,
