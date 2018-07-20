@@ -27,7 +27,7 @@ typedef enum {
 	ID_GROUP_SEMAPHORE,
 	ID_GROUP_MAILBOX,
 	ID_GROUP_RINGBUF,
-	ID_GROUP_MESSAGE,
+	ID_GROUP_MESSAGE_QUEUE
 	ID_GROUP_NUM, /* Must be the last member of this enum. */
 } IdGroup_t;
 
