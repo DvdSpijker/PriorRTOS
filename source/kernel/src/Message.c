@@ -10,6 +10,7 @@
 #include "TaskDef.h"
 #include "List.h"
 #include "Memory.h"
+#include "IdTypeDef.h"
 
 #include <stdlib.h>
 
@@ -23,6 +24,7 @@ typedef struct {
 
 	LinkedList_t list;
 	U32_t max_size;
+	Id_t task_id; /* Owner task. */
 }MessageQueue_t, *pMessageQueue_t;
 
 LinkedList_t MessageQueueList;
@@ -30,45 +32,31 @@ LinkedList_t MessageQueueList;
 
 void KMessageInit(void)
 {
-	ListInit(&MessageQueueList, ID_GROUP_TASK);
+	ListInit(&MessageQueueList, ID_GROUP_MESSAGE_QUEUE);
 }
 
-OsResult_t MessageQueueCreate(U32_t max_size)
+Id_t MessageQueueCreate(U32_t max_size)
 {
 	OsResult_t result = OS_RES_INVALID_ARGUMENT;
 	pMessageQueue_t queue = NULL;
-	pTcb_t task = NULL;
-	Id_t task_id = ID_INVALID;
 
 	if(max_size > 0) {
-		result = OS_RES_FAIL;
+		result = OS_RES_ERROR;
+		queue = KMemAllocObject(sizeof(MessageQueue_t), 0, NULL); /* Allocate memory for the Message queue. */
+		if(queue != NULL) {
+			queue->max_size = max_size;
+			queue->task_id = TaskIdGet();
+			result = ListNodeInit(&queue->node, queue); /* Initialize the queue node. */
+			if(result == OS_RES_OK) { /* Add the queue to the list of queues. */
+				result = ListNodeAddSorted(&MessageQueueList, &queue->node);
+			}
+			if(result == OS_RES_OK) { /* Initialize the newly created message queue. */
+				ListInit(&queue->list, ID_GROUP_MESSAGE_QUEUE);
+			}
 
-		task = KTaskRunningGet(); /* Acquire current running task. */;
-		if(task != NULL) {
-			task_id = ListNodeIdGet(&task->list_node);
-		}
-		queue = (pMessageQueue_t)ListNodeChildGet(ListSearch(&MessageQueueList, task_id)); /* Check if the task already has a queue. */
-		if(queue == NULL) {
-			result = OS_RES_ERROR;
-
-			queue = KMemAllocObject(sizeof(MessageQueue_t), 0, NULL); /* Allocate memory for the Message queue. */
-			if(queue != NULL && task != NULL) {
-				queue->max_size = max_size;
-				result = ListNodeInit(&queue->node, queue); /* Initialize the queue node. */
-				if(result == OS_RES_OK) { /* Assign the same ID as the owning task. */
-					result = ListNodeIdSet(&queue->node, task_id);
-				}
-				if(result == OS_RES_OK) { /* Add the queue to the list of queues. */
-					result = ListNodeAddSorted(&MessageQueueList, &queue->node);
-				}
-				if(result == OS_RES_OK) { /* Initialize the newly created message queue. */
-					ListInit(&queue->list, ID_GROUP_MESSAGE);
-				}
-
-				/* Free the object if one of the steps failed. */
-				if(result != OS_RES_OK) {
-					KMemFreeObject(&queue, NULL);
-				}
+			/* Free the object if one of the steps failed. */
+			if(result != OS_RES_OK) {
+				KMemFreeObject(&queue, NULL);
 			}
 		}
 	}
@@ -76,30 +64,31 @@ OsResult_t MessageQueueCreate(U32_t max_size)
 	return result;
 }
 
-OsResult_t MessageSend(Id_t task_id, Message_t *message, U32_t timeout_ms)
+OsResult_t MessageSend(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms)
 {
 	OsResult_t result = OS_RES_INVALID_ARGUMENT;
 	pMessageQueue_t queue = NULL;
 	pMessageNode_t msg_node = NULL;
 
-	if(task_id != ID_INVALID && message != NULL) {
+	if(msg_queue_id != ID_INVALID && message != NULL) {
 		result = OS_RES_ERROR;
 
-		queue = (pMessageQueue_t)ListNodeChildGet(ListSearch(&MessageQueueList, task_id));
+		queue = (pMessageQueue_t)ListNodeChildGet(ListSearch(&MessageQueueList, msg_queue_id));
 		if(queue != NULL) {
 			result = OS_RES_FAIL;
 
 			msg_node = KMemAllocObject(sizeof(MessageNode_t), 0, NULL);
 			if(queue->list.size < queue->max_size && msg_node != NULL) {
-
 				result = ListNodeInit(&msg_node->node, msg_node);
 				if(result == OS_RES_OK) {
 					msg_node->msg = *message;
+					ListNodeIdSet(&msg_node->node, msg_queue_id); /* Assign same ID as the message queue. This ID is never used. */
 					result = ListNodeAddAtPosition(&queue->list, &msg_node->node, LIST_POSITION_TAIL);
 				}
 
-				/* Free the object if one of the steps failed. */
+				/* Deinit the node and free the object if one of the steps failed. */
 				if(result != OS_RES_OK) {
+					ListNodeDeinit(&queue->list, &msg_node->node);
 					KMemFreeObject(&msg_node, NULL);
 				}
 			}
@@ -109,28 +98,44 @@ OsResult_t MessageSend(Id_t task_id, Message_t *message, U32_t timeout_ms)
 	return result;
 }
 
-OsResult_t MessageMulticast(struct IdList_t *task_ids, Message_t *message, U32_t timeout_ms)
+OsResult_t MessageMulticast(IdList_t *msg_queue_ids, Message_t *message, U32_t timeout_ms)
 {
-	return OS_RES_CRIT_ERROR;
+	OsResult_t res = OS_RES_FAIL;
+	Id_t msg_queue_id;
+
+	do {
+		msg_queue_id = IdListIdRemove(msg_queue_ids);
+		if(msg_queue_id == ID_INVALID) {
+			break;
+		}
+		res = MessageSend(msg_queue_id, message, timeout_ms);
+	} while(res == OS_RES_OK);
+
+	return res;
 }
 
-OsResult_t MessageReceive(Message_t *message, U32_t timeout_ms)
+OsResult_t MessageReceive(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms)
 {
 	OsResult_t result = OS_RES_INVALID_ARGUMENT;
 	pMessageQueue_t queue = NULL;
 	pMessageNode_t msg_node = NULL;
 	pTcb_t task = NULL;
 
-	if(message != ID_INVALID) {
+	if(msg_queue_id != ID_INVALID && message != NULL) {
 		result = OS_RES_ERROR;
 
-		task = KTaskRunningGet(); /* Acquire current running task. */
-		queue = (pMessageQueue_t)ListNodeChildGet(ListSearch(&MessageQueueList, ListNodeIdGet(&task->list_node)));
+		queue = (pMessageQueue_t)ListNodeChildGet(ListSearch(&MessageQueueList, msg_queue_id));
 		if(queue != NULL) {
-			msg_node = (pMessageNode_t)ListNodeChildGet(ListNodeRemoveFromHead(&queue->list));
-			if(msg_node != NULL) {
-				*message = msg_node->msg;
-				result = KMemFreeObject(&msg_node, NULL);
+			result = OS_RES_RESTRICTED;
+
+			if(queue->task_id == TaskIdGet()) { /* Check if the calling task is also the owner. */
+				result = OS_RES_FAIL;
+
+				msg_node = (pMessageNode_t)ListNodeChildGet(ListNodeRemoveFromHead(&queue->list));
+				if(msg_node != NULL) {
+					*message = msg_node->msg;
+					result = KMemFreeObject(&msg_node, NULL);
+				}
 			}
 		}
 	}
