@@ -14,7 +14,7 @@ extern "C" {
 #endif
 
 #include <List.h>
-#include "include/Timer.h"
+#include "Timer.h"
 
 typedef struct Timer_t {
     ListNode_t       list_node;

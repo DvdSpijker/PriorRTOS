@@ -44,7 +44,7 @@ extern "C" {
 
 #include <OsTypes.h>
 #include <EventDef.h>
-#include "include/PriorRTOSConfig.h"
+#include "PriorRTOSConfig.h"
 
 /* Timer States */
 typedef enum {

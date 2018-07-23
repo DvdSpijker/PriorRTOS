@@ -63,7 +63,7 @@ extern "C" {
 /* Optional includes */
 
 #if PRTOS_CONFIG_ENABLE_SOFTWARE_TIMERS==1
-#include "include/Timer.h"
+#include "Timer.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_EVENTGROUPS==1

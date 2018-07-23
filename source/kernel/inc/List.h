@@ -146,7 +146,7 @@ OsResult_t ListLock(LinkedList_t *list, U8_t mode);
 /* V T Unlocks the list. */
 OsResult_t ListUnlock(LinkedList_t *list);
 
-/* V T Return true if locked, false if not locked. */
+/* V T Returns true if locked, false if not locked. */
 bool ListIsLocked(LinkedList_t *list);
 
 /* Sorts the list according to the specified sorting type. */
@@ -177,7 +177,7 @@ ListSize_t ListSizeGet(LinkedList_t *list);
 
 
 /* V T Verifies the integrity of the list by checking next and previous pointers.
- * Note that this function will locked the list indefinitely if corruptions are
+ * Note that this function will locked the list indefinitely if corruption are
  * found. Only ListIntegrityRestore can access the list and unlock it if restoration
  * succeeds.
  * Returns:
@@ -338,11 +338,6 @@ do {                                                            \
 
 #define LIST_ITERATOR_BREAK_ON_CONDITION(cond)  \
 if(cond) break;                                 \
-
-#define LIST_ITERATOR_GOTO_NEXT(p_it)   \
-goto p_it##_next;                       \
-
-#define LIST_ITERATOR_GOTO_NEXT_ON_CONDITION(p_it, cond)  
 
 #define LIST_ITERATOR_END(p_it)     \
 if(ListIteratorNext(p_it) == NULL)  \

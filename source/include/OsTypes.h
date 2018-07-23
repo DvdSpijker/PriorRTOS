@@ -100,7 +100,7 @@ typedef enum {
      /* The system call failed. The reason is
      * further specified in the API description of
      * the caller. */
-    OS_RES_FAIL             = -3,    
+    OS_RES_FAIL             = -3,
             
     /* One or more arguments passed to the system call had invalid
      * values. */

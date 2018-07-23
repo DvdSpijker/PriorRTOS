@@ -50,7 +50,7 @@
 #include <IdTypeDef.h>
 #include <IdType.h>
 
-#include "port/PortCore.h"
+#include "PortCore.h"
 #include "CoreDef.h"
 #include <TaskDef.h>
 #include <MemoryDef.h>
