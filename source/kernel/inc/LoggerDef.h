@@ -13,13 +13,12 @@
 extern "C" {
 #endif
 
+#include "include/Logger.h"
+#include "kernel/inc/Event.h"
+
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-
-#include <Logger.h>
-#include <Event.h>
 
 /******************************************************************************
  * @func:  OsResult_t KLogInit(void)

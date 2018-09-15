@@ -6,8 +6,8 @@
  */
 
 
-#include <IdType.h>
-#include <IdTypeDef.h>
+#include "include/IdType.h"
+#include "kernel/inc/IdTypeDef.h"
 
 #include <stdlib.h>
 #include <stdbool.h>

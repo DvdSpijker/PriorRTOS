@@ -38,16 +38,16 @@
  **********************************************************************************************************************************************/
 
 
-#include <Ringbuffer.h>
-#include <MemoryDef.h>
-#include <List.h>
-#include <Event.h>
-#include <RingbufferDef.h>
+#include "include/Ringbuffer.h"
+#include "kernel/inc/RingbufferDef.h"
+
+#include "kernel/inc/MemoryDef.h"
+#include "kernel/inc/List.h"
+#include "kernel/inc/Event.h"
+#include "include/OsTypes.h"
 
 #include <stdlib.h>
-#include <inttypes.h>
-#include <OsTypes.h>
-#include <stdio.h>
+
 
 static S8_t IRingbufLockWrite(Ringbuf_t *ringbuf);
 static S8_t IRingbufUnlockWrite(Ringbuf_t *ringbuf);

@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include <OsTypes.h>
+#include "OsTypes.h"
 
 #define SHELL_MAX_COMMAND_LENGTH 10 /* Maximum length of the command. */
 

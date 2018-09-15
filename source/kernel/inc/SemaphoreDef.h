@@ -13,8 +13,9 @@
 extern "C" {
 #endif
 
-#include <Semaphore.h>
-#include <List.h>
+#include "include/Semaphore.h"
+
+#include "kernel/inc/List.h"
 
 /* TODO: Implement Semaphore types below and move to public .h file. */
 #define SEMAPHORE_TYPE_MUTEX_RECURSIVE    0x02

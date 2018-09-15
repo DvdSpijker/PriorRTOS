@@ -5,8 +5,9 @@
  *  Author: Dorus
  */ 
 
-#include "../../inc/shellcmd/ShellCommandHelp.h"
+#include "kernel/inc/shellcmd/ShellCommandHelp.h"
 
+#include <stdlib.h>
 
 struct ShellCommand ShellCommandHelp = {
     .cmd = "help",

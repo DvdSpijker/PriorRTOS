@@ -39,30 +39,28 @@
 **********************************************************************************************************************************************/
 
 /* Prior RTOS includes. */
-#include <PriorRTOS.h>
-#include <Logger.h>
-#include <LoggerDef.h>
-#include <Convert.h>
-#include <KernelTask.h>
-#include <List.h>
-#include <Event.h>
-#include <OsTypes.h>
-#include <IdTypeDef.h>
-#include <IdType.h>
+#include "kernel/inc/CoreDef.h"
+#include "port/PortCore.h"
 
-#include "PortCore.h"
-#include "CoreDef.h"
-#include <TaskDef.h>
-#include <MemoryDef.h>
+#include "include/PriorRTOS.h"
+
+#include "include/Logger.h"
+#include "kernel/inc/LoggerDef.h"
+#include "include/Convert.h"
+#include "kernel/inc/KernelTask.h"
+#include "kernel/inc/List.h"
+#include "kernel/inc/Event.h"
+#include "kernel/inc/IdTypeDef.h"
+#include "include/IdType.h"
+#include "kernel/inc/TaskDef.h"
+#include "kernel/inc/MemoryDef.h"
 
 /* Kernel Tasks. */
-#include "ktask/KernelTaskIdle.h"
+#include "kernel/inc/ktask/KernelTaskIdle.h"
 
 
 /*Include standard libraries*/
 #include <stdlib.h>
-#include <inttypes.h>
-#include <stdio.h>
 #include <math.h>
 
 
@@ -75,35 +73,35 @@ LOG_FILE_NAME("Core.c");
 
 
 #if PRTOS_CONFIG_ENABLE_SOFTWARE_TIMERS==1
-#include <TimerDef.h>
+#include "kernel/inc/TimerDef.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_PIPES==1
-#include <PipeDef.h>
+#include "kernel/inc/PipeDef.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_EVENTGROUPS==1
-#include <EventgroupDef.h>
+#include "kernel/inc/EventgroupDef.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_SIGNALS==1
-#include <SignalDef.h>
+#include "kernel/inc/SignalDef.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_MAILBOXES==1
-#include <MailboxDef.h>
+#include "kernel/inc/MailboxDef.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_SEMAPHORES==1
-#include <SemaphoreDef.h>
+#include "kernel/inc/SemaphoreDef.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
-#include <RingbufferDef.h>
+#include "kernel/inc/RingbufferDef.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_SHELL==1
-#include <Shell.h>
+#include "include/Shell.h"
 OsResult_t KShellInit(void);
 #endif
 

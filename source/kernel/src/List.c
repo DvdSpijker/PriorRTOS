@@ -6,14 +6,13 @@
  */
 
 
-#include "../inc/List.h"
-#include <Convert.h>
-#include <Logger.h>
-#include <IdTypeDef.h>
+#include "kernel/inc/List.h"
+
+#include "include/Convert.h"
+#include "include/Logger.h"
+#include "kernel/inc/IdTypeDef.h"
 
 #include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
 
 LOG_FILE_NAME("List.c");
 

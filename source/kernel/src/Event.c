@@ -4,17 +4,16 @@
  * Created: 09-Dec-16 19:16:54
  *  Author: User
  */
+#include "kernel/inc/Event.h"
 
-#include <PriorRTOSConfig.h>
-#include <Logger.h>
-#include <LoggerDef.h>
-#include <Event.h>
-#include <Fletcher.h>
-#include <MemoryDef.h>
-#include <OsTypes.h>
+#include "include/PriorRTOSConfig.h"
+#include "include/Logger.h"
+#include "include/OsTypes.h"
+#include "kernel/inc/LoggerDef.h"
+#include "kernel/inc/Fletcher.h"
+#include "kernel/inc/MemoryDef.h"
 
 #include <stdlib.h>
-#include <stdio.h>
 
 LOG_FILE_NAME("Event.c");
 

@@ -5,12 +5,10 @@
  *  Author: Dorus
  */
 
-#include "../../inc/ktask/KernelTaskIdle.h"
-#include <PriorRTOS.h>
+#include "kernel/inc/ktask/KernelTaskIdle.h"
 
-#include <List.h>
-#include <TaskDef.h>
-#include <CoreDef.h>
+#include "kernel/inc/CoreDef.h"
+#include "include/Task.h"
 
 void KernelTaskIdle(const void* p_arg, U32_t v_arg)
 {

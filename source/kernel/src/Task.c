@@ -38,19 +38,17 @@
  **********************************************************************************************************************************************/
 
 /*********OS Task management*********/
+#include "include/Task.h"
+#include "kernel/inc/TaskDef.h"
 
-#include <LoggerDef.h>
-#include <Convert.h>
-#include <Task.h>
-#include <Event.h>
-#include <TaskDef.h>
-#include <MemoryDef.h>
+#include "include/Convert.h"
+#include "kernel/inc/Event.h"
+#include "kernel/inc/CoreDef.h"
+#include "kernel/inc/LoggerDef.h"
+#include "kernel/inc/MemoryDef.h"
+#include "include/OsTypes.h"
 
 #include <stdlib.h>
-#include <inttypes.h>
-#include <OsTypes.h>
-#include <stdio.h>
-#include <string.h>
 
 LOG_FILE_NAME("Task.c");
 

@@ -43,22 +43,19 @@ extern "C" {
 #define PRIOR_RTOS
 #define OS_VERSION 0x0041 /* 0.4.1 */
 
-#include <stdlib.h>
-
-#include <PriorRTOSConfig.h>
-#include <OsTypes.h>
+#include "PriorRTOSConfig.h"
+#include "OsTypes.h"
 
 /*Core API includes*/
-#include <Memory.h>
-#include <Task.h>
-#include <Logger.h>
-#include <KernelTask.h>
+#include "include/Memory.h"
+#include "include/Task.h"
+#include "include/Logger.h"
+#include "kernel/inc/KernelTask.h"
 
 /* Utility API includes */
 #ifdef PRTOS_CONFIG_USE_CONVERT_LIB_IN_APP
-#include <Convert.h>
+#include "Convert.h"
 #endif
-
 
 /* Optional includes */
 
@@ -67,29 +64,30 @@ extern "C" {
 #endif
 
 #if PRTOS_CONFIG_ENABLE_EVENTGROUPS==1
-#include <Eventgroup.h>
+#include "Eventgroup.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_MAILBOXES==1
-#include <Mailbox.h>
+#include "Mailbox.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_PIPES==1
-#include <Pipe.h>
+#include "Pipe.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_RINGBUFFERS==1
-#include <Ringbuffer.h>
+#include "Ringbuffer.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_SIGNALS==1
-#include <Signal.h>
+#include "Signal.h"
 #endif
 
 #if PRTOS_CONFIG_ENABLE_SEMAPHORES==1
-#include <Semaphore.h>
+#include "Semaphore.h"
 #endif
 
+#include <stdbool.h>
 
 /******************************************************************************
  * @func: OsResult_t OsInit(OsResult_t *result_optional)

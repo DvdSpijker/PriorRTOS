@@ -13,9 +13,9 @@
 extern "C" {
 #endif
 
-#include <OsTypes.h>
-#include <Event.h>
-#include <Task.h>
+#include "include/OsTypes.h"
+#include "include/Task.h"
+#include "kernel/inc/Event.h"
 
 #define IDLETASK_PRIO   0x0A //Idle Task priority
 

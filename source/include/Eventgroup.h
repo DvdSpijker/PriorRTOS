@@ -42,9 +42,9 @@
 extern "C" {
 #endif
 
-#include <OsTypes.h>
-#include <PriorRTOSConfig.h>
-#include <EventDef.h>
+#include "include/OsTypes.h"
+#include "include/PriorRTOSConfig.h"
+#include "include/EventDef.h"
 
 /* Eventgroup flag macros. */
 #define EVENTGROUP_FLAG_MASK_0 0x01

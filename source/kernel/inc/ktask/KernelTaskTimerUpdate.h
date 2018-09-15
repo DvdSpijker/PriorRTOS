@@ -10,7 +10,7 @@
 #define KERNEL_TASK_TIMER_UPDATE_H_
 
 
-#include <OsTypes.h>
+#include "include/OsTypes.h"
 
 void KernelTaskTimerUpdate(const void* p_arg, U32_t v_arg);
 Id_t KTidTimerUpdate;

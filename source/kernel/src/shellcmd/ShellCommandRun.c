@@ -1,6 +1,8 @@
-#include <Shell.h>
-#include <PriorRTOS.h>
-#include "../../inc/shellcmd/ShellCommandRun.h"
+
+#include "kernel/inc/shellcmd/ShellCommandRun.h"
+#include "include/Shell.h"
+#include "include/PriorRTOS.h"
+
 #include <string.h>
 
 struct ShellCommand ShellCommandRun = {

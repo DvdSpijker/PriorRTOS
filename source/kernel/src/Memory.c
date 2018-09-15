@@ -38,10 +38,11 @@
  **********************************************************************************************************************************************/
 
 
-#include <Memory.h>
-#include <MemoryDef.h>
-#include <CoreDef.h>
-#include <LoggerDef.h>
+#include "include/Memory.h"
+#include "kernel/inc/MemoryDef.h"
+
+#include "kernel/inc/CoreDef.h"
+#include "kernel/inc/LoggerDef.h"
 
 LOG_FILE_NAME("Memory.c");
 

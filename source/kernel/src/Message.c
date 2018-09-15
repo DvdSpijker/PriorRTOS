@@ -5,12 +5,12 @@
  *      Author: Dorus
  */
 
-#include "Message.h"
+#include "include/Message.h"
 
-#include "TaskDef.h"
-#include "List.h"
-#include "Memory.h"
-#include "IdTypeDef.h"
+#include "kernel/inc/TaskDef.h"
+#include "kernel/inc/List.h"
+#include "kernel/inc/MemoryDef.h"
+#include "kernel/inc/IdTypeDef.h"
 
 #include <stdlib.h>
 
@@ -56,7 +56,7 @@ Id_t MessageQueueCreate(U32_t max_size)
 
 			/* Free the object if one of the steps failed. */
 			if(result != OS_RES_OK) {
-				KMemFreeObject(&queue, NULL);
+				KMemFreeObject((void **)&queue, NULL);
 			}
 		}
 	}
@@ -89,7 +89,7 @@ OsResult_t MessageSend(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms)
 				/* Deinit the node and free the object if one of the steps failed. */
 				if(result != OS_RES_OK) {
 					ListNodeDeinit(&queue->list, &msg_node->node);
-					KMemFreeObject(&msg_node, NULL);
+					KMemFreeObject((void **)&msg_node, NULL);
 				}
 			}
 		}
@@ -134,7 +134,7 @@ OsResult_t MessageReceive(Id_t msg_queue_id, Message_t *message, U32_t timeout_m
 				msg_node = (pMessageNode_t)ListNodeChildGet(ListNodeRemoveFromHead(&queue->list));
 				if(msg_node != NULL) {
 					*message = msg_node->msg;
-					result = KMemFreeObject(&msg_node, NULL);
+					result = KMemFreeObject((void **)&msg_node, NULL);
 				}
 			}
 		}

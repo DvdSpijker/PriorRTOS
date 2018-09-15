@@ -39,22 +39,19 @@
 
 //Timer parameter | bit 0: ON | bit 1: permanent | bit 2: auto-reset | bit 3-7 number of iterations (if bit 1 = 0) |
 
+#include "include/Timer.h"
+#include "kernel/inc/TimerDef.h"
+#include "kernel/inc/ktask/KernelTaskTimerUpdate.h"
 
-#include <List.h>
-#include <Convert.h>
-#include <LoggerDef.h>
-#include <Timer.h>
-#include <Event.h>
-#include <TimerDef.h>
-#include <KernelTask.h>
-#include <MemoryDef.h>
-
-#include "../inc/ktask/KernelTaskTimerUpdate.h"
-
+#include "include/OsTypes.h"
+#include "kernel/inc/List.h"
+#include "include/Convert.h"
+#include "kernel/inc/LoggerDef.h"
+#include "kernel/inc/Event.h"
+#include "kernel/inc/KernelTask.h"
+#include "kernel/inc/MemoryDef.h"
 
 #include <stdlib.h>
-#include <inttypes.h>
-#include <OsTypes.h>
 #include <stdbool.h>
 
 LOG_FILE_NAME("Timer.c")

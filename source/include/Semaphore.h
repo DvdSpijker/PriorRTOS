@@ -13,13 +13,11 @@
 extern "C" {
 #endif
 
-#include <OsTypes.h>
-#include <EventDef.h>
+#include "OsTypes.h"
+#include "EventDef.h"
 
 /* Semaphore Types */
 #define SEMAPHORE_TYPE_MUTEX_BINARY       0x01
-
-
 
 /* Semaphore Event macros */
 #define SEM_EVENT_CREATE         EVENT_TYPE_CREATE

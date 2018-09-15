@@ -9,13 +9,14 @@
 #ifndef SYSTEM_CALL_H_
 #define SYSTEM_CALL_H_
 
-#include <stdlib.h>
-#include <Event.h>
-#include <TaskDef.h>
-#include <List.h>
-#include <OsTypes.h>
+#include "include/OsTypes.h"
+#include "include/PriorRTOSConfig.h"
 
-#include <PriorRTOSConfig.h>
+#include "kernel/inc/Event.h"
+#include "kernel/inc/TaskDef.h"
+#include "kernel/inc/List.h"
+
+#include <stdlib.h>
 
 extern S8_t OsIsrNestCountGet(void);
 

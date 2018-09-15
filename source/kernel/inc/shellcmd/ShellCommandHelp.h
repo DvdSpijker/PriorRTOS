@@ -9,9 +9,8 @@
 #ifndef SHELL_COMMAND_HELP_H_
 #define SHELL_COMMAND_HELP_H_
 
-#include <OsTypes.h>
-#include <Shell.h>
-#include <stdlib.h>
+#include "include/OsTypes.h"
+#include "include/Shell.h"
 
 OsResult_t ShellCommandExecuteHelp(char **tokens, U8_t n_tokens);
 

@@ -36,15 +36,15 @@
  *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  *  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **********************************************************************************************************************************************/
+#include "include/Mailbox.h"
+#include "kernel/inc/MailboxDef.h"
 
-#include <List.h>
-#include <Mailbox.h>
-#include <Event.h>
-#include <MailboxDef.h>
-#include <CoreDef.h>
-#include <MemoryDef.h>
-#include <TaskDef.h>
-#include <SystemCall.h>
+#include "kernel/inc/List.h"
+#include "kernel/inc/Event.h"
+#include "kernel/inc/CoreDef.h"
+#include "kernel/inc/MemoryDef.h"
+#include "kernel/inc/TaskDef.h"
+#include "kernel/inc/SystemCall.h"
 
 #include <stdlib.h>
 #include <stdbool.h>

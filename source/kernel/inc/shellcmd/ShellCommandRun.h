@@ -9,9 +9,8 @@
 #ifndef SHELL_COMMAND_RUN_H_
 #define SHELL_COMMAND_RUN_H_
 
-#include <OsTypes.h>
-#include <Shell.h>
-#include <stdlib.h>
+#include "include/OsTypes.h"
+#include "include/Shell.h"
 
 OsResult_t ShellCommandExecuteRun(char **tokens, U8_t n_tokens);
 OsResult_t ShellCommandHelpRun(void);

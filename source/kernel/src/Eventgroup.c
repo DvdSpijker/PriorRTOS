@@ -37,20 +37,16 @@
 **********************************************************************************************************************************************/
 
 
-#include <Eventgroup.h>
-#include <EventgroupDef.h>
-#include <CoreDef.h>
-#include <MemoryDef.h>
-#include <Event.h>
-#include <List.h>
-#include <Task.h>
-#include <SystemCall.h>
-#include <IdType.h>
+#include "include/Eventgroup.h"
+#include "kernel/inc/EventgroupDef.h"
+
+#include "kernel/inc/MemoryDef.h"
+#include "kernel/inc/Event.h"
+#include "kernel/inc/List.h"
+#include "kernel/inc/SystemCall.h"
+#include "include/IdType.h"
 
 #include <stdlib.h>
-#include <inttypes.h>
-#include <stdio.h>
-#include <math.h>
 
 OsResult_t KEventgroupInit (void)
 {
