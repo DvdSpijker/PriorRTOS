@@ -42,10 +42,9 @@
 extern "C" {
 #endif
 
-#include <StdTypes.h>
-#include <IdType.h>
-#include <PriorRTOSConfig.h>
-
+#include "PriorRTOSConfig.h"
+#include "StdTypes.h"
+#include "IdType.h"
 
 
 #ifdef PRTOS_CONFIG_MEM_WIDTH_8_BITS

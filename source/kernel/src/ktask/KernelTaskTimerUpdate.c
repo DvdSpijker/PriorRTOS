@@ -5,13 +5,10 @@
  *  Author: Dorus
  */
 
-#include "../inc/ktask/KernelTaskTimerUpdate.h"
-#include <PriorRTOS.h>
+#include "kernel/inc/ktask/KernelTaskTimerUpdate.h"
+#include "kernel/inc/TimerDef.h"
 
-#include <List.h>
-#include <TaskDef.h>
-#include <TimerDef.h>
-#include <CoreDef.h>
+#include "include/Task.h"
 
 
 /* This kernel task is created by the Timer module upon initialization.

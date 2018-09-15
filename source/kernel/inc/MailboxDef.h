@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-#include <List.h>
+#include "kernel/inc/List.h"
 
 #define MAILBOX_CONFIG_MAX_OWNERS 2
 

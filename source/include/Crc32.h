@@ -8,7 +8,7 @@
 #ifndef CRC32_H_
 #define CRC32_H_
 
-#include "StdTypes.h"
+#include "include/StdTypes.h"
 
 U32_t Crc32 (U32_t prev_crc, const void *buf, U32_t len);
 

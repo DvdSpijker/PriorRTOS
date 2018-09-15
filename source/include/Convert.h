@@ -42,7 +42,7 @@
 extern "C" {
 #endif
 
-#include <OsTypes.h>
+#include "include/OsTypes.h"
 
 #define CONVERT_BUFFER_SIZE_RESULT_TO_STRING    19
 #define CONVERT_BUFFER_SIZE_OSVERSION_TO_STRING 7

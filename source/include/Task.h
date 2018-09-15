@@ -42,12 +42,12 @@
 extern "C" {
 #endif
 
+#include "OsTypes.h"
+#include "EventDef.h"
+
 #include <stdbool.h>
-#include <OsTypes.h>
-#include <EventDef.h>
 
-
-/* Task_t definition see Types.h. */
+/* Task_t definition see OsTypes.h. */
 
 /* Task States */
 typedef enum {

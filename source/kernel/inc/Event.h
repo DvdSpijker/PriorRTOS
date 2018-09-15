@@ -42,8 +42,8 @@
 extern "C" {
 #endif
 
-#include <List.h>
-#include <EventDef.h>
+#include "include/EventDef.h"
+#include "kernel/inc/List.h"
 
 /* Private Event flags. */
 #define     EVENT_FLAG_NONE          0x00

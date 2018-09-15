@@ -5,9 +5,10 @@
  *  Author: Dorus
  */
 
-#include <Logger.h>
-#include <LoggerDef.h>
+#include "include/Logger.h"
+#include "kernel/inc/LoggerDef.h"
 #include "port/PortDebug.h"
+
 #include <stdio.h>
 
 #ifdef PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER

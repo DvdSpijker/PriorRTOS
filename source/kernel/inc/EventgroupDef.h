@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-#include <List.h>
+#include "kernel/inc/List.h"
 
 typedef struct EventGrp_t {
     ListNode_t list_node;

@@ -13,6 +13,10 @@
 extern "C" {
 #endif
 
+#include "kernel/inc/List.h"
+
+#include <stdbool.h>
+
 #define RINGBUF_LOCK_READ_MASK  0x80
 #define RINGBUF_LOCK_WRITE_MASK 0x40
 

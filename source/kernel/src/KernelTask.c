@@ -36,14 +36,10 @@
  *  LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
  *  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  **********************************************************************************************************************************************/
-#include <PriorRTOS.h>
-#include <KernelTask.h>
+#include "include/Task.h"
+#include "kernel/inc/KernelTask.h"
 
-#include <inttypes.h>
 #include <stdlib.h>
-#include <stdio.h>
-
-
 
 
 Id_t KernelTaskCreate(Task_t handler, Prio_t priority, U8_t add_param, U32_t stack_size, const void *p_arg, U32_t v_arg)

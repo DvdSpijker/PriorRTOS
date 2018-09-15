@@ -41,13 +41,11 @@
 extern "C" {
 #endif
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "PriorRTOSConfig.h"
+#include "StdTypes.h"
 
-#include <PriorRTOSConfig.h>
-#include <OsTypes.h>
+#include <stdarg.h>
+#include <stdlib.h>
 
 #ifdef PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER
 Id_t LoggerRingbuf;

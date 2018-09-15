@@ -38,16 +38,16 @@
  *  CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 ***********************************************************************************************************************/
 
-#include <StdTypes.h>
+#include "StdTypes.h"
 
 /*******************************************************
  * Information on Prior RTOS configuration macros.
  *
  * - All configuration macros have the PRTOS_CONFIG_ prefix in their name.
  * 
- * - Settings requiring a specific value such as a frequency or interval are 
- * suffixed with their respective unit e.g. PRTOS_CONFIG_F_CPU_HZ or
- * PRTOS_CONFIG_OS_HEAP_SIZE_BYTES.
+ * - Settings requiring a specific value (e.g. frequency or heap size) are
+ * suffixed with their respective unit (e.g. PRTOS_CONFIG_F_CPU_HZ or
+ * PRTOS_CONFIG_OS_HEAP_SIZE_BYTES).
  * 
  * - PRTOS_CONFIG_ENABLE_ settings expect a 1 to enable, and a 0 to disable.
  * 
@@ -67,7 +67,7 @@
  * @dtype:    U32_t
  * @unit:     Hertz.
  *******************************************************/
-#define PRTOS_CONFIG_F_CPU_HZ					80000000 
+#define PRTOS_CONFIG_F_CPU_HZ					72000000
 
 
 /*******************************************************
@@ -79,7 +79,7 @@
  * @dtype:    U32_t
  * @unit:     Hertz.
  *******************************************************/
-#define PRTOS_CONFIG_F_OS_TIMER_HZ              40000000
+#define PRTOS_CONFIG_F_OS_TIMER_HZ              72000000
 
 
 /*******************************************************
@@ -220,7 +220,7 @@
  * @dtype: U32_t
  * @unit: bytes
  *******************************************************/
-#define PRTOS_CONFIG_OS_HEAP_SIZE_BYTES				0x14000 /* 80kB */
+#define PRTOS_CONFIG_OS_HEAP_SIZE_BYTES				0x4400 /* 17kB */
 
 /*******************************************************
  * @macro:  PRTOS_CONFIG_USER_HEAP_SIZE_BYTES
@@ -231,7 +231,7 @@
  * @dtype: U32_t
  * @unit: bytes
  *******************************************************/
-#define PRTOS_CONFIG_USER_HEAP_SIZE_BYTES			0x4000 /* 16kB */
+#define PRTOS_CONFIG_USER_HEAP_SIZE_BYTES			0x800 /* 2kB */
 
 /*******************************************************
  * @macro: PRTOS_CONFIG_N_USER_POOLS

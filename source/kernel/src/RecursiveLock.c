@@ -5,7 +5,7 @@
 *  Author: Dorus
 */
 
-#include <RecursiveLock.h>
+#include "kernel/inc/RecursiveLock.h"
 
 #define LOCK_MASK_MODE             0b10000000
 #define LOCK_MASK_COUNT            0b01111111

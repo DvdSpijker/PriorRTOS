@@ -42,9 +42,10 @@
 extern "C" {
 #endif
 
+#include "include/OsTypes.h"
+
 #include <stdbool.h>
-#include <OsTypes.h>
-#include <CoreDef.h>
+
 
 #define LIST_ITERATOR_DIRECTION_FORWARD 0x00
 #define LIST_ITERATOR_DIRECTION_REVERSE 0x01

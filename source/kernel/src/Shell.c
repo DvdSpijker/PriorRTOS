@@ -1,17 +1,16 @@
-#include <Shell.h>
-#include <KernelTask.h>
-#include <Task.h>
-#include <TaskDef.h>
-#include <Ringbuffer.h>
-#include <Memory.h>
-#include <OsTypes.h>
+#include "include/Shell.h"
 
-#include "shellcmd/ShellCommandHelp.h"
-#include "shellcmd/ShellCommandRun.h"
-//#include "shellcmd/ShellCommandHelp.h"
+#include "kernel/inc/KernelTask.h"
+#include "include/Task.h"
+#include "kernel/inc/TaskDef.h"
+#include "include/Ringbuffer.h"
+#include "include/Memory.h"
+#include "include/OsTypes.h"
+
+#include "kernel/inc/shellcmd/ShellCommandHelp.h"
+#include "kernel/inc/shellcmd/ShellCommandRun.h"
 
 #include <string.h>
-#include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 

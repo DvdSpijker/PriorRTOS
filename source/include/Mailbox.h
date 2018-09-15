@@ -42,9 +42,9 @@
 extern "C" {
 #endif
 
-#include <OsTypes.h>
-#include <PriorRTOSConfig.h>
-#include <EventDef.h>
+#include "PriorRTOSConfig.h"
+#include "OsTypes.h"
+#include "EventDef.h"
 
 /* Mailbox Event macros */
 #define MAILBOX_EVENT_CREATE         EVENT_TYPE_CREATE
@@ -60,7 +60,7 @@ extern "C" {
 typedef U8_t MailboxBase_t; //Allowed to be modified by user
 
 /******************************************************************************
- * @func: Id_t MailboxCreate(U8_t mailbox_size, Task_t owners[],
+ * @func: Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[],
  * U8_t n_owners)
  *
  * @desc: Creates a mailbox of the specified size with given

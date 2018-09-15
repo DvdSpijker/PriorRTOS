@@ -8,6 +8,8 @@
 #ifndef ID_TYPE_DEF_H_
 #define ID_TYPE_DEF_H_
 
+#include "include/IdType.h"
+
 /* Initialize ID pools. */
 void KIdInit(void);
 

@@ -1,14 +1,14 @@
-#include <Semaphore.h>
-#include <SemaphoreDef.h>
-#include <TaskDef.h>
-#include <CoreDef.h>
-#include <MemoryDef.h>
-#include <SystemCall.h>
+#include "include/Semaphore.h"
+#include "kernel/inc/SemaphoreDef.h"
+
+#include "kernel/inc/TaskDef.h"
+#include "kernel/inc/CoreDef.h"
+#include "kernel/inc/MemoryDef.h"
+#include "kernel/inc/SystemCall.h"
+
+#include "include/OsTypes.h"
 
 #include <stdlib.h>
-#include <inttypes.h>
-#include <OsTypes.h>
-#include <stdio.h>
 
 LinkedList_t SemList;
 

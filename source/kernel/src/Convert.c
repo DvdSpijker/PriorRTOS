@@ -5,11 +5,12 @@
 *  Author: Dorus
 */
 
-#include <Convert.h>
+#include "include/Convert.h"
+
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h> /* Included for sscanf. */
 #include <stdbool.h>
-#include <stdio.h>
 
 U8_t ConvertResultToString(OsResult_t result, char *out_result_str)
 {

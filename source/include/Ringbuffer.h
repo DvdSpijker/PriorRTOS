@@ -41,10 +41,9 @@
 extern "C" {
 #endif
 
-#include <List.h>
-#include <OsTypes.h>
-#include <PriorRTOSConfig.h>
-#include <EventDef.h>
+#include "include/PriorRTOSConfig.h"
+#include "include/OsTypes.h"
+#include "include/EventDef.h"
 
 /* Ring-buffer Events. */
 #define RINGBUF_EVENT_CREATE         EVENT_TYPE_CREATE

@@ -5,9 +5,9 @@
 extern "C" {
 #endif
 
-#include <stdlib.h>
+#include "include/OsTypes.h"
+
 #include <stdbool.h>
-#include <OsTypes.h>
 
 /* Generates a 16-bits Fletcher checksum from given data.
  * Returns 0 if an error has occurred. */

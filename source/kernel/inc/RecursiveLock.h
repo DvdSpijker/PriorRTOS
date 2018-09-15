@@ -5,10 +5,9 @@
 extern "C" {
 #endif
 
-#include <OsTypes.h>
-#include <EventDef.h>
+#include "include/OsTypes.h"
+#include "include/EventDef.h"
 
-#include <stdint.h>
 #include <stdbool.h>
 
 #define RECURSIVE_LOCK_EVENT_LOCK(tid)   	(EVENT_TYPE_STATE_CHANGE | 0x00001000 | (U32_t)(0xF000 & tid)) /* ID is of the task that locked the lock. */

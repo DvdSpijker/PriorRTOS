@@ -42,13 +42,11 @@
 extern "C" {
 #endif
 
-#include <OsTypes.h>
-#include <Task.h>
+#include "include/OsTypes.h"
+#include "include/Task.h"
 
 /* Creates a task in CAT_OS, this task has parameter TASK_PARAM_NO_PREEM and TASK_PARAM_INSTANT_WAKE by default. */
 Id_t KernelTaskCreate(Task_t handler, Prio_t priority, U8_t add_param, U32_t stack_size, const void *p_arg, U32_t v_arg);
-
-
 
 #ifdef __cplusplus
 }

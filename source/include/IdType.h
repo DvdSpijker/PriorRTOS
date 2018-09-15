@@ -8,7 +8,7 @@
 #ifndef ID_TYPE_H_
 #define ID_TYPE_H_
 
-#include <StdTypes.h>
+#include "StdTypes.h"
 
 #define ID_LIST_SIZE_MAX 5
 
@@ -27,7 +27,7 @@ typedef enum {
 	ID_GROUP_SEMAPHORE,
 	ID_GROUP_MAILBOX,
 	ID_GROUP_RINGBUF,
-	ID_GROUP_MESSAGE_QUEUE
+	ID_GROUP_MESSAGE_QUEUE,
 	ID_GROUP_NUM, /* Must be the last member of this enum. */
 } IdGroup_t;
 
