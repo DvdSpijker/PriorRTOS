@@ -13,6 +13,9 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdio.h>
+
+//#define SHELL_CONFIG_USE_TX_RINGBUF
 
 #define SHELL_MAX_COMMAND_COUNT     10  /* Maximum number of commands. */
 #define SHELL_MAX_LINE_LENGTH       200 /* Maximum length of a single line. */
@@ -30,7 +33,9 @@ const char LineTerminatorChar = '\n';
 //char TokenBuffer[SHELL_MAX_TOKEN_COUNT][SHELL_MAX_TOKEN_LENGTH];
 
 Id_t ShellRxRingbuf;
+#ifdef SHELL_CONFIG_USE_TX_RINGBUF
 Id_t ShellTxRingbuf;
+#endif
 Id_t ShellPool = ID_INVALID;
 struct ShellCommand ShellCommandSet[SHELL_MAX_COMMAND_COUNT];
 U8_t TotalShellCommands;
@@ -70,13 +75,25 @@ OsResult_t KShellInit(void)
     OsResult_t result = OS_RES_OK;
 
     ShellRxRingbuf = RingbufCreate(ShellRxBuffer, SHELL_MAX_LINE_LENGTH * 2);
+#ifdef SHELL_CONFIG_USE_TX_RINGBUF
     ShellTxRingbuf = RingbufCreate(NULL, 50);
-    ShellPool = MemPoolCreate(SHELL_MAX_TOKEN_COUNT * SHELL_MAX_TOKEN_COUNT * 2);
-    if((ShellRxRingbuf == ID_INVALID) || (ShellTxRingbuf == ID_INVALID)) {
+#endif
+    ShellPool = MemPoolCreate(SHELL_MAX_TOKEN_COUNT * SHELL_MAX_TOKEN_LENGTH * 2);
+
+    if((ShellRxRingbuf == ID_INVALID) || (ShellPool == ID_INVALID)) {
         RingbufDelete(&ShellRxRingbuf);
-        RingbufDelete(&ShellTxRingbuf);
+        MemPoolDelete(ShellPool);
         result = OS_RES_ERROR;
     }
+
+#ifdef SHELL_CONFIG_USE_TX_RINGBUF
+    if(ShellTxRingbuf == ID_INVALID) {
+        RingbufDelete(&ShellRxRingbuf);
+        MemPoolDelete(ShellPool);
+    	RingbufDelete(&ShellTxRingbuf);
+    	result = OS_RES_ERROR;
+    }
+#endif
 
     if(result == OS_RES_OK) {
         TotalShellCommands = 0;
@@ -127,6 +144,8 @@ U16_t ShellPutRaw(char *message, ...)
 {
     va_list args;
     va_start(args, message);
+
+#ifdef SHELL_CONFIG_USE_TX_RINGBUF
     U32_t est_size = 30;
     char *msg_buffer = malloc(est_size);
 
@@ -145,12 +164,17 @@ cleanup:
 	va_end(args);
     free(msg_buffer);
     return act_size;
+#else
+    return vprintf(message, args);
+#endif
 }
 
 U16_t ShellPutRawNewline(char *message, ...)
 {
     va_list args;
     va_start(args, message);
+
+#ifdef SHELL_CONFIG_USE_TX_RINGBUF
     U32_t est_size = 30;
     char *msg_buffer = malloc(est_size);
     msg_buffer[0] = '\n';
@@ -171,12 +195,18 @@ cleanup:
 	va_end(args);
     free(msg_buffer);
     return act_size;
+#else
+    printf("\n");
+    return vprintf(message, args);
+#endif
 }
 
 U16_t ShellPut(char *message, ...)
 {
     va_list args;
     va_start(args, message);
+
+#ifdef SHELL_CONFIG_USE_TX_RINGBUF
     U32_t est_size = 30;
     U32_t offset = 0;
     char *msg_buffer = malloc(est_size);
@@ -199,6 +229,10 @@ cleanup:
     va_end(args);
     free(msg_buffer);
     return act_size;
+#else
+    printf("%s", ShellMessageStart);
+    return vprintf(message, args);
+#endif
 }
 
 static void IShellReplyInvalidNumberArgs(char *command, uint8_t n_args)
@@ -226,7 +260,7 @@ static U8_t IShellSplitLine(char *line, char **args)
     U8_t i = 0;
     U8_t split = 0;
 
-    while(line[i] != '\0') {
+    while(line[i] != '\0' && i < SHELL_MAX_LINE_LENGTH) {
         for(U8_t j = 0; j < SHELL_SPLIT_CHAR_COUNT; j++) {
             if(line[i] == SplitChars[j]) {
                 split = 1;
@@ -235,7 +269,10 @@ static U8_t IShellSplitLine(char *line, char **args)
         }
         if(split) {
             args[token_cnt][token_w_index] = '\0';
-            token_cnt++;
+            if(++token_cnt > SHELL_MAX_TOKEN_LENGTH) {
+            	token_cnt--;
+            	break;
+            }
             token_w_index = 0;
             split = 0;
         } else {
@@ -247,12 +284,17 @@ static U8_t IShellSplitLine(char *line, char **args)
                 }
             }
             if(store) {
-                args[token_cnt][token_w_index] = line[i];
-                token_w_index++;
+            	args[token_cnt][token_w_index] = line[i];
+                if(++token_w_index > SHELL_MAX_TOKEN_COUNT) {
+                	token_w_index--;
+                	break;
+                }
             }
         }
         i++;
     }
+
+    args[token_cnt][token_w_index] = '\0';
 
     return (token_cnt+1);
 }
@@ -277,25 +319,29 @@ void TaskShellReadParse(const void* p_arg, U32_t v_arg)
     OS_ARG_UNUSED(v_arg);
 
     static U8_t line_write_index = 0;
-    static Id_t evt_rx_data_available = ID_INVALID;
+    static char LineBuffer[SHELL_MAX_LINE_LENGTH] = {0};
 
     U32_t read_amount = 1;
+	OsResult_t result = OS_RES_ERROR;
 	
-	static char LineBuffer[SHELL_MAX_LINE_LENGTH] = {0};
 
     TASK_INIT_BEGIN() {
 
     }
     TASK_INIT_END();
 
-    if(TaskPoll(ShellRxRingbuf, RINGBUF_EVENT_DATA_IN, 0, true) == OS_RES_EVENT) {
-        read_amount = RingbufDataCountGet(ShellRxRingbuf);
-        RingbufRead(ShellRxRingbuf, (RingbufBase_t *)&LineBuffer[line_write_index], &read_amount, OS_TIMEOUT_INFINITE);
-        if(read_amount) {
-            line_write_index+=(read_amount-1);
-            if(LineBuffer[line_write_index] == LineTerminatorChar) {
-                LineBuffer[line_write_index] = '\0';
-				char **tokens = (char **)MemAlloc(ShellPool, SHELL_MAX_TOKEN_COUNT * SHELL_MAX_TOKEN_LENGTH);
+    result =TaskPoll(ShellRxRingbuf, RINGBUF_EVENT_DATA_IN, OS_TIMEOUT_INFINITE, true);
+	if( (result == OS_RES_EVENT) || (result == OS_RES_POLL) ) {
+		read_amount = RingbufDataCountGet(ShellRxRingbuf);
+		RingbufRead(ShellRxRingbuf, (RingbufBase_t *)&LineBuffer[line_write_index], &read_amount, OS_TIMEOUT_INFINITE);
+		if(read_amount) {
+			line_write_index+=(read_amount-1);
+			if(LineBuffer[line_write_index] == LineTerminatorChar) {
+				LineBuffer[line_write_index] = '\0';
+				char **tokens = (char **)MemAlloc(ShellPool, SHELL_MAX_TOKEN_COUNT);
+				for(U32_t i = 0; i < SHELL_MAX_TOKEN_COUNT; i++) {
+					tokens[i] = (char *)MemAlloc(ShellPool, SHELL_MAX_TOKEN_LENGTH);
+				}
 				if(tokens == NULL) {
 					ShellPut("No resources available to execute command.");
 				} else {
@@ -305,16 +351,16 @@ void TaskShellReadParse(const void* p_arg, U32_t v_arg)
 					}
 				}
 				memset(LineBuffer, 0, SHELL_MAX_LINE_LENGTH);
-            } else {
-                if(line_write_index < (SHELL_MAX_COMMAND_LENGTH - 1)) {
-                    line_write_index+=read_amount;
-                } else {
+			} else {
+				if(line_write_index < (SHELL_MAX_COMMAND_LENGTH - 1)) {
+					line_write_index+=read_amount;
+				} else {
 					ShellPut("Invalid command.");
 					memset(LineBuffer, 0, SHELL_MAX_LINE_LENGTH);
 				}
-            }
-        }
-    }
+			}
+		}
+	}
 
 }
 
@@ -347,6 +393,13 @@ task_exit:
 	MemFree((void **)tokens);
     TaskDelete(&tid);
 }
+
+void PortDebugCallbackReadChars(char *chars, U32_t n)
+{
+	RingbufWrite(ShellRxRingbuf, (RingbufBase_t *)chars, &n, OS_TIMEOUT_NONE);
+}
+
+/* Config command. */
 
 OsResult_t ShellCommandExecuteConfig(char **tokens, U8_t n_tokens)
 {
