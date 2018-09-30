@@ -8,7 +8,7 @@
 #include "kernel/inc/ktask/KernelTaskTimerUpdate.h"
 #include "kernel/inc/TimerDef.h"
 
-#include "include/Task.h"
+#include "include/PriorRTOS.h"
 
 
 /* This kernel task is created by the Timer module upon initialization.
