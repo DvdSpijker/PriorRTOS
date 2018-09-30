@@ -206,7 +206,6 @@ OsResult_t OsInit(OsResult_t *status_optional)
 		return OS_RES_INVALID_ARGUMENT;
 	}
 
-    OsCritSectBegin();
     OsResult_t status_kernel   = OS_RES_OK; //status tracker for essential kernel modules
     *status_optional = OS_RES_OK; //status tracker for optional modules
     KernelReg.lock = 0;
@@ -224,8 +223,9 @@ OsResult_t OsInit(OsResult_t *status_optional)
         KernelReg.object_count = 0;
     }
     KERNEL_REG_UNLOCK();
-
     KCoreFlagClear(CORE_FLAG_ALL);//clear all flags
+
+    OsCritSectBegin();
     KCoreKernelModeEnter(); //Enable kernel mode
 
 #if ( PRTOS_CONFIG_ENABLE_LOG_DEBUG == 1 || PRTOS_CONFIG_ENABLE_LOG_ERROR == 1 || PRTOS_CONFIG_ENABLE_LOG_INFO == 1 || PRTOS_CONFIG_ENABLE_LOG_EVENT == 1 )
@@ -368,6 +368,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
 #endif
 
     KCoreKernelModeExit(); //Clear kernel mode flag
+    OsCritSectEnd();
 
 #if PRTOS_CONFIG_ENABLE_WATCHDOG==1
     ICoreWdtDisable();
@@ -380,6 +381,9 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
 void OsStart(Id_t start_task_id)
 {
+	U8_t *running = &KernelReg.os_running;;
+
+	OsCritSectBegin();
 
 #if PRTOS_CONFIG_ENABLE_WATCHDOG==1
     ICoreWdtEnable(PORT_WDT_EXPIRE_120MS);
@@ -412,8 +416,8 @@ void OsStart(Id_t start_task_id)
     ICoreOsIntEnable();
     PortOsTimerTicksReset();
 
-    OsCritSectEnd();
 
+    OsCritSectEnd();
     PortOsTimerEnable();
     LOG_INFO_APPEND("running");
 
@@ -423,7 +427,6 @@ void OsStart(Id_t start_task_id)
 #endif
 
     /* Embedded infinite run-loop. */
-    U8_t *running = &KernelReg.os_running;
     while (*running) {
 
 #if PRTOS_CONFIG_ENABLE_WATCHDOG==1
@@ -1109,6 +1112,9 @@ static OsResult_t ICoreLoadNewTask(pTcb_t tcb)
 void KCoreFlagSet(CoreFlags_t flag)
 {
     KERNEL_REG_LOCK() {
+    	if(KernelReg.sreg & flag) {
+    		LOG_ERROR_NEWLINE("Flag=1");
+    	}
         (KernelReg.sreg) |= ((U16_t)flag);
     }
     KERNEL_REG_UNLOCK();
@@ -1117,6 +1123,9 @@ void KCoreFlagSet(CoreFlags_t flag)
 void KCoreFlagClear(CoreFlags_t flag)
 {
     KERNEL_REG_LOCK() {
+    	if(flag != CORE_FLAG_IDLE && !(KernelReg.sreg & flag)) {
+    		LOG_ERROR_NEWLINE("Flag=0");
+    	}
         (KernelReg.sreg) &= ~((U16_t)flag);
     }
     KERNEL_REG_UNLOCK();
@@ -1147,6 +1156,8 @@ U8_t KCoreKernelModeEnter(void)
     if(KernelReg.kernel_mode_nest_counter < 255) {
         KernelReg.kernel_mode_nest_counter++;
         return KernelReg.kernel_mode_nest_counter;
+    } else {
+    	LOG_ERROR_NEWLINE("Kernel mode overflow.");
     }
 
     return 0;
@@ -1161,6 +1172,8 @@ U8_t KCoreKernelModeExit(void)
     }
     if(KernelReg.kernel_mode_nest_counter> 0) {
         KernelReg.kernel_mode_nest_counter--;
+    } else {
+    	LOG_ERROR_NEWLINE("Kernel mode underflow.");
     }
 
     return KernelReg.kernel_mode_nest_counter;
