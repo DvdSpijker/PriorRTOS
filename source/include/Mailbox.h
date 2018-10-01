@@ -53,11 +53,11 @@ extern "C" {
 #ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
 #define MAILBOX_EVENT_POST(addr)     (EVENT_TYPE_ACCESS | 0x00001000 | (U32_t)addr)
 #define MAILBOX_EVENT_PEND(addr)     (EVENT_TYPE_ACCESS | 0x00002000 | (U32_t)addr)
-#define MAILBOX_EVENT_POST_ALL       (EVENT_TYPE_ACCESS | 0x00003000)
+#define MAILBOX_EVENT_POST_ANY       (EVENT_TYPE_ACCESS | 0x00003000)
 #endif
 
 /* Mailbox width definition */
-typedef U8_t MailboxBase_t; //Allowed to be modified by user
+typedef U16_t MailboxBase_t; //Allowed to be modified by user
 
 /******************************************************************************
  * @func: Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[],

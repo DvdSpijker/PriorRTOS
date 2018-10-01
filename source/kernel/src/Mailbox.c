@@ -275,7 +275,7 @@ static OsResult_t IMailboxWrite(Id_t mailbox_id, U8_t address, MailboxBase_t dat
 	                mailbox->pend_counters[address] = mailbox->n_owners;
 	#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
 	                EventEmit(mailbox_id, MAILBOX_EVENT_POST(address), EVENT_FLAG_NONE);
-	                EventEmit(mailbox_id, MAILBOX_EVENT_POST_ALL, EVENT_FLAG_NONE);
+	                EventEmit(mailbox_id, MAILBOX_EVENT_POST_ANY, EVENT_FLAG_NONE);
 	#endif
 	            }
 	        }

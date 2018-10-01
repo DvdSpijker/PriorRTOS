@@ -161,14 +161,3 @@ OsResult_t SemaphoreCountReset(Id_t sem_id)
     LIST_NODE_ACCESS_END();
     return result;
 }
-
-
-static pSem_t ISemaphoreFromId(Id_t sem_id)
-{
-    pSem_t sem = NULL;
-    ListNode_t *node = ListSearch(&SemList, sem_id);
-    if(node != NULL) {
-        sem = (pSem_t)ListNodeChildGet(node);
-    }
-    return sem;
-}

@@ -38,6 +38,7 @@
  **********************************************************************************************************************************************/
 #include "include/Task.h"
 #include "kernel/inc/KernelTask.h"
+#include "kernel/inc/CoreDef.h"
 
 #include <stdlib.h>
 

@@ -13,6 +13,7 @@
 #include "kernel/inc/IdTypeDef.h"
 
 #include <stdlib.h>
+#include <stdio.h>
 
 LOG_FILE_NAME("List.c");
 

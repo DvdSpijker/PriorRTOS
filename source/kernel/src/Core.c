@@ -112,8 +112,11 @@ OsResult_t KShellInit(void);
 #error "PriorRTOS: Multiple schedulers in use; Both PRTOS_CONFIG_USE_SCHEDULER_COOP and PRTOS_CONFIG_USE_SCHEDULER_PREEM are defined."
 #endif
 
+#ifdef PRTOS_CONFIG_USE_SCHEDULER_COOP
 static void ICoreTickCoop(void);
+#else
 static void ICoreTickPreem(void);
+#endif
 static void ICoreTickInvoke(U32_t tc);
 
 static void ICoreSchedulerInit(void);
@@ -720,11 +723,7 @@ void OsTick(void)
 	}
 }
 
-static void ICoreTickPreem(void)
-{
-
-}
-
+#ifdef PRTOS_CONFIG_USE_SCHEDULER_COOP
 
 /* Cooperative Tick. */
 static void ICoreTickCoop(void)
@@ -774,6 +773,15 @@ static void ICoreTickCoop(void)
     PortOsIntFlagClear();
 }
 
+#else
+
+static void ICoreTickPreem(void)
+{
+
+}
+
+#endif
+
 static void ICoreTickInvoke(U32_t tc)
 {
     /* Calculate time passed since last Tick interrupt and update t_accu. */
@@ -815,9 +823,7 @@ static void ICoreSchedulerCycle(void)
 
     KCoreFlagSet(CORE_FLAG_SCHEDULER);
 
-    ListSize_t list_size;
     ICoreEventBrokerCycle(&ExecutionQueue);
-    list_size = ListSizeGet(&ExecutionQueue);
 
     KCoreFlagClear(CORE_FLAG_SCHEDULER);
 }
@@ -1112,9 +1118,9 @@ static OsResult_t ICoreLoadNewTask(pTcb_t tcb)
 void KCoreFlagSet(CoreFlags_t flag)
 {
     KERNEL_REG_LOCK() {
-    	if(KernelReg.sreg & flag) {
-    		LOG_ERROR_NEWLINE("Flag=1");
-    	}
+//    	if(KernelReg.sreg & flag) {
+//    		LOG_ERROR_NEWLINE("Flag=1");
+//    	}
         (KernelReg.sreg) |= ((U16_t)flag);
     }
     KERNEL_REG_UNLOCK();
@@ -1123,9 +1129,9 @@ void KCoreFlagSet(CoreFlags_t flag)
 void KCoreFlagClear(CoreFlags_t flag)
 {
     KERNEL_REG_LOCK() {
-    	if(flag != CORE_FLAG_IDLE && !(KernelReg.sreg & flag)) {
-    		LOG_ERROR_NEWLINE("Flag=0");
-    	}
+//    	if(flag != CORE_FLAG_IDLE && !(KernelReg.sreg & flag)) {
+//    		LOG_ERROR_NEWLINE("Flag=0");
+//    	}
         (KernelReg.sreg) &= ~((U16_t)flag);
     }
     KERNEL_REG_UNLOCK();

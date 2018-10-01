@@ -10,6 +10,7 @@
 #include "port/PortDebug.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #ifdef PRTOS_CONFIG_USE_LOGGER_MODE_RINGBUFFER
 #include <Ringbuffer.h>
