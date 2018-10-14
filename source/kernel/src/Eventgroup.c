@@ -180,7 +180,7 @@ OsResult_t EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t ti
 
     LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
         U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
-        if((flags & mask) != ~mask) { /* Not all flags have been cleared. */
+        if(flags) { /* Not all flags have been cleared. */
             SYS_CALL_EVENT_REGISTER(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_CLEAR(mask), &result, timeout);
         } else {
             result = OS_RES_OK;
@@ -210,7 +210,7 @@ OsResult_t EventgroupFlagsRequireSet(Id_t eventgroup_id, U8_t mask, U32_t timeou
 
 	LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
 		U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
-		if((flags & mask) != mask) { /* Not all flags have been set. */
+		if(!flags) { /* Not all flags have been set. */
 			SYS_CALL_EVENT_REGISTER(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result, timeout);
 		} else {
 			result = OS_RES_OK;

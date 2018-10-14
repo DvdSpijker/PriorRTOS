@@ -464,7 +464,7 @@ OsResult_t MemFree(void **ptr)
         return OS_RES_INVALID_ID;
     }
     if((pool_id == KernelPoolId || pool_id == ObjectPoolId) && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
-        LOG_ERROR_NEWLINE("Restricted pool ID.");
+
         return OS_RES_RESTRICTED;
     }
     OsCritSectBegin();

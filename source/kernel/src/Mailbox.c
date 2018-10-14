@@ -177,6 +177,7 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
                  * After pending a pend event is emitted. */
                 if(result == OS_RES_OK) {
                     *data = mailbox->buffer[address];
+                    mailbox->pend_counters[address]--;
 #ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
                     EventEmit(mailbox_id, MAILBOX_EVENT_PEND(address), EVENT_FLAG_NONE);
 #endif
