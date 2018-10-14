@@ -8,9 +8,14 @@
  #define UT_FAIL	-1
  
  typedef int (*ut_test_t)(void);
-
-int ut_set_up(void);
-int ut_tear_down(void);
+ 
+ typedef struct {
+	const char *name;
+	ut_test_t set_up;
+	ut_test_t tear_down;
+	int n_tests;
+	ut_test_t tests[];
+ }ut_test_set_t;
 
 void ut_init(void);
 
@@ -23,7 +28,7 @@ uint32_t ut_cnt_pass_get(void);
 uint32_t ut_cnt_fail_get(void);
 
 int ut_run_test(ut_test_t test);
-int ut_run_set(const char *name, ut_test_t *ut_test_set, int n_tests);
+int ut_run_set(ut_test_set_t *set);
 
 #define ut_suite_report printf("\n[UTEST] ---Suite Report---\nTotal:\t%u\nPassed:\t%u\nFailed:\t%u\n", ut_cnt_run_get(), ut_cnt_pass_get(),  ut_cnt_fail_get());
 #define ut_set_report printf("\n[UTEST] ---Set Report---\nTotal:\t%u\nPassed:\t%u\nFailed:\t%u\n\n", ut_cnt_run_get(), ut_cnt_pass_get(),  ut_cnt_fail_get());
