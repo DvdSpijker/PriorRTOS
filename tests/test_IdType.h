@@ -3,10 +3,6 @@
 
 #include "utest.h"
 
-int test_KIdRequest(void);
-int test_IdSequenceNumberGet(void);
-int test_IdGroupGet(void);
-
-extern ut_test_t test_set_IdType[];
+extern ut_test_set_t test_set_IdType;
 
 #endif

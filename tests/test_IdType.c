@@ -3,33 +3,45 @@
 #include "IdType.h"
 #include "IdTypeDef.h"
 
+int set_up(void);
+int tear_down(void);
+
+int test_KIdRequest(void);
 int test_KIdRequest_invalid_group(void);
 int test_KIdRequest_valid_group_single(void);
 int test_KIdRequest_valid_group_all(void);
 int test_KIdRequest_all(void);
 int test_KIdRequest_all_plus_one(void);
 
+int test_IdSequenceNumberGet(void);
 int test_IdSequenceNumberGet_valid(void);
 int test_IdSequenceNumberGet_invalid_id(void);
 int test_IdSequenceNumberGet_invalid_group(void);
 
+int test_IdGroupGet(void);
 int test_IdGroupGet_invalid_group(void);
 int test_IdGroupGet_invalid_id(void);
 int test_IdGroupGet_valid(void);
 
-ut_test_t test_set_IdType[] = {
+ut_test_set_t test_set_IdType = {
+	.name = "IdType",
+	.set_up = set_up,
+	.tear_down = tear_down,
+	.n_tests = 3,
+	.tests = {
 	test_KIdRequest,
 	test_IdSequenceNumberGet,
 	test_IdGroupGet,
+	},
 };
 
-int ut_set_up(void)
+int set_up(void)
 {
 	KIdInit();
 	return UT_OK;
 }
 
-int ut_tear_down(void) 
+int tear_down(void) 
 {
 	return UT_OK;
 }
