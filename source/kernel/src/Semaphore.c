@@ -12,7 +12,7 @@
 
 LinkedList_t SemList;
 
-static pSem_t ISemaphoreFromId(Id_t sem_id);
+Sem_t *ISemaphoreFromId(Id_t sem_id);
 
 OsResult_t KSemaphoreInit(void)
 {
@@ -50,8 +50,18 @@ Id_t SemaphoreCreate(U8_t sem_type, U8_t max_count)
 
 }
 
-/* TODO: Implementation SemaphoreDelete. */
-OsResult_t SemaphoreDelete(Id_t *sem_id);
+OsResult_t SemaphoreDelete(Id_t *sem_id)
+{
+    Sem_t *sem = ISemaphoreFromId(*sem_id);
+    if (sem != NULL) {
+        ListNodeDeinit(&SemList, &sem->list_node);
+
+        KMemFreeObject((void **)&sem, (void **)sem->owner_task_ids);
+        *sem_id = ID_INVALID;
+        return OS_RES_OK;
+    }
+    return OS_RES_ERROR;
+}
 
 OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout)
 {
@@ -160,4 +170,14 @@ OsResult_t SemaphoreCountReset(Id_t sem_id)
     }
     LIST_NODE_ACCESS_END();
     return result;
+}
+
+Sem_t *ISemaphoreFromId(Id_t sem_id)
+{
+    ListNode_t *node = ListSearch(&SemList, sem_id);
+    if(node != NULL) {
+        return (Sem_t *)ListNodeChildGet(node);
+    } else {
+        return NULL;
+    }
 }
