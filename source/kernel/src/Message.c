@@ -76,20 +76,23 @@ OsResult_t MessageSend(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms)
 		queue = (pMessageQueue_t)ListNodeChildGet(ListSearch(&MessageQueueList, msg_queue_id));
 		if(queue != NULL) {
 			result = OS_RES_FAIL;
+			if(queue->list.size < queue->max_size) {
+				result = OS_RES_ERROR;
 
-			msg_node = KMemAllocObject(sizeof(MessageNode_t), 0, NULL);
-			if(queue->list.size < queue->max_size && msg_node != NULL) {
-				result = ListNodeInit(&msg_node->node, msg_node);
-				if(result == OS_RES_OK) {
-					msg_node->msg = *message;
-					ListNodeIdSet(&msg_node->node, msg_queue_id); /* Assign same ID as the message queue. This ID is never used. */
-					result = ListNodeAddAtPosition(&queue->list, &msg_node->node, LIST_POSITION_TAIL);
-				}
+				msg_node = KMemAllocObject(sizeof(MessageNode_t), 0, NULL);
+				if(msg_node != NULL) {
+					result = ListNodeInit(&msg_node->node, msg_node);
+					if(result == OS_RES_OK) {
+						msg_node->msg = *message;
+						ListNodeIdSet(&msg_node->node, msg_queue_id); /* Assign same ID as the message queue. This ID is never used. */
+						result = ListNodeAddAtPosition(&queue->list, &msg_node->node, LIST_POSITION_TAIL);
+					}
 
-				/* Deinit the node and free the object if one of the steps failed. */
-				if(result != OS_RES_OK) {
-					ListNodeDeinit(&queue->list, &msg_node->node);
-					KMemFreeObject((void **)&msg_node, NULL);
+					/* Deinit the node and free the object if one of the steps failed. */
+					if(result != OS_RES_OK) {
+						ListNodeDeinit(&queue->list, &msg_node->node);
+						KMemFreeObject((void **)&msg_node, NULL);
+					}
 				}
 			}
 		}
@@ -114,32 +117,57 @@ OsResult_t MessageMulticast(IdList_t *msg_queue_ids, Message_t *message, U32_t t
 	return res;
 }
 
+//#ifdef PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_SET
+//	LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
+//		U8_t flags = EventgroupFlagsGet(eventgroup_id, mask);
+//		if(!flags) { /* Not all flags have been set. */
+//			SYS_CALL_EVENT_REGISTER(node, eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result, timeout);
+//		} else {
+//			result = OS_RES_OK;
+//		}
+//	}
+//	LIST_NODE_ACCESS_END();
+//#endif
+
+
 OsResult_t MessageReceive(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms)
 {
-	OsResult_t result = OS_RES_INVALID_ARGUMENT;
-	pMessageQueue_t queue = NULL;
-	pMessageNode_t msg_node = NULL;
-	pTcb_t task = NULL;
-
-	if(msg_queue_id != ID_INVALID && message != NULL) {
-		result = OS_RES_ERROR;
-
-		queue = (pMessageQueue_t)ListNodeChildGet(ListSearch(&MessageQueueList, msg_queue_id));
-		if(queue != NULL) {
-			result = OS_RES_RESTRICTED;
-
-			if(queue->task_id == TaskIdGet()) { /* Check if the calling task is also the owner. */
-				result = OS_RES_FAIL;
-
-				msg_node = (pMessageNode_t)ListNodeChildGet(ListNodeRemoveFromHead(&queue->list));
-				if(msg_node != NULL) {
-					*message = msg_node->msg;
-					result = KMemFreeObject((void **)&msg_node, NULL);
-				}
-			}
-		}
-	}
-
-	return result;
+//	OsResult_t result = OS_RES_INVALID_ARGUMENT;
+//	pMessageQueue_t queue = NULL;
+//	pMessageNode_t msg_node = NULL;
+//
+//	SYS_CALL_EVENT_HANDLE(eventgroup_id, EVENTGROUP_EVENT_FLAG_SET(mask), &result) {
+//		/* Do nothing. */
+//	}
+//	SYS_CALL_EVENT_HANDLE_TIMEOUT(&result) {
+//		return result;
+//	}
+//	SYS_CALL_EVENT_HANDLE_POLL(&result) {
+//		return result;
+//	}
+//
+//	if(msg_queue_id != ID_INVALID && message != NULL) {
+//		result = OS_RES_ERROR;
+//
+//		LIST_NODE_ACCESS_READ_BEGIN(&MessageQueueList, msg_queue_id) {
+//			queue = (pMessageQueue_t)ListNodeChildGet(node);
+//			if(queue != NULL) {
+//				result = OS_RES_RESTRICTED;
+//
+//				if(queue->task_id == TaskIdGet()) { /* Check if the calling task is also the owner. */
+//					result = OS_RES_FAIL;
+//
+//					msg_node = (pMessageNode_t)ListNodeChildGet(ListNodeRemoveFromHead(&queue->list));
+//					if(msg_node != NULL) {
+//						*message = msg_node->msg;
+//						result = KMemFreeObject((void **)&msg_node, NULL);
+//					}
+//				}
+//			}
+//		}
+//
+//	}
+//
+//	return result;
 }
 

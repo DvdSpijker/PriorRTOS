@@ -11,16 +11,32 @@
 #include "OsTypes.h"
 
 typedef enum {
-	MSG_DATA_TYPE_VALUE = 0,
-	MSG_DATA_TYPE_POINTER,
-}MessageDataType_t;
+	MSG_TYPE_INVALID = -1,
+
+	/* Value message. */
+	MSG_TYPE_U8,
+	MSG_TYPE_U16,
+	MSG_TYPE_U32,
+	MSG_TYPE_U64,
+	MSG_TYPE_S8,
+	MSG_TYPE_S16,
+	MSG_TYPE_S32,
+
+	/* Pointer message. */
+	MSG_TYPE_ARRAY,
+	MSG_TYPE_STRING,
+}MessageType_t;
 
 typedef struct {
-	U8_t msg_type; /* User defined message type. */
-	MessageDataType_t data_type; /* Message data type. */
+	void *p;
+	U32_t sz;
+}PointerMessage_t;
+
+typedef struct {
+	MessageType_t type; /* Message type. */
 	union {
-		void *ptr; /* Pointer message. */
-		U32_t val; /* Value message. */
+		PointerMessage_t ptr; /* Pointer message. */
+		U64_t val; /* Value message. */
 	}msg_data;
 }Message_t;
 
