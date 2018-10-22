@@ -1,5 +1,6 @@
 #include "utest.h"
 
+uint32_t sets_run;
 uint32_t tests_run;
 uint32_t tests_pass; 
 uint32_t tests_fail;
@@ -27,6 +28,11 @@ void ut_cnt_pass_inc(void)
 void ut_cnt_fail_inc(void)
 {
 	tests_fail++;
+}
+
+uint32_t ut_cnt_sets_get(void)
+{
+	return sets_run;
 }
 
 uint32_t ut_cnt_run_get(void)
@@ -73,6 +79,9 @@ int ut_run_test(ut_test_t test)
 int ut_run_set(ut_test_set_t *set)
 {
 	int res = UT_OK; 
+	int curr_passed = ut_cnt_pass_get();
+	int curr_failed = ut_cnt_fail_get();
+	int curr_total = ut_cnt_run_get();
 
 	ut_set_up = set->set_up;
 	ut_tear_down = set->tear_down;
@@ -83,8 +92,8 @@ int ut_run_set(ut_test_set_t *set)
 			res = set->tests[i]();
 		}
 	}
-
-	ut_set_report;
+	sets_run++;
+	ut_set_report(curr_total, curr_passed, curr_failed);
 	
 	return res;
 }
