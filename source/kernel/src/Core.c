@@ -754,7 +754,7 @@ static void ICoreTickCoop(void)
             KCoreFlagClear(CORE_FLAG_DISPATCH);
         }
 
-        /* Scheduler will only run if all needed lists and the scheduler itself are unlocked. */
+        /* Scheduler will only run if all required lists and the scheduler itself are unlocked. */
         if(!KernelReg.scheduler_lock && !ListIsLocked(&TcbWaitList) && !ListIsLocked(&TcbList) && !ListIsLocked(&EventList)) {
             ICoreSchedulerCycle();
         }
