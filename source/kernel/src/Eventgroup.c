@@ -149,17 +149,32 @@ OsResult_t EventgroupFlagsClear(Id_t eventgroup_id, U8_t mask)
 
 U8_t EventgroupFlagsGet(Id_t eventgroup_id, U8_t mask)
 {
-    U8_t event_flag_state = 0;
+    U8_t flags = 0;
     LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
 
         pEventGrp_t eventgroup = (pEventGrp_t)ListNodeChildGet(node);
         if(eventgroup != NULL) {
-            event_flag_state = ((eventgroup->event_reg & mask) ? 1 : 0);
+        	flags = eventgroup->event_reg & mask;
         }
     }
     LIST_NODE_ACCESS_END()
 
-    return event_flag_state;
+    return flags;
+}
+
+U8_t EventgroupFlagsAreSet(Id_t eventgroup_id, U8_t mask)
+{
+    U8_t set = 0;
+    LIST_NODE_ACCESS_READ_BEGIN(&EventGroupList, eventgroup_id) {
+
+        pEventGrp_t eventgroup = (pEventGrp_t)ListNodeChildGet(node);
+        if(eventgroup != NULL) {
+        	set = ((eventgroup->event_reg & mask) == mask ? 1 : 0);
+        }
+    }
+    LIST_NODE_ACCESS_END()
+
+    return set;
 }
 
 OsResult_t EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t timeout)

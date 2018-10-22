@@ -144,6 +144,20 @@ OsResult_t EventgroupFlagsClear(Id_t eventgroup_id, U8_t mask);
  ******************************************************************************/
 U8_t EventgroupFlagsGet(Id_t eventgroup_id, U8_t mask);
 
+/******************************************************************************
+ * @func: U8_t EventgroupFlagsAreSet(Id_t evengroup_id, U8_t mask)
+ *
+ * @desc: Returns 1 if the flags specified in the mask are set.
+ *
+ * @argin: (Id_t) eventgroup_id; Eventgroup ID.
+ * @argin: (U8_t) mask; Event flag mask.
+ *
+ * @rettype:  (U8_t); state
+ * @retval:   1; flags are set.
+ * @retval:   0; flags are not (all) set.
+ ******************************************************************************/
+U8_t EventgroupFlagsAreSet(Id_t eventgroup_id, U8_t mask);
+
 OsResult_t EventgroupFlagsRequireCleared(Id_t eventgroup_id, U8_t mask, U32_t timeout);
 
 OsResult_t EventgroupFlagsRequireSet(Id_t eventgroup_id, U8_t mask, U32_t timeout);
