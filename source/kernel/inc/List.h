@@ -160,15 +160,15 @@ OsResult_t ListMerge(LinkedList_t *list_x, LinkedList_t *list_y);
 /* V T Searches for the list for the ID. NULL
  * is returned if no node was found.
  * ListSearch takes advantage of sorted lists.
- * Worst case unsorted: O(N)
- * Worst case sorted:   O(N/2)
+ * Unsorted: O(N)
+ * Sorted:   O(N/2)
  */
 ListNode_t *ListSearch(LinkedList_t *list, Id_t id);
 
 /* V T Searches the list in a exclusively linear fashion for the
  * ID. NULL is returned if no node was found.
  * ListSearch does NOT take advantage of sorted lists.
- * Worst case: O(N)
+ * O(N)
  */
 ListNode_t *ListSearchLinear(LinkedList_t *list, Id_t id);
 
@@ -287,7 +287,7 @@ OsResult_t ListNodeChildSet(ListNode_t *node, void *child);
 /* V T Returns the node ID. */
 Id_t ListNodeIdGet(ListNode_t *node);
 
-/* V T Returns true if the node is in a list, false if not. */
+/* V T Returns true if the node is in a list, false if it is not. */
 bool ListNodeIsInList(LinkedList_t *list, ListNode_t *node);
 
 
