@@ -220,7 +220,7 @@
  * @dtype: U32_t
  * @unit: bytes
  *******************************************************/
-#define PRTOS_CONFIG_OS_HEAP_SIZE_BYTES				0x4400 /* 17kB */
+#define PRTOS_CONFIG_OS_HEAP_SIZE_BYTES				0x3C00 /* 15kB */
 
 /*******************************************************
  * @macro:  PRTOS_CONFIG_USER_HEAP_SIZE_BYTES
@@ -231,7 +231,7 @@
  * @dtype: U32_t
  * @unit: bytes
  *******************************************************/
-#define PRTOS_CONFIG_USER_HEAP_SIZE_BYTES			0x800 /* 2kB */
+#define PRTOS_CONFIG_USER_HEAP_SIZE_BYTES			0x400 /* 1kB */
 
 /*******************************************************
  * @macro: PRTOS_CONFIG_N_USER_POOLS
@@ -348,7 +348,7 @@
  *
  * @desc: Enable the Eventgroup module.
  *******************************************************/
-#define PRTOS_CONFIG_ENABLE_EVENTGROUPS                 1
+#define PRTOS_CONFIG_ENABLE_EVENTGROUPS					1
 
 #define PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_SET
 #define PRTOS_CONFIG_USE_EVENTGROUP_EVENT_FLAG_CLEAR
@@ -366,7 +366,16 @@
 #define PRTOS_CONFIG_USE_RINGBUFFER_EVENT_EMPTY_FULL
 #define PRTOS_CONFIG_USE_RINGBUFFER_EVENT_PURGE
 
+/* Message Module Settings. */
+/*******************************************************
+ * @macro: PRTOS_CONFIG_ENABLE_RINGBUFFERS
+ *
+ * @desc: Enable the Ringbuffer module.
+ *******************************************************/
+#define PRTOS_CONFIG_ENABLE_MESSAGES					1
 
+#define PRTOS_CONFIG_USE_MESSAGE_EVENT_SEND
+#define PRTOS_CONFIG_USE_MESSAGE_EVENT_RECEIVE
 
 
 /************ Utility Settings ************/
@@ -479,6 +488,6 @@
  * @desc: Enable the Shell module. The shell provides
  * a Command Line Interface.
  *******************************************************/
-#define PRTOS_CONFIG_ENABLE_SHELL						0
+#define PRTOS_CONFIG_ENABLE_SHELL						1
 
 #endif
