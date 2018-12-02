@@ -70,8 +70,8 @@ typedef struct Tcb_t {
     const void          *p_arg;
     U32_t               v_arg;
 
-#if PRTOS_CONFIG_ENABLE_TASKNAMES>0
-    char                generic_name[PRTOS_CONFIG_TASK_NAME_LENGTH_CHARS];
+#if PRTOS_CONFIG_ENABLE_TASKNAMES==1
+    char                name[PRTOS_CONFIG_TASK_NAME_LENGTH_CHARS];
 #endif
 
     TaskFlags_t         flags;
@@ -102,7 +102,7 @@ pTcb_t TcbRunning;/* Holds a pointer to the TCB
                      of the currently running task. */
 
 pTcb_t TcbIdle;/* Holds a pointer to the TCB
-                  of the OS Idle task (see Kernel_task.c). */
+                  of the OS Idle task (see KernelTaskIdle.c). */
 
 /* Kernel Task API */
 

@@ -426,7 +426,7 @@ void EventListPrint(LinkedList_t *list)
         event = (pEvent_t)ListNodeChildGet(node);
         for (; i < list->size; i++) {
 
-            printf("[%u][0x%04x][0x%08x]\n", i, event->source_id, (unsigned int)event->event_code);
+            printf("[%u][%08lx][0x%08lx]\n", i, event->source_id, event->event_code);
             node = ListNodePeekNext(node);
             if(node == NULL) {
                 break;

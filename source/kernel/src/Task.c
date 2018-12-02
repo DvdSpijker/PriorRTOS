@@ -49,6 +49,7 @@
 #include "include/OsTypes.h"
 
 #include <stdlib.h>
+#include <string.h> /* For memset. */
 
 LOG_FILE_NAME("Task.c");
 
@@ -57,8 +58,6 @@ LOG_FILE_NAME("Task.c");
 static OsResult_t ITaskEventRegister(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *event_id);
 
 extern U32_t OsRunTimeMicrosGet(void);
-
-extern void TaskGenericNameSet(Id_t task_id, const char* gen_name);
 
 /* -3 Event does not exist.
  * -1 Event has not occurred.
@@ -102,57 +101,59 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
         return ID_INVALID;
     }
 
-    volatile pTcb_t new_TCB;
+    pTcb_t new_tcb;
 
     /* Use data section of ObjectAlloc for Task stack in the future. */
-    new_TCB = (pTcb_t)KMemAllocObject(sizeof(Tcb_t), 0, NULL);
-    if (new_TCB == NULL) {
+    new_tcb = (pTcb_t)KMemAllocObject(sizeof(Tcb_t), 0, NULL);
+    if (new_tcb == NULL) {
         LOG_ERROR_NEWLINE("Failed to allocate memory for a task.");
         return ID_INVALID;
     }
 
     OsResult_t result;
-    ListNodeInit(&new_TCB->list_node, (void*)new_TCB);
+    ListNodeInit(&new_tcb->list_node, (void*)new_tcb);
 
-    ListInit(&new_TCB->event_list, 0);
-    new_TCB->handler = handler;
-    new_TCB->priority = KCalculatePriority(category, priority);
-    new_TCB->category = category;
-    new_TCB->p_arg = p_arg;
-    new_TCB->v_arg = v_arg;
-    new_TCB->state = TASK_STATE_IDLE;
-    new_TCB->active_time_us = 0;
-    new_TCB->run_time_us = 0;
-    new_TCB->deadline_time_us = PRTOS_CONFIG_REAL_TIME_TASK_DEADLINE_DEFAULT_MS;
+    ListInit(&new_tcb->event_list, 0);
+    new_tcb->handler = handler;
+    new_tcb->priority = KCalculatePriority(category, priority);
+    new_tcb->category = category;
+    new_tcb->p_arg = p_arg;
+    new_tcb->v_arg = v_arg;
+    new_tcb->state = TASK_STATE_IDLE;
+    new_tcb->active_time_us = 0;
+    new_tcb->run_time_us = 0;
+    new_tcb->deadline_time_us = PRTOS_CONFIG_REAL_TIME_TASK_DEADLINE_DEFAULT_MS;
+#if PRTOS_CONFIG_ENABLE_TASKNAMES==1
+    memset(new_tcb->name, 0, PRTOS_CONFIG_TASK_NAME_LENGTH_CHARS);
+#endif
+    new_tcb->flags = 0;
 
-    new_TCB->flags = 0;
-
-    result = ListNodeAddSorted(&TcbList, &new_TCB->list_node);
+    result = ListNodeAddSorted(&TcbList, &new_tcb->list_node);
 
     if(result != OS_RES_OK) {
         LOG_ERROR_NEWLINE("A task could not be added to the list.");
-        ListNodeDeinit(&TcbList, &new_TCB->list_node);
-        KMemFreeObject((void **)&new_TCB, NULL);
+        ListNodeDeinit(&TcbList, &new_tcb->list_node);
+        KMemFreeObject((void **)&new_tcb, NULL);
         return ID_INVALID;
     }
     
     /* Handle task creation parameters. */
     if(param != TASK_PARAMETER_NONE)  {
         if(param & TASK_PARAMETER_ESSENTIAL) {
-            KTaskFlagSet(new_TCB, TASK_FLAG_ESSENTIAL);
+            KTaskFlagSet(new_tcb, TASK_FLAG_ESSENTIAL);
         }
         if(param & TASK_PARAMETER_NO_PREEM) {
-            KTaskFlagSet(new_TCB, TASK_FLAG_NO_PREEM);
+            KTaskFlagSet(new_tcb, TASK_FLAG_NO_PREEM);
         }
         if(param & TASK_PARAMETER_START) {
-            TaskResumeWithVarg(new_TCB->list_node.id, v_arg);
+            TaskResumeWithVarg(new_tcb->list_node.id, v_arg);
         }
     }
 #ifdef PRTOS_CONFIG_USE_TASK_EVENT_CREATE_DELETE
-    EventEmit(new_TCB->list_node.id, TASK_EVENT_CREATE, EVENT_FLAG_NONE);
+    EventEmit(new_tcb->list_node.id, TASK_EVENT_CREATE, EVENT_FLAG_NONE);
 #endif
-    LOG_INFO_NEWLINE("Task created: %08x", new_TCB->list_node.id);
-    return new_TCB->list_node.id;
+    LOG_INFO_NEWLINE("Task created: %08x", new_tcb->list_node.id);
+    return new_tcb->list_node.id;
 }
 
 OsResult_t TaskDelete(Id_t *task_id)
@@ -185,8 +186,8 @@ OsResult_t TaskDelete(Id_t *task_id)
     return result;
 }
 
-#if PRTOS_CONFIG_ENABLE_TASKNAMES>0
-void TaskGenericNameSet(Id_t task_id, const char* gen_name)
+#if PRTOS_CONFIG_ENABLE_TASKNAMES==1
+void TaskNameSet(Id_t task_id, const char* name)
 {
     pTcb_t tcb = NULL;
     OsResult_t result = OS_RES_ERROR;
@@ -199,7 +200,7 @@ void TaskGenericNameSet(Id_t task_id, const char* gen_name)
 
     if(tcb != NULL) {
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
-            strcpy(tcb->generic_name,gen_name);
+            strcpy(tcb->name,name);
             result = OS_RES_OK;
             ListNodeUnlock(&tcb->list_node, LIST_LOCK_MODE_WRITE);
         }
@@ -462,7 +463,6 @@ U32_t TaskRunTimeGet(void)
 
 static S8_t ITaskEventStateGet(pEvent_t event)
 {
-
     S8_t result = 0;
     if(event != NULL) {
         if(ListNodeLock(&event->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {

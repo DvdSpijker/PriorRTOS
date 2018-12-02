@@ -43,8 +43,8 @@ if(*p_res == OS_RES_EVENT) \
 #else
 
 /* System Call header for Pre-Emptive handling. 
- * Contains the label 'preem_ret' which is 
- * jumped to when returning from TaskWait and
+ * Defines the label 'wait_ret' which is
+ * jumped to when returning from KSysCallWait and
  * the event has occurred. */
 #define SYS_CALL_EVENT_HANDLE(obj_id, evt, p_res) \
 wait_ret:
@@ -57,8 +57,8 @@ else if(*p_res == OS_RES_TIMEOUT) \
 else if(*p_res == OS_RES_POLL) \
 
 
-/* Registers to the specified event
- * from the specified object ID with given timeout. 
+/* Registers the calling task to the specified event
+ * of the specified object ID with given timeout.
  * The poll/wait result is placed in p_res. 
  */
 #if (defined(PRTOS_CONFIG_USE_SCHEDULER_COOP)||defined(PRTOS_CONFIG_USE_SYS_CALL_NO_BLOCK))
@@ -70,13 +70,16 @@ if(OsIsrNestCountGet() == 0) { \
 } \
 
 #else
+/* The list node (ls_node) is unlocked before calling wait to enable
+ * other tasks to access the object. KSysCallWait only returns if the event
+ * or a timeout has occurred. */
 #define SYS_CALL_EVENT_REGISTER(ls_node, obj_id, evt, p_res, t_out) \
-*p_res = OS_RES_ERROR;
+*p_res = OS_RES_ERROR; \
 if(OsIsrNestCountGet() == 0) { \
 ListNodeUnlock(ls_node); \
 *p_res = KSysCallWait(obj_id, evt, t_out); \
 if(*p_res == OS_RES_EVENT) { \
-    goto preem_ret; \
+    goto wait_ret; \
 }} \
 
 #endif

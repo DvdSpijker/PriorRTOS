@@ -14,6 +14,7 @@
 
 #define ID_INVALID           0xFFFFFFFF /* Invalid ID definition. */
 
+
 /* All OS resources are assigned a unique ID.
  * An ID is requested using IdRequest.
  * An ID consists of 2 parts: the ID group and the sequence number. */

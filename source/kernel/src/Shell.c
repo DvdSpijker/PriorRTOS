@@ -330,7 +330,7 @@ void TaskShellReadParse(const void* p_arg, U32_t v_arg)
     }
     TASK_INIT_END();
 
-    result =TaskPoll(ShellRxRingbuf, RINGBUF_EVENT_DATA_IN, OS_TIMEOUT_INFINITE, true);
+    result = TaskPoll(ShellRxRingbuf, RINGBUF_EVENT_DATA_IN, OS_TIMEOUT_INFINITE, true);
 	if( (result == OS_RES_EVENT) || (result == OS_RES_POLL) ) {
 		read_amount = RingbufDataCountGet(ShellRxRingbuf);
 		RingbufRead(ShellRxRingbuf, (RingbufBase_t *)&LineBuffer[line_write_index], &read_amount, OS_TIMEOUT_INFINITE);

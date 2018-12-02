@@ -1005,7 +1005,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
     if(ListSizeGet(to_list) == 0) {
         //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at head.", task->list_node.id);
         if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_HEAD) != OS_RES_OK) {
-            LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, from_list);
+            LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, to_list);
         }
     } else {
         LIST_ITERATOR_BEGIN(&it, to_list, LIST_ITERATOR_DIRECTION_FORWARD);
@@ -1020,7 +1020,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
                 if(task->priority > compare_task->priority) {
                     //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x before %04x.", task->list_node.id, it.current_node->id);
                     if(ListNodeAddAtNode(to_list, &task->list_node, it.current_node, LIST_ADD_BEFORE) != OS_RES_OK) {
-                        LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, from_list);
+                        LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, to_list);
                         while(1);
                     }
                     return;
@@ -1028,7 +1028,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
             } else {
                 //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at tail.", task->list_node.id);
                 if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_TAIL) != OS_RES_OK) {
-                    LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, from_list);
+                    LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, to_list);
                     while(1);
                 }
                 return;

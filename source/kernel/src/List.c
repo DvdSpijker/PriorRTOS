@@ -1089,7 +1089,7 @@ char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size)
         buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s", PrintToBufferText[3]);
         LIST_ITERATOR_BEGIN(&it, list, LIST_ITERATOR_DIRECTION_FORWARD) {
             if(it.current_node != NULL) {
-                buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s%04x", PrintToBufferText[4], it.current_node->id);
+                buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s %08lx", PrintToBufferText[4], it.current_node->id);
             }
         }
         LIST_ITERATOR_END(&it);

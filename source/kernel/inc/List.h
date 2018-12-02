@@ -296,9 +296,9 @@ bool ListNodeIsInList(LinkedList_t *list, ListNode_t *node);
  * Searches for the node in the list belonging to the ID.
  * An attempt to lock the node is done.
  * If successful, the block between _BEGIN and _END is executed. */
-#define LIST_NODE_ACCESS_READ_BEGIN(list, id)                    \
+#define LIST_NODE_ACCESS_READ_BEGIN(p_list, id)                    \
 static ListNode_t *node = NULL;                               \
-node = ListSearch(list, id);                                     \
+node = ListSearch(p_list, id);                                     \
 if(node != NULL) {                                               \
     if(ListNodeLock(node, LIST_LOCK_MODE_READ) == OS_RES_OK) {    \
 
@@ -306,9 +306,9 @@ if(node != NULL) {                                               \
  * Searches for the node in the list belonging to the ID.
  * An attempt to lock the node is done.
  * If successful, the block between _BEGIN and _END is executed. */
-#define LIST_NODE_ACCESS_WRITE_BEGIN(list, id)                   \
+#define LIST_NODE_ACCESS_WRITE_BEGIN(p_list, id)                   \
 static ListNode_t *node = NULL;                               \
-node = ListSearch(list, id);                                     \
+node = ListSearch(p_list, id);                                     \
 if(node != NULL) {                                               \
     if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {   \
 

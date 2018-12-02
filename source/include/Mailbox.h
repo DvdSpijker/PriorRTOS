@@ -46,7 +46,7 @@ extern "C" {
 #include "OsTypes.h"
 #include "EventDef.h"
 
-/* Mailbox Event macros */
+/* Mailbox Events */
 #define MAILBOX_EVENT_CREATE         EVENT_TYPE_CREATE
 #define MAILBOX_EVENT_DELETE         EVENT_TYPE_DELETE
 

@@ -440,8 +440,8 @@ if(init_done == 0) {                    \
 }                                      \
 
 
-#if PRTOS_CONFIG_ENABLE_TASKNAMES>0
-void TaskGenericNameSet(Id_t task_id, const char* gen_name);
+#if PRTOS_CONFIG_ENABLE_TASKNAMES==1
+void TaskNameSet(Id_t task_id, const char* gen_name);
 #endif
 
 
