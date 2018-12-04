@@ -87,6 +87,10 @@ extern "C" {
 #include "Semaphore.h"
 #endif
 
+#if PRTOS_CONFIG_ENABLE_MESSAGES==1
+#include "Message.h"
+#endif
+
 #include <stdbool.h>
 
 /******************************************************************************
