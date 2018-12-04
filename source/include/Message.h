@@ -12,6 +12,8 @@
 #include "OsTypes.h"
 #include "EventDef.h"
 
+#include <stdbool.h>
+
 /* Message Queue Events */
 #define MESSAGE_EVENT_CREATE	EVENT_TYPE_CREATE
 #define MESSAGE_EVENT_DELETE	EVENT_TYPE_DELETE
@@ -45,8 +47,9 @@ typedef enum {
 }MessageDataType_t;
 
 typedef struct {
-	void *p;	/* Pointer to the array/string. */
-	U32_t size;	/* Array/string size. */
+	bool copy;	/* The data is copied if true. TODO: Implementation. */
+	void *p;	/* Pointer to the data. */
+	U32_t size;	/* Data size. */
 }PointerMessage_t;
 
 typedef struct {
@@ -73,6 +76,17 @@ typedef struct {
  * @retval:   Other; valid ID.
  ******************************************************************************/
 Id_t MessageQueueCreate(Id_t task_id, U32_t max_size);
+
+/******************************************************************************
+ * @func: U32_t MessageQueueSizeGet(Id_t msg_queue_id)
+ *
+ * @desc: Returns the number of message in the Message Queue.
+ *
+ * @argin: (Id_t) msg_queue_id; Message Queue ID.
+ *
+ * @rettype:  (U32_t); queue size.
+ ******************************************************************************/
+U32_t MessageQueueSizeGet(Id_t msg_queue_id);
 
 /******************************************************************************
  * @func: OsResult_t MessageSend(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms)

@@ -66,6 +66,21 @@ Id_t MessageQueueCreate(Id_t task_id, U32_t max_size)
 	return result;
 }
 
+U32_t MessageQueueSizeGet(Id_t msg_queue_id)
+{
+	U32_t size = 0;
+	pMessageQueue_t queue = NULL;
+
+	LIST_NODE_ACCESS_WRITE_BEGIN(&MessageQueueList, msg_queue_id) {
+		queue = (pMessageQueue_t)ListNodeChildGet(node);
+		if(queue != NULL) {
+			size = ListSizeGet(&queue->list);
+		}
+	} LIST_NODE_ACCESS_END();
+
+	return size;
+}
+
 OsResult_t MessageSend(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms)
 {
 	OsResult_t result = OS_RES_INVALID_ARGUMENT;
