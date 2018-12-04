@@ -49,8 +49,8 @@ static U8_t IShellSplitLine(char *line, char **args);
 S8_t IShellCommandTokensContainArgument(char **tokens, U8_t n_tokens, const char *argument);
 
 /* Shell Tasks. */
-void TaskShellReadParse(const void *p_arg, U32_t v_arg);
-Id_t TidShellReadParse;
+void TaskShellParse(const void *p_arg, U32_t v_arg);
+Id_t TidShellParse;
 
 void TaskShellExecute(const void *p_arg, U32_t v_arg);
 
@@ -102,12 +102,12 @@ OsResult_t KShellInit(void)
         ShellCommandRegister(&ShellCommandRun);
 
         if(result == OS_RES_OK) {
-            TidShellReadParse = KernelTaskCreate(TaskShellReadParse, 3, TASK_PARAMETER_NONE, 0, NULL, 0);
-            if(TidShellReadParse == ID_INVALID) {
+        	TidShellParse = KernelTaskCreate(TaskShellParse, 3, TASK_PARAMETER_NONE, 0, NULL, 0);
+            if(TidShellParse == ID_INVALID) {
                 result = OS_RES_ERROR;
             }
             if(result == OS_RES_OK) {
-                result = TaskResumeWithVarg(TidShellReadParse, 0);
+                result = TaskNotify(TidShellParse, 0);
             }
         }
     }
@@ -142,6 +142,7 @@ S8_t IShellCommandTokensContainArgument(char **tokens, U8_t n_tokens, const char
 
 U16_t ShellPutRaw(char *message, ...)
 {
+	U32_t act_size;
     va_list args;
     va_start(args, message);
 
@@ -149,7 +150,7 @@ U16_t ShellPutRaw(char *message, ...)
     U32_t est_size = 30;
     char *msg_buffer = malloc(est_size);
 
-    U32_t act_size = vsnprintf(msg_buffer, est_size, message, args);
+    act_size = vsnprintf(msg_buffer, est_size, message, args);
     if(act_size > est_size) {
         msg_buffer = realloc(msg_buffer, act_size);
         if(msg_buffer == NULL) {
@@ -160,17 +161,18 @@ U16_t ShellPutRaw(char *message, ...)
     }
     RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_TIMEOUT_INFINITE);
 
-cleanup:
-	va_end(args);
-    free(msg_buffer);
-    return act_size;
+    cleanup:
+        free(msg_buffer);
 #else
-    return vprintf(message, args);
+	act_size = vprintf(message, args);
 #endif
+	va_end(args);
+	return act_size;
 }
 
 U16_t ShellPutRawNewline(char *message, ...)
 {
+	U32_t act_size;
     va_list args;
     va_start(args, message);
 
@@ -178,7 +180,7 @@ U16_t ShellPutRawNewline(char *message, ...)
     U32_t est_size = 30;
     char *msg_buffer = malloc(est_size);
     msg_buffer[0] = '\n';
-    U32_t act_size = vsnprintf(&msg_buffer[1], (est_size - 1), message, args);
+    act_size = vsnprintf(&msg_buffer[1], (est_size - 1), message, args);
     if(act_size > (est_size - 1)) {
         msg_buffer = realloc(msg_buffer, (act_size+1));
         if(msg_buffer == NULL) {
@@ -191,18 +193,19 @@ U16_t ShellPutRawNewline(char *message, ...)
     act_size+=1;
     RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_TIMEOUT_INFINITE);
 
-cleanup:
-	va_end(args);
-    free(msg_buffer);
-    return act_size;
+    cleanup:
+        free(msg_buffer);
 #else
-    printf("\n");
-    return vprintf(message, args);
+	printf("\n");
+	act_size = vprintf(message, args);
 #endif
+	va_end(args);
+	return act_size;
 }
 
 U16_t ShellPut(char *message, ...)
 {
+	U32_t act_size;
     va_list args;
     va_start(args, message);
 
@@ -213,7 +216,7 @@ U16_t ShellPut(char *message, ...)
     for (; offset < SHELL_MSG_START_LENGTH; offset++) {
         msg_buffer[offset] = ShellMessageStart[offset];
     }
-    U32_t act_size = vsnprintf(&msg_buffer[offset], (est_size - offset), message, args);
+    act_size = vsnprintf(&msg_buffer[offset], (est_size - offset), message, args);
     if(act_size > (est_size - offset)) {
         msg_buffer = realloc(msg_buffer, (act_size + offset));
         if(msg_buffer == NULL) {
@@ -226,13 +229,13 @@ U16_t ShellPut(char *message, ...)
     RingbufWrite(ShellTxRingbuf, (RingbufBase_t *)msg_buffer, &act_size, OS_TIMEOUT_INFINITE);
 
 cleanup:
-    va_end(args);
     free(msg_buffer);
-    return act_size;
 #else
     printf("%s", ShellMessageStart);
-    return vprintf(message, args);
+    act_size = vprintf(message, args);
 #endif
+    va_end(args);
+    return act_size;
 }
 
 static void IShellReplyInvalidNumberArgs(char *command, uint8_t n_args)
@@ -313,7 +316,7 @@ struct ShellCommand *ShellCommandFromName(char *name)
 
 /* Shell Tasks. */
 
-void TaskShellReadParse(const void* p_arg, U32_t v_arg)
+void TaskShellParse(const void* p_arg, U32_t v_arg)
 {
     OS_ARG_UNUSED(p_arg);
     OS_ARG_UNUSED(v_arg);
@@ -366,7 +369,7 @@ void TaskShellReadParse(const void* p_arg, U32_t v_arg)
 
 void TaskShellExecute(const void* p_arg, U32_t v_arg)
 {
-    OS_ARG_UNUSED(p_arg);
+
     U8_t n_tokens = v_arg;
 	char **tokens = (char **)p_arg;
 	Id_t tid = TaskIdGet();
@@ -386,7 +389,7 @@ void TaskShellExecute(const void* p_arg, U32_t v_arg)
             goto task_exit;
         }
     }
-	
+
     IShellReplyInvalidCommand(tokens[0]); /* Only called if no command was found. */
 
 task_exit:
