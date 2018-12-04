@@ -20,7 +20,7 @@ OsResult_t ShellCommandExecuteRun(char **tokens, U8_t n_tokens)
 	/* Run task by ID. */
 	Id_t task_id = ConvertHexStringToId(tokens[1]);
 	if(OsTaskExists(task_id)) {
-		TaskResumeWithVarg(task_id, 0);
+		TaskNotify(task_id, 0);
 	} else {
 		ShellPut("Specified task does not exist.");
 	}

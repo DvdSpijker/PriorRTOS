@@ -146,7 +146,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
             KTaskFlagSet(new_tcb, TASK_FLAG_NO_PREEM);
         }
         if(param & TASK_PARAMETER_START) {
-            TaskResumeWithVarg(new_tcb->list_node.id, v_arg);
+            TaskNotify(new_tcb->list_node.id, v_arg);
         }
     }
 #ifdef PRTOS_CONFIG_USE_TASK_EVENT_CREATE_DELETE
@@ -243,7 +243,7 @@ OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)
     return result;
 }
 
-OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg)
+OsResult_t TaskNotify(Id_t task_id, U32_t v_arg)
 {
     if(task_id == ID_INVALID) {
         return OS_RES_INVALID_ID;

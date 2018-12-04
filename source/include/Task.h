@@ -243,13 +243,13 @@ U32_t TaskRunTimeGet(void);
 
 
 /******************************************************************************
- * @func: OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg)
+ * @func: OsResult_t TaskNotify(Id_t task_id, U32_t v_arg)
  *
  * @desc: Resumes the task and passes a value argument to it.
  * The value argument will be passed to the task upon execution.
  * NOTE 1:  This does NOT work when the task is disabled (TASK_STATE_DISABLED).
  * NOTE 2:  If task v_arg is unused, pass 0.
- * NOTE 3:  A task CANNOT resume itself.
+ * NOTE 3:  A task CANNOT notify itself.
  *
  * @argin: (Id_t) task_id; Task ID.
  * @argin: (U32_t) v_arg; Task Value argument.
@@ -258,7 +258,7 @@ U32_t TaskRunTimeGet(void);
  * @retval:   OS_RES_OK; if the task was resumed.
  * @retval:   OS_RES_ERROR; if the task could not be found.
  ******************************************************************************/
-OsResult_t TaskResumeWithVarg(Id_t task_id, U32_t v_arg);
+OsResult_t TaskNotify(Id_t task_id, U32_t v_arg);
 
 /******************************************************************************
  * @func: OsResult_t TaskResume(Id_t task_id)
