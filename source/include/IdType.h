@@ -10,10 +10,21 @@
 
 #include "StdTypes.h"
 
-#define ID_LIST_SIZE_MAX 5
+#define ID_LIST_SIZE_MAX 5 /* Max. 127 */
 
-#define ID_INVALID           0xFFFFFFFF /* Invalid ID definition. */
+#define ID_INVALID			0xFFFFFFFF /* Invalid ID definition. */
+#define ID_GROUP_INVALID	0xFF000000
+#define ID_SEQ_NUM_MAX		0x00FFFFFF
 
+#define ID_MASK_GROUP		0xFF000000 /* ID group mask. */
+#define ID_MASK_SEQ_NUM		0x00FFFFFF /* Sequence mask. */
+#define ID_SHIFT_AMOUNT_GROUP	24
+
+#define ID_GROUP_IS_VALID(group) ( (((Id_t)group & ID_MASK_GROUP) != ID_GROUP_INVALID) \
+									&& ((((Id_t)group & ID_MASK_GROUP) >> ID_SHIFT_AMOUNT_GROUP) < ID_GROUP_NUM) ) 
+#define ID_IS_VALID(id) ( id != ID_INVALID && ID_GROUP_IS_VALID(id) )
+
+#define ID_LIST_EMPTY 0
 
 /* All OS resources are assigned a unique ID.
  * An ID is requested using IdRequest.
@@ -29,12 +40,13 @@ typedef enum {
 	ID_GROUP_MAILBOX,
 	ID_GROUP_RINGBUF,
 	ID_GROUP_MESSAGE_QUEUE,
-	ID_GROUP_NUM, /* Must be the last member of this enum. */
+	ID_GROUP_NUM, /* Must be the second to last member of this enum. */
+	ID_GROUP_INV = 0xFF, /* Must be the last member of this enum. */
 } IdGroup_t;
 
 typedef struct {
 	Id_t ids[ID_LIST_SIZE_MAX];
-	S8_t n;
+	U8_t n;
 }IdList_t;
 
 /******************************************************************************
@@ -57,6 +69,7 @@ Id_t IdSequenceNumberGet(Id_t id);
  * @argin: (Id_t) id; ID.
  *
  * @rettype:  (IdGroup_t); ID group
+ * @retval:   ID_GROUP_INV; if the ID is invalid.
  * @retval:   Valid IdGroup_t; if the ID is valid.
  ******************************************************************************/
 IdGroup_t IdGroupGet(Id_t id);
@@ -79,7 +92,7 @@ U8_t IdIsInGroup(Id_t id, IdGroup_t group);
 void IdListInit(IdList_t *list);
 void IdListIdAdd(IdList_t *list, Id_t id);
 Id_t IdListIdRemove(IdList_t *list);
-S8_t IdListCount(IdList_t *list);
+U8_t IdListCount(IdList_t *list);
 void IdListCopy(IdList_t *list_to, IdList_t *list_from);
 
 #endif /* ID_TYPE_H_ */
