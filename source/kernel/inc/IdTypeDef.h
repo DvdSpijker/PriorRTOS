@@ -8,7 +8,9 @@
 #ifndef ID_TYPE_DEF_H_
 #define ID_TYPE_DEF_H_
 
-#include "include/IdType.h"
+#include "IdType.h"
+
+#define ID_LIST_SIZE_ABS_MAX 127
 
 /* Initialize ID pools. */
 void KIdInit(void);
