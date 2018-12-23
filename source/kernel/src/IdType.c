@@ -6,20 +6,18 @@
  */
 
 
-#include "include/IdType.h"
-#include "kernel/inc/IdTypeDef.h"
+#include "IdType.h"
+#include "IdTypeDef.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define ID_MASK_GROUP	0xFF000000 /* ID group mask. */
-#define ID_MASK_SEQ_NUM	0x00FFFFFF /* Sequence mask. */
-#define ID_SHIFT_AMOUNT_GROUP	24
+#if ID_LIST_SIZE_MAX > ID_LIST_SIZE_ABS_MAX 
+#error "Value of ID_LIST_SIZE_MAX is larger than the allowed maximum."
+#endif
 
-#define GROUP_FROM_ID(id) (IdGroup_t)((U8_t)((id & ID_MASK_GROUP) >> ID_SHIFT_AMOUNT_GROUP))
+#define GROUP_FROM_ID(id) (IdGroup_t)((id & ID_MASK_GROUP) >> ID_SHIFT_AMOUNT_GROUP)
 #define SEQ_NUM_FROM_ID(id) (id & ID_MASK_SEQ_NUM)
-
-#define ID_LIST_EMPTY -1
 
 struct IdPool{
 	Id_t free_id;
@@ -63,16 +61,27 @@ Id_t KIdRequest(IdGroup_t type)
 
 Id_t IdSequenceNumberGet(Id_t id)
 {
+	if(!ID_IS_VALID(id)) {
+		return ID_INVALID;
+	}
+
 	return SEQ_NUM_FROM_ID(id);
 }
 
 IdGroup_t IdGroupGet(Id_t id)
 {
+	if(!ID_IS_VALID(id)) {
+		return ID_GROUP_INV;
+	}
 	return GROUP_FROM_ID(id);
 }
 
 U8_t IdIsInGroup(Id_t id, IdGroup_t group)
 {
+	if(!ID_IS_VALID(id) || !ID_GROUP_IS_VALID(group)) {
+		return 0;
+	}
+
     return (GROUP_FROM_ID(id) == group ? 1 : 0);
 }
 
@@ -82,10 +91,10 @@ void IdListInit(IdList_t *list)
         return;
     }
     
-    list->n = ID_LIST_EMPTY;								
-    for(U8_t i = 0; i < ID_LIST_SIZE_MAX; i++) {	
-        list->ids[i] = ID_INVALID;			
-    }									
+    list->n = ID_LIST_EMPTY;
+    for(U8_t i = 0; i < ID_LIST_SIZE_MAX; i++) {
+        list->ids[i] = ID_INVALID;
+    }
 }
 
 void IdListIdAdd(IdList_t *list, Id_t id)
@@ -94,9 +103,9 @@ void IdListIdAdd(IdList_t *list, Id_t id)
         return;
     }
     
-    if(list->n < ID_LIST_SIZE_MAX) {
-        list->n++;
+    if((list->n + 1) <= ID_LIST_SIZE_MAX) {
         list->ids[list->n] = id;
+		list->n++;
     }    
 }
 
@@ -108,15 +117,16 @@ Id_t IdListIdRemove(IdList_t *list)
     
     Id_t rm_id = ID_INVALID;
     
-    if(list->n != ID_LIST_EMPTY) {
-        rm_id = list->ids[list->n];
+    if((list->n - 1) >= ID_LIST_EMPTY) {
+        rm_id = list->ids[list->n - 1];
+		list->ids[list->n - 1] = ID_INVALID;
         list->n--;
     }  
     
     return rm_id;
 }
 
-S8_t IdListCount(IdList_t *list)
+U8_t IdListCount(IdList_t *list)
 {
     if(list == NULL) {
         return ID_LIST_EMPTY;
