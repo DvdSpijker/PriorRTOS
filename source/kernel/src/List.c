@@ -6,42 +6,46 @@
  */
 
 
-#include "kernel/inc/List.h"
+#include "List.h"
 
-#include "include/Convert.h"
-#include "include/Logger.h"
-#include "kernel/inc/IdTypeDef.h"
+//#include "Logger.h"
+#include "IdTypeDef.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 
-LOG_FILE_NAME("List.c");
+#if LIST_LOCK_READ_COUNT_MAX > 63
+#error "LIST_LOCK_READ_COUNT_MAX exceeds the maximum allowed value of 63."
+#endif
 
-#define ID_BUFFER_SLOT_INVALID        0xFF
-#define ID_BUFFER_SLOT_OCCUP          0x01
-#define ID_BUFFER_SLOT_FREE           0x02
+#define LOG_ERROR_NEWLINE(msg, ...)
+#define LOG_ERROR_APPEND(msg, ...)
 
-#define LOCK_MASK_CHECKED          0b01000000
+//LOG_FILE_NAME("List.c");
+
 #define LOCK_MASK_MODE             0b10000000
 #define LOCK_MASK_COUNT            0b00111111
-#define LOCK_COUNT_MAX_VALUE       63
 
 #define LOCK_MODE_SET_WRITE(lock) (lock |= LOCK_MASK_MODE)
 #define LOCK_MODE_SET_READ(lock) (lock &= ~(LOCK_MASK_MODE))
-#define LOCK_CHECKED_BIT_SET(lock) (lock |= LOCK_MASK_CHECKED)
-#define LOCK_CHECKED_BIT_GET(lock) ((lock & LOCK_MASK_CHECKED) ? true : false)
-#define LOCK_CHECKED_BIT_CLEAR(lock) (lock &= ~(LOCK_MASK_CHECKED))
-#define LOCK_COUNT_INC(lock) if((lock & LOCK_MASK_COUNT) < LOCK_COUNT_MAX_VALUE)++lock
+#define LOCK_COUNT_INC(lock) if((lock & LOCK_MASK_COUNT) < LIST_LOCK_READ_COUNT_MAX)++lock
 #define LOCK_COUNT_DEC(lock) if((lock & LOCK_MASK_COUNT) > 0)--lock
 #define LOCK_COUNT_GET(lock)(lock & LOCK_MASK_COUNT)
 
 #define LOCK_MODE_IS_WRITE(lock)((lock & LOCK_MASK_MODE) ? true : false)
 
-#define LOCK_MODE_IS_READ(lock)((lock & LOCK_MASK_MODE) ? true : false)
+#define LOCK_MODE_IS_READ(lock)((lock & LOCK_MASK_MODE) ? false : true)
 
 
-extern void OsCritSectBegin(void);
-extern void OsCritSectEnd(void);
+void OsCritSectBegin(void)
+{
+	
+}
+
+void OsCritSectEnd(void)
+{
+	
+}
 
 /* Internal functions. */
 static void IListIdInit(LinkedList_t *list, IdGroup_t id_group);
@@ -54,8 +58,12 @@ static OsResult_t UtilUnlock(volatile U8_t *lock);
 
 
 
-void ListInit(LinkedList_t *list, IdGroup_t id_group)
+OsResult_t ListInit(LinkedList_t *list, IdGroup_t id_group)
 {
+    if(list == NULL) {
+        return OS_RES_INVALID_ARGUMENT;
+    }
+
     list->head = list->tail = NULL;
     list->lock = 0;
     list->size = 0;
@@ -66,6 +74,8 @@ void ListInit(LinkedList_t *list, IdGroup_t id_group)
 #endif
 
     IListIdInit(list, id_group);
+	
+	return OS_RES_OK;
 }
 
 OsResult_t ListDestroy(LinkedList_t *list)
@@ -79,10 +89,9 @@ OsResult_t ListDestroy(LinkedList_t *list)
         return OS_RES_LOCKED;
     }
 
-    /* Note that the list will be locked, but not unlocked.
+    /* Note: The list will be locked, but not unlocked.
      * The only function ignoring locks, ListInit, can unlock
      * the list. */
-
     ListNode_t *rm_node = NULL;
     OsResult_t result = OS_RES_OK;
     for (ListSize_t i = 0; i <= list->size; i++) {
@@ -112,6 +121,7 @@ OsResult_t ListLock(LinkedList_t *list, U8_t mode)
     if(result != OS_RES_OK) {
         LOG_ERROR_NEWLINE("Failed to lock list %p in %s mode. Lock val: 0x%02x", list, (mode == 0 ? "READ" : "WRITE"), list->lock);
     }
+    
     return result;
 }
 
@@ -266,6 +276,7 @@ OsResult_t ListNodeInit(ListNode_t *node, void *child)
     node->child = child;
     node->lock = 0;
     node->id = ID_INVALID;
+
     return OS_RES_OK;
 }
 
@@ -1089,7 +1100,7 @@ char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size)
         buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s", PrintToBufferText[3]);
         LIST_ITERATOR_BEGIN(&it, list, LIST_ITERATOR_DIRECTION_FORWARD) {
             if(it.current_node != NULL) {
-                buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s %08lx", PrintToBufferText[4], it.current_node->id);
+                buffer_write_offset += sprintf(&format_buffer[buffer_write_offset], "%s%04x", PrintToBufferText[4], it.current_node->id);
             }
         }
         LIST_ITERATOR_END(&it);
@@ -1107,55 +1118,28 @@ static OsResult_t UtilLock(volatile U8_t *lock, U8_t mode)
     OsResult_t result = OS_RES_ERROR;
 
     if(mode == LIST_LOCK_MODE_READ) {
-
-        /* If not locked, check value of the lock counter.
-         * If the counter has not reached its max. value
-         * increment, otherwise return. */
-        if(LOCK_COUNT_GET(*lock) == LOCK_COUNT_MAX_VALUE) {
-            result = OS_RES_LOCKED;
-            goto exit;
-        } else {
+    	if(LOCK_MODE_IS_READ(*lock)) {
+    		if(LOCK_COUNT_GET(*lock) == LIST_LOCK_READ_COUNT_MAX) {
+    			result = OS_RES_LOCKED;
+    		} else {
+    			LOCK_COUNT_INC(*lock);
+    			result = OS_RES_OK;
+    		}
+    	} else {            
+    		result = OS_RES_LOCKED;
+    	}
+    } else if(mode == LIST_LOCK_MODE_WRITE) {
+        if(LOCK_COUNT_GET(*lock) == 0) {
+        	LOCK_MODE_SET_WRITE(*lock);
             LOCK_COUNT_INC(*lock);
             result = OS_RES_OK;
-            goto exit;
-        }
-    } else if(mode == LIST_LOCK_MODE_WRITE) {
-
-        if(LOCK_CHECKED_BIT_GET(*lock)) {
-            if(LOCK_COUNT_GET(*lock) == LOCK_COUNT_MAX_VALUE) {
-                result = OS_RES_LOCKED;
-                goto exit;
-            } else {
-                LOCK_COUNT_INC(*lock);
-                result = OS_RES_OK;
-                goto exit;
-            }
         } else {
-            if(LOCK_COUNT_GET(*lock) == LOCK_COUNT_MAX_VALUE) {
-                result = OS_RES_LOCKED;
-                goto exit;
-            } else {
-                /* Locking in write mode is not allowed when
-                 * the lock is in read mode and the counter != 0,
-                 * since there are active readers which are not
-                 * protected by a critical section. */
-                if(LOCK_MODE_IS_READ(*lock) && LOCK_COUNT_GET(*lock) != 0) {
-                    result = OS_RES_LOCKED;
-                    goto exit;
-                }
-                LOCK_MODE_SET_WRITE(*lock);
-                LOCK_CHECKED_BIT_SET(*lock);
-                LOCK_COUNT_INC(*lock);
-                //OsCritSectBegin();
-                result = OS_RES_OK;
-                goto exit;
-            }
+        	result = OS_RES_LOCKED;
         }
     } else { /* Invalid mode. */
         result = OS_RES_ERROR;
     }
 
-exit:
     OsCritSectEnd();
     return result;
 }
@@ -1166,15 +1150,13 @@ static OsResult_t UtilUnlock(volatile U8_t *lock)
     OsCritSectBegin();
     OsResult_t result = OS_RES_ERROR;
 
-    LOCK_COUNT_DEC(*lock);
-    if(LOCK_COUNT_GET(*lock) == 0) {
-        if(LOCK_MODE_IS_WRITE(*lock)) {
-            // OsCritSectEnd();
-        }
-        LOCK_CHECKED_BIT_CLEAR(*lock);
-        LOCK_MODE_SET_READ(*lock);
+    if(LOCK_COUNT_GET(*lock)) {
+		LOCK_COUNT_DEC(*lock);
+		if(LOCK_COUNT_GET(*lock) == 0) {
+			LOCK_MODE_SET_READ(*lock);
+		}
+		result = OS_RES_OK;
     }
-    result = OS_RES_OK;
 
 
     OsCritSectEnd();

@@ -42,7 +42,9 @@
 extern "C" {
 #endif
 
-#include "include/OsTypes.h"
+#include "OsResult.h"
+#include "StdTypes.h"
+#include "IdType.h"
 
 #include <stdbool.h>
 
@@ -56,8 +58,9 @@ extern "C" {
 #define LIST_ADD_BEFORE 0x00
 #define LIST_ADD_AFTER  0x01
 
-#define LIST_LOCK_MODE_READ  0x00
-#define LIST_LOCK_MODE_WRITE 0x01
+#define LIST_LOCK_MODE_READ 		0x00
+#define LIST_LOCK_MODE_WRITE		0x01
+#define LIST_LOCK_READ_COUNT_MAX	63 /* Must be <= 63. */
 
 #define LIST_INTEGRITY_RESULT_NO_ELEMENTS        3
 #define LIST_INTEGRITY_RESULT_LOCKED             2
@@ -134,8 +137,8 @@ typedef enum {
 
 /**** List API. ****/
 
-/* V T Initializes the list with specified ID type. V */
-void ListInit(LinkedList_t *list, IdGroup_t id_type);
+/* V T Initializes the list with specified ID type. */
+OsResult_t ListInit(LinkedList_t *list, IdGroup_t id_type);
 
 /* V Destroys the specified list and all its nodes. */
 OsResult_t ListDestroy(LinkedList_t *list);
@@ -296,9 +299,9 @@ bool ListNodeIsInList(LinkedList_t *list, ListNode_t *node);
  * Searches for the node in the list belonging to the ID.
  * An attempt to lock the node is done.
  * If successful, the block between _BEGIN and _END is executed. */
-#define LIST_NODE_ACCESS_READ_BEGIN(p_list, id)                    \
+#define LIST_NODE_ACCESS_READ_BEGIN(list, id)                    \
 static ListNode_t *node = NULL;                               \
-node = ListSearch(p_list, id);                                     \
+node = ListSearch(list, id);                                     \
 if(node != NULL) {                                               \
     if(ListNodeLock(node, LIST_LOCK_MODE_READ) == OS_RES_OK) {    \
 
@@ -306,9 +309,9 @@ if(node != NULL) {                                               \
  * Searches for the node in the list belonging to the ID.
  * An attempt to lock the node is done.
  * If successful, the block between _BEGIN and _END is executed. */
-#define LIST_NODE_ACCESS_WRITE_BEGIN(p_list, id)                   \
+#define LIST_NODE_ACCESS_WRITE_BEGIN(list, id)                   \
 static ListNode_t *node = NULL;                               \
-node = ListSearch(p_list, id);                                     \
+node = ListSearch(list, id);                                     \
 if(node != NULL) {                                               \
     if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {   \
 
