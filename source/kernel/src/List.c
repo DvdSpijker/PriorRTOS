@@ -335,21 +335,25 @@ OsResult_t ListNodeUnlock(ListNode_t *node)
 
 OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t position)
 {
-
-    if(ListSizeGet(list) == LIST_SIZE_MAX) {
-        LOG_ERROR_NEWLINE("List (%p) has reached its max capacity.", list);
-        return OS_RES_FAIL;
-    }
-
     if(node == NULL || list == NULL) {
         LOG_ERROR_NEWLINE("List or node is NULL!");
-        while(1);
+        return OS_RES_INVALID_ARGUMENT;
     }
 
-    OsResult_t result = OS_RES_ERROR;
-    if(ListLock(list, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
+    /* Lock the list, only proceed if the list was locked successfully. 
+     * The list is locked in write mode because a node will be added. */
+    OsResult_t result = ListLock(list, LIST_LOCK_MODE_WRITE);
+    if(result == OS_RES_OK) {
+    	if(list->size == LIST_SIZE_MAX) {
+            LOG_ERROR_NEWLINE("List (%p) has reached its max capacity.", list);
+            result = OS_RES_FAIL; 
+            goto unlock;
+    	}
+    	
+    	/* If the node does not have an assigned ID yet, request one. */
         if(node->id == ID_INVALID) {
             node->id = IListIdRequest(list);
+            /* No IDs available. */
             if(node->id == ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node, list);
                 result = OS_RES_INVALID_ID;
@@ -357,16 +361,17 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
             }
         }
 
-        if(list->size == 0) { /* In case the size 0, the newly added node will head and tail. */
+      
+        if(list->size == 0) {  /* In case the size 0, the newly added node will head and tail. */ 
             list->head = list->tail = node;
             node->prev_node = NULL;
             node->next_node = NULL;
-        } else if(position == LIST_POSITION_HEAD) {
+        } else if(position == LIST_POSITION_HEAD) { /* New node becomes head. */
             list->head->prev_node = node;
             node->next_node = list->head;
             list->head = node;
             node->prev_node = NULL;
-        } else if(position == LIST_POSITION_TAIL) {
+        } else if(position == LIST_POSITION_TAIL) { /* New node becomes tail. */
             list->tail->next_node = node;
             node->prev_node = list->tail;
             list->tail = node;
@@ -374,6 +379,7 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
         }
 
 
+        /* Increment the list size and set the sorted state to false. */
         list->size++;
         result = OS_RES_OK;
         list->sorted = false;
