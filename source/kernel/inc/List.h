@@ -84,7 +84,7 @@ extern "C" {
 //#define LIST_EVENT_NODE_REMOVE  (EVENT_TYPE_STATE_CHANGE | 0x00007000)
 
 typedef U16_t ListSize_t;
-#define LIST_SIZE_MAX 65535
+#define LIST_SIZE_MAX UINT16_MAX
 
 typedef struct ListNode_t {
     Id_t            id;
