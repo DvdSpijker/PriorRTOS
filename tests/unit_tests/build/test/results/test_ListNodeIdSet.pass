@@ -1,0 +1,20 @@
+---
+:source:
+  :path: test/test_List
+  :file: test_ListNodeIdSet.c
+:successes:
+- :test: test_ListNodeIdSet_invalid_node
+  :line: 53
+  :message: ''
+- :test: test_ListNodeInit_valid_node
+  :line: 62
+  :message: ''
+:failures: []
+:ignores: []
+:counts:
+  :total: 2
+  :passed: 2
+  :failed: 0
+  :ignored: 0
+:stdout: []
+:time: 0.002724271000005274
