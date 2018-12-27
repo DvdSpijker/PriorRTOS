@@ -133,24 +133,25 @@ typedef enum {
 } ListResult_t;
 
 /* V = Implemented.
- * T = Tested. */
+ * T = Tested.
+ * U = Unit Tested. */
 
 /**** List API. ****/
 
-/* V T Initializes the list with specified ID type. */
+/* V T U Initializes the list with specified ID type. */
 OsResult_t ListInit(LinkedList_t *list, IdGroup_t id_type);
 
 /* V Destroys the specified list and all its nodes. */
 OsResult_t ListDestroy(LinkedList_t *list);
 
-/* V T Locks the list. Any request to access the list after locking
+/* V T U Locks the list. Any request to access the list after locking
  * will be denied. */
 OsResult_t ListLock(LinkedList_t *list, U8_t mode);
 
-/* V T Unlocks the list. */
+/* V T U Unlocks the list. */
 OsResult_t ListUnlock(LinkedList_t *list);
 
-/* V T Returns true if locked, false if not locked. */
+/* V T U Returns true if locked, false if not locked. */
 bool ListIsLocked(LinkedList_t *list);
 
 /* Sorts the list according to the specified sorting type. */
@@ -216,25 +217,28 @@ char *ListPrintToBuffer(LinkedList_t *list,  U32_t *buffer_size);
 
 /**** ListNode API. ****/
 
-/* V T Initializes the node with specified child. */
+/* V T U Initializes the node with specified child. */
 OsResult_t ListNodeInit(ListNode_t *node, void *child);
 
 /* V T De-initializes the node. If the node was still in a list, it is removed.
  * If the node is already removed from its list, pass NULL for the list. */
 OsResult_t ListNodeDeinit(LinkedList_t *list, ListNode_t *node);
 
-/* V T Set the ID of a node. */
+/* V T U Set the ID of a node. */
 OsResult_t ListNodeIdSet(ListNode_t *node, Id_t id);
 
-/* V T Lock the node in either read or write mode.
+/* V T U Returns the node ID. */
+Id_t ListNodeIdGet(ListNode_t *node);
+
+/* V T U Lock the node in either read or write mode.
  * Read locks are recursive. Write lock exclusive. */
 OsResult_t ListNodeLock(ListNode_t *node, U8_t mode);
 
-/* V T Unlocks the node from either read or write mode.
+/* V T U Unlocks the node from either read or write mode.
  * Read locks are recursive. Write lock exclusive. */
 OsResult_t ListNodeUnlock(ListNode_t *node);
 
-/* V T Adds an initialized node to the list at the specified position.
+/* V T U Adds an initialized node to the list at the specified position.
  * position options: LIST_POSITION_HEAD or LIST_POSITION_TAIL. */
 OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t position);
 
@@ -281,14 +285,11 @@ OsResult_t ListNodeSwap(LinkedList_t *list, ListNode_t *node_x, ListNode_t *node
 /* V T Returns the child pointer from the node ID in the list. */
 void *ListNodeChildFromId(LinkedList_t *list, Id_t id);
 
-/* V T Returns the child pointer of the node. */
+/* V T U Returns the child pointer of the node. */
 void *ListNodeChildGet(ListNode_t *node);
 
 /* V T Sets the child of the node. */
 OsResult_t ListNodeChildSet(ListNode_t *node, void *child);
-
-/* V T Returns the node ID. */
-Id_t ListNodeIdGet(ListNode_t *node);
 
 /* V T Returns true if the node is in a list, false if it is not. */
 bool ListNodeIsInList(LinkedList_t *list, ListNode_t *node);
