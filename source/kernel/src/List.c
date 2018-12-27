@@ -674,7 +674,7 @@ OsResult_t ListNodeMove(LinkedList_t *list_x, LinkedList_t *list_y, ListNode_t *
     OsResult_t result = OS_RES_ERROR;
     ListNode_t *mv_node = ListNodeRemove(list_x, node);
     if(mv_node != NULL) {
-        result = ListNodeAddSorted(list_y, node); /* TODO: Replace with AddSorted. */
+        result = ListNodeAddSorted(list_y, node);
     }
     OsCritSectEnd();
     return result;
@@ -815,7 +815,7 @@ void *ListNodeChildGet(ListNode_t *node)
 
 OsResult_t ListNodeChildSet(ListNode_t *node, void *child)
 {
-    if (node == NULL || child == NULL) {
+    if (node == NULL) {
         return OS_RES_INVALID_ARGUMENT;
     }
     if(ListNodeLock(node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
