@@ -13,7 +13,7 @@
 *  -----------------
 *
 *
-*  Copyright© 2017    D. van de Spijker
+*  Copyrightï¿½ 2017    D. van de Spijker
 *
 *  Permission is hereby granted, free of charge, to any person obtaining a copy
 *  of this software AND associated documentation files (the "Software"), to deal
@@ -153,6 +153,11 @@ static void ICoreWdtEnable(U8_t wdt_expire_opt);
 static void ICoreWdtDisable();
 #endif
 
+/* OS Heap and memory. */
+
+U8_t OsHeap[PRTOS_CONFIG_OS_HEAP_SIZE_BYTES];
+Pmb_t OsPoolTable[MEM_NUM_POOLS];
+
 /* Kernel Register */
 
 typedef struct Reg_t {
@@ -259,7 +264,8 @@ OsResult_t OsInit(OsResult_t *status_optional)
     LOG_INFO_APPEND("ok");
     
     LOG_INFO_NEWLINE("Initializing module:Memory Management...");
-    status_kernel = KMemInit(); //Initiate memory management
+    status_kernel = KMemInit(OsHeap, PRTOS_CONFIG_OS_HEAP_SIZE_BYTES, PRTOS_CONFIG_USER_HEAP_SIZE_BYTES,
+    		OsPoolTable); /* Initialize memory management */
     if(status_kernel == OS_RES_CRIT_ERROR) {
         LOG_ERROR_NEWLINE("critical error");
         return status_kernel;
@@ -267,7 +273,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
     LOG_INFO_APPEND("ok");
 
     LOG_INFO_NEWLINE("Initializing module:Task...");
-    status_kernel = KTaskInit(); //Initiate task management
+    status_kernel = KTaskInit(); /* Initialize task management */
     if(status_kernel == OS_RES_CRIT_ERROR) {
         LOG_ERROR_NEWLINE("critical error");
         return status_kernel;
@@ -285,7 +291,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
 
     /*Core initiations*/
     LOG_INFO_NEWLINE("Initializing Scheduler...");
-    ICoreSchedulerInit(); //Initiate Prior Scheduler
+    ICoreSchedulerInit(); /* Initialize Prior Scheduler */
     LOG_INFO_APPEND("ok");
 
 
