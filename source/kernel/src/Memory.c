@@ -12,7 +12,7 @@
  *  -----------------
  *
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -41,6 +41,7 @@
 #include "include/Memory.h"
 #include "kernel/inc/MemoryDef.h"
 
+#include "include/Os.h"
 #include "kernel/inc/CoreDef.h"
 #include "kernel/inc/LoggerDef.h"
 
@@ -58,17 +59,12 @@ static U16_t IPoolChecksumGenerate(pPmb_t pool);
 #include <stdio.h>
 
 #define ALLOC_DATA_OFFSET   sizeof(U32_t) / sizeof(U8_t)
-
-extern void OsCritSectBegin(void);
-extern void OsCritSectEnd(void);
-
 #define BLOCK_SIZE       16
-
 #define BYTES_TO_BLOCKS(bytes) ( (bytes % BLOCK_SIZE) ? (bytes / BLOCK_SIZE) + 1 : (bytes / BLOCK_SIZE) )
 
-Pmb_t PoolTable[N_POOLS];
+Pmb_t *PoolTable = NULL;
 
-U8_t OsHeap[PRTOS_CONFIG_OS_HEAP_SIZE_BYTES];
+U8_t *OsHeap = NULL;
 
 Id_t TotalHeapPools;
 U32_t TotalHeapSize;
@@ -82,12 +78,18 @@ static Id_t IPoolIdFromPointer(MemBase_t *ptr);
 
 /************OS Memory Management************/
 
-OsResult_t KMemInit()
+OsResult_t KMemInit(U8_t *heap, U32_t heap_size, U32_t user_heap_size, Pmb_t *pool_table)
 {
-    OsResult_t result = OS_RES_ERROR;
+	if(heap == NULL || heap_size == 0 || pool_table == NULL) {
+		return OS_RES_INVALID_ARGUMENT;
+	}
+	
+    OsResult_t result = OS_RES_OK;
 
-    TotalHeapPools = (Id_t)(N_POOLS);
-    TotalHeapSize = (U32_t)sizeof(OsHeap);
+    OsHeap = heap;
+    PoolTable = pool_table;
+    TotalHeapPools = (Id_t)(MEM_NUM_POOLS);
+    TotalHeapSize = heap_size;
     HeapIndexEnd = TotalHeapSize - 1;
 
     for (Id_t i = 0; i < (TotalHeapPools); i++) {
@@ -96,7 +98,7 @@ OsResult_t KMemInit()
         PoolTable[i].pool_size = 0;
         PoolTable[i].mem_left = 0;
     }
-    for (U32_t j = 0; j<(HeapIndexEnd); j++) {
+    for (U32_t j = 0; j< TotalHeapSize; j++) {
         OsHeap[j] = 0;
     }
 
@@ -105,22 +107,21 @@ OsResult_t KMemInit()
     if(KernelPoolId == ID_INVALID) {
         result = OS_RES_CRIT_ERROR;
         LOG_ERROR_NEWLINE("Invalid pool ID returned");
-        goto exit;
     } else {
         LOG_INFO_APPEND("ok");
     }
 
-    LOG_INFO_NEWLINE("Creating Object pool..");
-    ObjectPoolId = MemPoolCreate(PRTOS_CONFIG_OS_HEAP_SIZE_BYTES - PRTOS_CONFIG_USER_HEAP_SIZE_BYTES);
-    if(ObjectPoolId == ID_INVALID) {
-        result = OS_RES_CRIT_ERROR;
-        LOG_ERROR_NEWLINE("Invalid pool ID returned");
-        goto exit;
-    } else {
-        LOG_INFO_APPEND("ok");
+    if(result == OS_RES_OK) {
+		LOG_INFO_NEWLINE("Creating Object pool..");
+		ObjectPoolId = MemPoolCreate(TotalHeapSize - user_heap_size - KERNEL_POOL_SIZE_BYTES);
+		if(ObjectPoolId == ID_INVALID) {
+			result = OS_RES_CRIT_ERROR;
+			LOG_ERROR_NEWLINE("Invalid pool ID returned");
+		} else {
+			LOG_INFO_APPEND("ok");
+		}
     }
 
-exit:
     return result;
 }
 
@@ -136,8 +137,8 @@ Id_t MemPoolCreate(U32_t pool_size)
     Id_t pool_id = 0;
     Id_t tmp_pool_id = 0;
     pPmb_t pmb = NULL;
-    U32_t mem_req = 0;
-    U32_t mem_found = 0;
+    U32_t blocks_req = 0;
+    U32_t blocks_found = 0;
     U32_t index = 0;
     U32_t index_offset = 0;
 
@@ -153,20 +154,20 @@ Id_t MemPoolCreate(U32_t pool_size)
     }
 
     pmb = &(PoolTable[pool_id]);
-    mem_req = BYTES_TO_BLOCKS(pool_size);
+    blocks_req = BYTES_TO_BLOCKS(pool_size);
 
-    while(mem_found < mem_req && (index + index_offset) < HeapIndexEnd) {
+    while(blocks_found < blocks_req && (index + index_offset) < HeapIndexEnd) {
         tmp_pool_id = IPoolIdFromIndex(index + index_offset);
         if(tmp_pool_id == ID_INVALID) {
             index_offset += BLOCK_SIZE;
-            mem_found += 1;
+            blocks_found += 1;
         } else {
             index = (PoolTable[tmp_pool_id].end_index + 1);
             index_offset = 0;
-            mem_found = 0;
+            blocks_found = 0;
         }
     }
-    if(mem_found >= mem_req) {
+    if(blocks_found >= blocks_req) {
         pmb->end_index = (index + index_offset - 1);
         pmb->start_index = index;
         pmb->mem_left = pool_size;
@@ -190,7 +191,7 @@ Id_t MemPoolCreate(U32_t pool_size)
 
 OsResult_t MemPoolDelete(Id_t pool_id)
 {
-    if(pool_id >= N_POOLS) {
+    if(pool_id >= TotalHeapPools) {
         return OS_RES_INVALID_ID;
     }
     if(pool_id == KernelPoolId || pool_id == ObjectPoolId) {
@@ -209,7 +210,7 @@ OsResult_t MemPoolDelete(Id_t pool_id)
 
 OsResult_t MemPoolFormat(Id_t pool_id)
 {
-    if(pool_id >= N_POOLS) {
+    if(pool_id >= TotalHeapPools) {
         return OS_RES_INVALID_ID;
     }
     if((pool_id == KernelPoolId || pool_id == ObjectPoolId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
@@ -231,7 +232,7 @@ OsResult_t MemPoolFormat(Id_t pool_id)
 
 U32_t MemPoolFreeSpaceGet(Id_t pool_id)
 {
-    if(pool_id >= N_POOLS) {
+    if(pool_id >= TotalHeapPools) {
         return 0;
     }
     U32_t mem_left = 0;
@@ -244,7 +245,7 @@ U32_t MemPoolFreeSpaceGet(Id_t pool_id)
 
 U32_t MemPoolUsedSpaceGet(Id_t pool_id)
 {
-    if(pool_id >= N_POOLS) {
+    if(pool_id >= TotalHeapPools) {
         return 0;
     }
 

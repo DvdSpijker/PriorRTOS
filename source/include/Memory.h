@@ -9,7 +9,7 @@
  *  D. van de Spijker
  *  -----------------
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -47,7 +47,7 @@ extern "C" {
  * @func: Id_t MemPoolCreate(U32_t size)
  *
  * @desc: Creates a memory pool on the OS heap if the amount of space
- * specified is available. MemPoolCreate will return an invalid ID (0xFFFF) if
+ * specified is available. MemPoolCreate will return an invalid ID if
  * the operation failed.
  *
  * Arguments:
@@ -132,6 +132,15 @@ OsResult_t MemPoolFormat(Id_t pool_id);
  ******************************************************************************/
 U32_t MemPoolFreeSpaceGet(Id_t pool_id);
 
+/******************************************************************************
+ * @func: U32_t MemPoolUsedSpaceGet(Id_t pool_id)
+ *
+ * @desc: Returns the amount of used space (in bytes) in the pool.
+ *
+ * @argin: (Id_t) pool_id; Pool ID.
+ *
+ * @rettype:  (U32_t); Used pool space.
+ ******************************************************************************/
 U32_t MemPoolUsedSpaceGet(Id_t pool_id);
 
 
@@ -151,7 +160,6 @@ U32_t MemOsHeapFreeSpaceGet(void);
  *
  * @desc: Dynamically allocates memory in given pool with specified size.
  * Allocated memory may be freed or reallocated.
- * If allocation fails, MemAllocDynamic will return NULL.
  *
  * @argin: (Id_t) pool_id; ID of the pool where the memory will be allocated.
  * @argin: (U32_t) size; Size to allocate
@@ -169,7 +177,7 @@ void *MemAlloc(Id_t pool_id, U32_t size);
  *
  * @desc: Re-Allocates memory in given
  * pool with specified size. The allocation may be
- * moved by passing a different pool ID. If allocation
+ * moved to another pool by passing a different pool ID. If allocation
  * fails, MemReAlloc returns OS_RES_FAIL. In this case the memory will
  * still remain allocated in the current pool.
  *
@@ -178,7 +186,7 @@ void *MemAlloc(Id_t pool_id, U32_t size);
  * If moving the allocation across memory pools is not desired,
  * either pass the same pool ID for new_pool_id as cur_pool_id or
  * pass ID_INVALID as new_pool_id.
- * @argout: (void**) ptr; Pointer to existing allocation
+ * @argout: (void **) ptr; Pointer to existing allocation
  * @argin: (U32_t) new_size; Size to allocate
  *
  * @rettype:  (OsResult_t); sys call result
@@ -186,25 +194,23 @@ void *MemAlloc(Id_t pool_id, U32_t size);
  * @retval:   OS_RES_FAIL; if the requested block was too large.
  * @retval:   OS_RES_INVALID_ARGUMENT; if the pool ID is not part of
  *            the pool memory space.
- * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the right privileges.
+ * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the correct privileges.
  ******************************************************************************/
-OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void** ptr, U32_t new_size);
+OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_size);
 
 /******************************************************************************
  * @func: OsResult_t MemFree (void **ptr)
  *
  * @desc: Frees the specified piece of allocated memory,returning it to
  * the pool. Freed memory will be set to 0. The pointer to the freed memory
- * will be implicitly set to NULL.
+ * will implicitly be set to NULL.
  *
  * @argin:  (void**) ptr; Pointer to the allocation pointer
  *
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if freeing was successful.
- * @retval:   OS_RES_INVALID_ARGUMENT; if the memory pointer equals NULL
- * @retval:   OS_RES_INVALID_ARGUMENT; if the pool ID is not part of
- *            the pool memory space.
- * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the right privileges.
+ * @retval:   OS_RES_INVALID_ARGUMENT; if the memory pointer equals NULL.
+ * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the correct privileges.
  ******************************************************************************/
 OsResult_t MemFree(void **ptr);
 
