@@ -231,7 +231,7 @@ void test_ListNodeAddAtPosition_add_head_max(void)
 	for(i = 0;i < LIST_SIZE_MAX; i++) {
 		size++;
 
-		KIdRequest_ExpectAndReturn(ID_GROUP_MESSAGE_QUEUE, id);
+		KIdRequest_IgnoreAndReturn(id);
 		//printf("ID: %u\n", id);
 		
 		ListNodeInit(&nodes[i], NULL);
