@@ -50,19 +50,19 @@ extern "C" {
 
 #ifdef PRTOS_CONFIG_MEM_WIDTH_8_BITS
 #if (defined(PRTOS_CONFIG_MEM_WIDTH_16_BITS) || defined(PRTOS_CONFIG_MEM_WIDTH_32_BITS))
-#error "Ambiguous memory width; multiple PRTOS_CONFIG_MEM_WIDTH_* definitions found."
+#error "PriorRTOS: Ambiguous memory width; multiple PRTOS_CONFIG_MEM_WIDTH_* definitions found."
 #endif
 typedef     U8_t   MemBase_t;
 #endif
 #ifdef PRTOS_CONFIG_MEM_WIDTH_16_BITS
 #if (defined(PRTOS_CONFIG_MEM_WIDTH_8_BITS) || defined(PRTOS_CONFIG_MEM_WIDTH_32_BITS))
-#error "Ambiguous memory width; multiple PRTOS_CONFIG_MEM_WIDTH_* definitions found."
+#error "PriorRTOS: Ambiguous memory width; multiple PRTOS_CONFIG_MEM_WIDTH_* definitions found."
 #endif
 typedef     U16_t   MemBase_t;
 #endif
 #ifdef PRTOS_CONFIG_MEM_WIDTH_32_BITS
 #if (defined(PRTOS_CONFIG_MEM_WIDTH_8_BITS) || defined(PRTOS_CONFIG_MEM_WIDTH_16_BITS))
-#error "Ambiguous memory width; multiple PRTOS_CONFIG_MEM_WIDTH_* definitions found."
+#error "PriorRTOS: Ambiguous memory width; multiple PRTOS_CONFIG_MEM_WIDTH_* definitions found."
 #endif
 typedef     U32_t   MemBase_t;
 #endif

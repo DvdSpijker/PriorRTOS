@@ -13,7 +13,7 @@
 #include <stdbool.h>
 
 #if ID_LIST_SIZE_MAX > ID_LIST_SIZE_ABS_MAX 
-#error "Value of ID_LIST_SIZE_MAX is larger than the allowed maximum."
+#error "PriorRTOS: Value of ID_LIST_SIZE_MAX is larger than the allowed maximum."
 #endif
 
 #define GROUP_FROM_ID(id) (IdGroup_t)((id & ID_MASK_GROUP) >> ID_SHIFT_AMOUNT_GROUP)
