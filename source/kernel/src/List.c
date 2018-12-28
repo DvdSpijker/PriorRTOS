@@ -15,7 +15,7 @@
 #include <stdio.h>
 
 #if LIST_LOCK_READ_COUNT_MAX > 63
-#error "LIST_LOCK_READ_COUNT_MAX exceeds the maximum allowed value of 63."
+#error "PriorRTOS: LIST_LOCK_READ_COUNT_MAX exceeds the maximum allowed value of 63."
 #endif
 
 #define LOG_ERROR_NEWLINE(msg, ...)
