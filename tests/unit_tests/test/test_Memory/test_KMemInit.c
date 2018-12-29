@@ -62,7 +62,6 @@ void test_KMemInit_invalid_heap(void)
 	
 	KLogInfo_Ignore();
 	LogError_Ignore();
-	KCoreFlagGet_IgnoreAndReturn(CORE_FLAG_KERNEL_MODE);
 	KCoreKernelModeEnter_IgnoreAndReturn(1);
 	KCoreKernelModeExit_IgnoreAndReturn(0);
 	
@@ -77,7 +76,6 @@ void test_KMemInit_invalid_heap_size(void)
 	
 	KLogInfo_Ignore();
 	LogError_Ignore();
-	KCoreFlagGet_IgnoreAndReturn(CORE_FLAG_KERNEL_MODE);
 	KCoreKernelModeEnter_IgnoreAndReturn(1);
 	KCoreKernelModeExit_IgnoreAndReturn(0);
 	
@@ -92,7 +90,6 @@ void test_KMemInit_invalid_pool_table(void)
 	
 	KLogInfo_Ignore();
 	LogError_Ignore();
-	KCoreFlagGet_IgnoreAndReturn(CORE_FLAG_KERNEL_MODE);
 	KCoreKernelModeEnter_IgnoreAndReturn(1);
 	KCoreKernelModeExit_IgnoreAndReturn(0);
 	
@@ -113,7 +110,6 @@ void test_KMemInit_no_user_heap(void)
 	
 	KLogInfo_Ignore();
 	LogError_Ignore();
-	KCoreFlagGet_IgnoreAndReturn(CORE_FLAG_KERNEL_MODE);
 	KCoreKernelModeEnter_IgnoreAndReturn(1);
 	KCoreKernelModeExit_IgnoreAndReturn(0);
 	OsCritSectBegin_Expect();
