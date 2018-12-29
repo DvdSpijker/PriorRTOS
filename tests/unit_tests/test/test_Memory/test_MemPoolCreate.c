@@ -24,6 +24,10 @@
  ******************************************************************************/
 #define TEST_HEAP_SIZE	0x100
 #define TEST_USER_HEAP_SIZE 0x50
+#define TEST_POOL_SIZE 0x10
+
+#define KERNEL_POOL_ID 0
+#define OBJ_POOL_ID 1
 
 /*******************************************************************************
  *    PRIVATE TYPES
@@ -46,6 +50,17 @@ U8_t TestHeap[TEST_HEAP_SIZE];
  
 void setUp(void)
 {
+	KLogInfo_Ignore();
+	LogError_Ignore();
+	KCoreKernelModeEnter_IgnoreAndReturn(1);
+	KCoreKernelModeExit_IgnoreAndReturn(0);
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	
+	TEST_ASSERT_EQUAL(KMemInit(TestHeap, TEST_HEAP_SIZE, 
+			TEST_USER_HEAP_SIZE, TestPoolTable), OS_RES_OK);
 }
  
 void tearDown(void)
@@ -56,80 +71,111 @@ void tearDown(void)
  *    TESTS
  ******************************************************************************/
 
-void test_KMemInit_invalid_heap(void)
+
+void test_MemPoolCreate_pool_size_zero(void)
 {
-	OsResult_t res = OS_RES_ERROR;
+	Id_t id = ID_INVALID;
 	
-	KLogInfo_Ignore();
 	LogError_Ignore();
-	KCoreFlagGet_IgnoreAndReturn(CORE_FLAG_KERNEL_MODE);
-	KCoreKernelModeEnter_IgnoreAndReturn(1);
-	KCoreKernelModeExit_IgnoreAndReturn(0);
 	
-	res = KMemInit(NULL, TEST_HEAP_SIZE, TEST_USER_HEAP_SIZE, TestPoolTable);
+	id = MemPoolCreate(0);
 	
-	TEST_ASSERT_EQUAL(res, OS_RES_INVALID_ARGUMENT);
+	TEST_ASSERT_EQUAL(id, ID_INVALID);
 }
 
-void test_KMemInit_invalid_heap_size(void)
+void test_MemPoolCreate_pool_greater_pool(void)
 {
-	OsResult_t res = OS_RES_ERROR;
+	Id_t id = ID_INVALID;
 	
-	KLogInfo_Ignore();
 	LogError_Ignore();
-	KCoreFlagGet_IgnoreAndReturn(CORE_FLAG_KERNEL_MODE);
-	KCoreKernelModeEnter_IgnoreAndReturn(1);
-	KCoreKernelModeExit_IgnoreAndReturn(0);
 	
-	res = KMemInit(TestHeap, 0, TEST_USER_HEAP_SIZE, TestPoolTable);
+	id = MemPoolCreate(TEST_HEAP_SIZE + 1);
 	
-	TEST_ASSERT_EQUAL(res, OS_RES_INVALID_ARGUMENT);
+	TEST_ASSERT_EQUAL(id, ID_INVALID);
 }
 
-void test_KMemInit_invalid_pool_table(void)
+void test_MemPoolCreate_no_pool_available(void)
 {
-	OsResult_t res = OS_RES_ERROR;
+	Id_t id = ID_INVALID;
 	
-	KLogInfo_Ignore();
-	LogError_Ignore();
-	KCoreFlagGet_IgnoreAndReturn(CORE_FLAG_KERNEL_MODE);
-	KCoreKernelModeEnter_IgnoreAndReturn(1);
-	KCoreKernelModeExit_IgnoreAndReturn(0);
-	
-	res = KMemInit(TestHeap, TEST_HEAP_SIZE, TEST_USER_HEAP_SIZE, NULL);
-	
-	TEST_ASSERT_EQUAL(res, OS_RES_INVALID_ARGUMENT);
-}
-
-void test_KMemInit_no_user_heap(void)
-{
-	OsResult_t res = OS_RES_ERROR;
-	
-	TestHeap[0] = 0xFF;
-	TestHeap[TEST_HEAP_SIZE - 1] = 0xFF;
-	TestPoolTable[0].pool_size = 0;
-	TestPoolTable[1].pool_size = 0;
-	TestPoolTable[MEM_NUM_POOLS - 1].pool_size = 0;
-	
-	KLogInfo_Ignore();
-	LogError_Ignore();
-	KCoreFlagGet_IgnoreAndReturn(CORE_FLAG_KERNEL_MODE);
-	KCoreKernelModeEnter_IgnoreAndReturn(1);
-	KCoreKernelModeExit_IgnoreAndReturn(0);
-	OsCritSectBegin_Expect();
-	OsCritSectEnd_Expect();
-	OsCritSectBegin_Expect();
-	OsCritSectEnd_Expect();
-	
-	res = KMemInit(TestHeap, TEST_HEAP_SIZE, TEST_USER_HEAP_SIZE, TestPoolTable);
-	
-	TEST_ASSERT_EQUAL(res, OS_RES_OK);
-	TEST_ASSERT_EQUAL(TestHeap[0], 0);
-	TEST_ASSERT_EQUAL(TestHeap[TEST_HEAP_SIZE - 1], 0);
-	
-	TEST_ASSERT_EQUAL(TestPoolTable[0].pool_size, KERNEL_POOL_SIZE_BYTES);
-	TEST_ASSERT_EQUAL(TestPoolTable[1].pool_size, TEST_HEAP_SIZE - TEST_USER_HEAP_SIZE - KERNEL_POOL_SIZE_BYTES);
-	for(int i = 2; i < MEM_NUM_POOLS; i++) {
-		TEST_ASSERT_EQUAL(TestPoolTable[i].pool_size, 0);
+	for(int i = 0; i < MEM_NUM_POOLS; i++) {
+		TestPoolTable[i].pool_size = 1;
 	}
+
+	LogError_Ignore();
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	
+	id = MemPoolCreate(TEST_POOL_SIZE);
+	
+	TEST_ASSERT_EQUAL(id, ID_INVALID);
+}
+
+void test_MemPoolCreate_single(void)
+{
+	Id_t id = ID_INVALID;
+	Id_t exp_id = OBJ_POOL_ID + 1;
+	
+	LogError_Ignore();
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	
+	id = MemPoolCreate(TEST_POOL_SIZE);
+	
+	TEST_ASSERT_EQUAL(id, exp_id);
+	TEST_ASSERT_EQUAL(TestPoolTable[id].pool_size, TEST_POOL_SIZE);
+	TEST_ASSERT_EQUAL(TestPoolTable[id].mem_left, TEST_POOL_SIZE);
+	TEST_ASSERT_EQUAL(TestPoolTable[id].start_index, TestPoolTable[OBJ_POOL_ID].end_index + 1);
+	TEST_ASSERT_EQUAL(TestPoolTable[id].end_index, TestPoolTable[id].start_index + TEST_POOL_SIZE - 1);
+}
+
+void test_MemPoolCreate_max(void)
+{
+	Id_t id = ID_INVALID;
+	Id_t exp_id = OBJ_POOL_ID + 1;
+	
+	LogError_Ignore();
+	
+	for(; exp_id < MEM_NUM_POOLS; exp_id++) { 
+		OsCritSectBegin_Expect();
+		OsCritSectEnd_Expect();
+		
+		id = MemPoolCreate(TEST_POOL_SIZE);
+		
+		TEST_ASSERT_EQUAL(id, exp_id);
+		TEST_ASSERT_EQUAL(TestPoolTable[id].pool_size, TEST_POOL_SIZE);
+		TEST_ASSERT_EQUAL(TestPoolTable[id].mem_left, TEST_POOL_SIZE);
+		TEST_ASSERT_EQUAL(TestPoolTable[id].start_index, TestPoolTable[exp_id - 1].end_index + 1);
+		TEST_ASSERT_EQUAL(TestPoolTable[id].end_index, TestPoolTable[id].start_index + TEST_POOL_SIZE - 1);		
+	}
+
+}
+
+void test_MemPoolCreate_no_space(void)
+{
+	Id_t id = ID_INVALID;
+	Id_t exp_id = OBJ_POOL_ID + 1;
+	
+	LogError_Ignore();
+	
+	for(; exp_id < MEM_NUM_POOLS - 1; exp_id++) { 
+		OsCritSectBegin_Expect();
+		OsCritSectEnd_Expect();
+		
+		id = MemPoolCreate(TEST_POOL_SIZE);
+		
+		TEST_ASSERT_EQUAL(id, exp_id);
+		TEST_ASSERT_EQUAL(TestPoolTable[id].pool_size, TEST_POOL_SIZE);
+		TEST_ASSERT_EQUAL(TestPoolTable[id].mem_left, TEST_POOL_SIZE);
+		TEST_ASSERT_EQUAL(TestPoolTable[id].start_index, TestPoolTable[exp_id - 1].end_index + 1);
+		TEST_ASSERT_EQUAL(TestPoolTable[id].end_index, TestPoolTable[id].start_index + TEST_POOL_SIZE - 1);		
+	}
+	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	
+	id = MemPoolCreate(TEST_HEAP_SIZE - TEST_POOL_SIZE);
+	
+	TEST_ASSERT_EQUAL(id, ID_INVALID);
+	TEST_ASSERT_EQUAL(TestPoolTable[exp_id].pool_size, 0);
 }
