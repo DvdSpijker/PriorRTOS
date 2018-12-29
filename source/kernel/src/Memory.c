@@ -181,7 +181,7 @@ Id_t MemPoolCreate(U32_t pool_size)
         pmb->checksum = IPoolChecksumGenerate(pmb);
 #endif
     } else {
-        LOG_ERROR_NEWLINE("Not enough memory available (%u bytes) to create a new pool (%u bytes).", mem_found, mem_req);
+        LOG_ERROR_NEWLINE("Not enough memory available (%u bytes) to create a new pool (%u bytes).", blocks_found, blocks_req);
         pool_id = ID_INVALID;    //No memory available for the requested pool size
     }
 
@@ -218,12 +218,14 @@ OsResult_t MemPoolFormat(Id_t pool_id)
         return OS_RES_RESTRICTED;
     }
     OsCritSectBegin();
+    
     pPmb_t mempool = &PoolTable[pool_id];
     for (U32_t i = mempool->start_index; i<mempool->end_index; i++) {
         OsHeap[i] = 0;
     }
     mempool->mem_left = mempool->pool_size;
-    mempool->N=0;
+    mempool->N = 0;
+    
     OsCritSectEnd();
 
     return OS_RES_OK;
