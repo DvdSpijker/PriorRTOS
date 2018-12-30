@@ -1,3 +1,8 @@
+<a href="https://scan.coverity.com/projects/dvdspijker-priorrtos">
+  <img alt="Coverity Scan Build Status"
+       src="https://scan.coverity.com/projects/14094/badge.svg"/>
+</a>
+
 # README #
 
 ![alt text](prior_logo.png)
