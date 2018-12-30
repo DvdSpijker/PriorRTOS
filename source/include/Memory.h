@@ -217,7 +217,7 @@ OsResult_t MemFree(void **ptr);
 /******************************************************************************
  * @func: U32_t MemAllocSizeGet(void *ptr)
  *
- * @desc: Returns the size of the allocated piece of memory.
+ * @desc: Returns the size of the allocation in bytes.
  *
  * @argin: (void *) ptr; Pointer to allocated memory.
  *
