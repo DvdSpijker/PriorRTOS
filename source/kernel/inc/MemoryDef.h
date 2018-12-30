@@ -31,6 +31,10 @@ extern "C" {
 #define MEM_NUM_OS_POOLS 2
 #define MEM_NUM_POOLS PRTOS_CONFIG_N_USER_POOLS + MEM_NUM_OS_POOLS
 
+#define MEM_ALLOC_DATA_OFFSET	sizeof(U32_t) / sizeof(U8_t)
+#define MEM_BLOCK_SIZE			16
+#define MEM_BYTES_TO_BLOCKS(bytes) ( (bytes % MEM_BLOCK_SIZE) ? (bytes / MEM_BLOCK_SIZE) + 1 : (bytes / MEM_BLOCK_SIZE) )
+
 /* Pool Management Block definition. */
 typedef struct Pmb_t {
 
