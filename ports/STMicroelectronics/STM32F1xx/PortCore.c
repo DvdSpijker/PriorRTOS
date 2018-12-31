@@ -3,8 +3,13 @@
 
 #include "stm32f1xx_hal.h"
 #include "core_cm3.h"
+#include "tim.h"
+#include "tim_config.h"
 
-uint16_t SysTickPrescaler;
+#define TIMER_INSTANCE_OSTICK	TIM3
+#define TIMER_IRQN_OSTICK		TIM3_IRQn
+
+void ITimerCallbackElapsedOsTick(void);
 
 void PortSuperVisorModeEnable(void)
 {
@@ -28,58 +33,62 @@ void PortGlobalIntEnable(void)
 
 void PortOsIntDisable(void)
 {
-	HAL_NVIC_DisableIRQ(SysTick_IRQn);
+	TimerHwIntEnablePeriodElapsed(TIMER_OSTICK, 0);
 }
 
 void PortOsIntEnable(void)
 {
-	HAL_NVIC_EnableIRQ(SysTick_IRQn);
+	TimerHwIntEnablePeriodElapsed(TIMER_OSTICK, 1);
 }
 
 void PortOsIntFlagClear(void)
 {
-	HAL_NVIC_EnableIRQ(SysTick_IRQn);
+
 }
 
 void PortOsTimerInit(U16_t prescaler, U16_t ovf)
 {
-	uint16_t SysTickPrescaler = prescaler;
-	uint32_t ticks = (uint32_t)(SysTickPrescaler * ovf);
-	HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
-	HAL_SYSTICK_Config(ticks);
-	SysTick->CTRL &= ~(SysTick_CTRL_ENABLE_Msk);
+	TimerConfig_t tmr_os_cfg = {
+		.timer = TIMER_OSTICK,
+		.instance = TIMER_INSTANCE_OSTICK,
+		.irqn_elapsed = TIMER_IRQN_OSTICK,
+		.cb_elapsed = ITimerCallbackElapsedOsTick,
+		.irq_prio_elapsed = 0,
+		.irq_subprio_elapsed = 0,
+	};
+
+	TimerHwConfigSet(&tmr_os_cfg);
+	TimerHwInit(TIMER_OSTICK, (uint32_t)prescaler, (uint32_t)ovf);
 	PortOsIntDisable();
 }
 
 
 void PortOsTimerDisable(void)
 {
-	SysTick->CTRL &= ~(SysTick_CTRL_ENABLE_Msk);
+	TimerHwStop(TIMER_OSTICK);
 }
 
 void PortOsTimerEnable(void)
 {
-	SysTick->CTRL |= (SysTick_CTRL_ENABLE_Msk);
+	TimerHwStart(TIMER_OSTICK);
 }
 
 U32_t PortOsTimerTicksGet(void)
 {
-    uint32_t tc_val = SysTick->VAL;
-    return (uint32_t)tc_val;
+    return TimerHwCountGet(TIMER_OSTICK);
 }
 
 void PortOsTimerTicksReset(void)
 {
-	SysTick->VAL = 0;
+	TimerHwCountSet(TIMER_OSTICK, 0);
 }
 
 void PortOsTimerTicksSet(U32_t ticks)
 {
-	ticks *= SysTickPrescaler;
-	SysTick->VAL = ticks;
+	TimerHwCountSet(TIMER_OSTICK, ticks);
 }
 
-void HAL_SYSTICK_Callback(void)
+void ITimerCallbackElapsedOsTick(void)
 {
 	OsTick();
 }
@@ -87,7 +96,7 @@ void HAL_SYSTICK_Callback(void)
 
 void PortOsIntInit(IrqPriority_t os_tick_irq_prio)
 {
-	NVIC_SetPriority (SysTick_IRQn, (1UL << os_tick_irq_prio) - 1UL); /* set Priority for Systick Interrupt */
+	TimerHwIntPrioSetPeriodElapsed(TIMER_OSTICK, os_tick_irq_prio);
 }
 
 
