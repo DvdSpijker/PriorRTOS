@@ -12,6 +12,8 @@
 #include "IdType.h"
 #include "IdTypeDef.h"
 
+#include "mock_Os.h"
+
 /* Other */
 #include <stdio.h>
  
@@ -60,6 +62,9 @@ void test_ListLock_lock_read(void)
 	LinkedList_t list;
 	OsResult_t res = ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	
 	res = ListLock(&list, LIST_LOCK_MODE_READ);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
 }
@@ -69,8 +74,14 @@ void test_ListLock_lock_read_twice(void)
 	LinkedList_t list;
 	OsResult_t res = ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	
 	res = ListLock(&list, LIST_LOCK_MODE_READ);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
+	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	
 	res = ListLock(&list, LIST_LOCK_MODE_READ);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
@@ -82,6 +93,8 @@ void test_ListLock_lock_read_max(void)
 	OsResult_t res = ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
 	
 	for(int i = 0; i < LIST_LOCK_READ_COUNT_MAX; i++) {
+		OsCritSectBegin_Expect();
+		OsCritSectEnd_Expect();
 		res = ListLock(&list, LIST_LOCK_MODE_READ);
 		TEST_ASSERT_EQUAL(res, OS_RES_OK);
 	}
@@ -93,10 +106,14 @@ void test_ListLock_lock_read_max_plus_one(void)
 	OsResult_t res = ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
 	
 	for(int i = 0; i < LIST_LOCK_READ_COUNT_MAX; i++) {
+		OsCritSectBegin_Expect();
+		OsCritSectEnd_Expect();
 		res = ListLock(&list, LIST_LOCK_MODE_READ);
 		TEST_ASSERT_EQUAL(res, OS_RES_OK);
 	}
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListLock(&list, LIST_LOCK_MODE_READ);
 	TEST_ASSERT_EQUAL(res, OS_RES_LOCKED);
 }
@@ -106,6 +123,8 @@ void test_ListLock_lock_write(void)
 	LinkedList_t list;
 	OsResult_t res = ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListLock(&list, LIST_LOCK_MODE_WRITE);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
 }
@@ -115,9 +134,13 @@ void test_ListLock_lock_write_twice(void)
 	LinkedList_t list;
 	OsResult_t res = ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListLock(&list, LIST_LOCK_MODE_WRITE);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListLock(&list, LIST_LOCK_MODE_WRITE);
 	TEST_ASSERT_EQUAL(res, OS_RES_LOCKED);
 }
@@ -127,9 +150,13 @@ void test_ListLock_lock_read_write(void)
 	LinkedList_t list;
 	OsResult_t res = ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListLock(&list, LIST_LOCK_MODE_READ);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListLock(&list, LIST_LOCK_MODE_WRITE);
 	TEST_ASSERT_EQUAL(res, OS_RES_LOCKED);
 }
@@ -139,9 +166,13 @@ void test_ListLock_lock_write_read(void)
 	LinkedList_t list;
 	OsResult_t res = ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListLock(&list, LIST_LOCK_MODE_WRITE);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListLock(&list, LIST_LOCK_MODE_READ);
 	TEST_ASSERT_EQUAL(res, OS_RES_LOCKED);
 }

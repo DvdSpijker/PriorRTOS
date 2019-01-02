@@ -12,6 +12,8 @@
 #include "IdType.h"
 #include "IdTypeDef.h"
 
+#include "mock_Os.h"
+
 /* Other */
 #include <stdio.h>
 #include <string.h>

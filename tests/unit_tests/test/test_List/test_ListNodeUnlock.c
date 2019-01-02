@@ -12,6 +12,8 @@
 #include "IdType.h"
 #include "IdTypeDef.h"
 
+#include "mock_Os.h"
+
 /* Other */
 #include <stdio.h>
  
@@ -64,6 +66,8 @@ void test_ListNodeUnlock_not_locked(void)
 	
 	ListNodeInit(&node, NULL);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListNodeUnlock(&node);
 	TEST_ASSERT_EQUAL(res, OS_RES_ERROR);
 }
@@ -74,8 +78,13 @@ void test_ListNodeUnlock_once(void)
 	ListNode_t node;
 	
 	ListNodeInit(&node, NULL);
+	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	ListNodeLock(&node, LIST_LOCK_MODE_READ);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListNodeUnlock(&node);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
 }
@@ -88,10 +97,14 @@ void test_ListNodeUnlock_max(void)
 	ListNodeInit(&node, NULL);
 	
 	for(int i = 0; i < LIST_LOCK_READ_COUNT_MAX; i++) {
+		OsCritSectBegin_Expect();
+		OsCritSectEnd_Expect();
 		ListNodeLock(&node, LIST_LOCK_MODE_READ);
 	}
 	
 	for(int i = 0; i < LIST_LOCK_READ_COUNT_MAX; i++) {
+		OsCritSectBegin_Expect();
+		OsCritSectEnd_Expect();
 		res = ListNodeUnlock(&node);
 		TEST_ASSERT_EQUAL(res, OS_RES_OK);	
 	}
@@ -103,12 +116,22 @@ void test_ListNodeUnlock_lock_after_unlock(void)
 	ListNode_t node;
 	
 	ListNodeInit(&node, NULL);
-	ListNodeLock(&node, LIST_LOCK_MODE_READ);
+	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	ListNodeLock(&node, LIST_LOCK_MODE_READ);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	ListNodeLock(&node, LIST_LOCK_MODE_READ);
+	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListNodeUnlock(&node);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListNodeLock(&node, LIST_LOCK_MODE_WRITE);
 	TEST_ASSERT_EQUAL(res, OS_RES_LOCKED);
 }

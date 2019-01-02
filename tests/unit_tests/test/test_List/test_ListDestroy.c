@@ -12,6 +12,8 @@
 #include "IdType.h"
 #include "IdTypeDef.h"
 
+#include "mock_Os.h"
+
 /* Other */
 #include <stdio.h>
  
@@ -72,6 +74,9 @@ void test_ListDestroy_empty_list(void)
 	LinkedList_t list;
 	OsResult_t res = ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
 	TEST_ASSERT_EQUAL_MESSAGE(res, OS_RES_OK, "Wrong result code on valid list.");
+	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	
 	res = ListDestroy(&list);
 	TEST_ASSERT_EQUAL_MESSAGE(res, OS_RES_OK, "Wrong result code on empty list.");

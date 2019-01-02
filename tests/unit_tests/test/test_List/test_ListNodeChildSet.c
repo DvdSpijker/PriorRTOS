@@ -12,6 +12,8 @@
 #include "IdType.h"
 #include "IdTypeDef.h"
 
+#include "mock_Os.h"
+
 /* Other */
 #include <stdio.h>
 #include <string.h>
@@ -65,8 +67,12 @@ void test_ListNodeChildSet_locked_node(void)
 	int value = 1;
 	ListNode_t node;
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	ListNodeLock(&node, LIST_LOCK_MODE_WRITE);
 	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	res = ListNodeChildSet(&node, (void *)&value);
 	TEST_ASSERT_EQUAL(res, OS_RES_LOCKED);
 }
@@ -75,6 +81,12 @@ void test_ListNodeChildSet_child_null(void)
 {
 	OsResult_t res = OS_RES_ERROR;
 	ListNode_t node;
+	node.lock = 0;
+	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	
 	res = ListNodeChildSet(&node, NULL);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);
@@ -87,6 +99,12 @@ void test_ListNodeChildSet_child_not_null(void)
 	OsResult_t res = OS_RES_ERROR;
 	int value = 1;
 	ListNode_t node;
+	node.lock = 0;
+	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	
 	res = ListNodeChildSet(&node, (void *)&value);
 	TEST_ASSERT_EQUAL(res, OS_RES_OK);

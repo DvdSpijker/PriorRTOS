@@ -12,6 +12,8 @@
 #include "IdType.h"
 #include "IdTypeDef.h"
 
+#include "mock_Os.h"
+
 /* Other */
 #include <stdio.h>
  
@@ -65,7 +67,9 @@ void test_ListIsLocked_locked(void)
 
 	LinkedList_t list;
 	ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
-	
+
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	ListLock(&list, LIST_LOCK_MODE_READ);
 	
 	is_locked = ListIsLocked(&list);
@@ -89,8 +93,13 @@ void test_ListIsLocked_unlocked_after_locked(void)
 
 	LinkedList_t list;
 	ListInit(&list, ID_GROUP_MESSAGE_QUEUE);
-	
+
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	ListLock(&list, LIST_LOCK_MODE_READ);
+	
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
 	ListUnlock(&list);
 	
 	is_locked = ListIsLocked(&list);
