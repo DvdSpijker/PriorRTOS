@@ -26,8 +26,7 @@
 #define TEST_USER_HEAP_SIZE 0x50
 #define TEST_POOL_SIZE 0x10
 
-#define KERNEL_POOL_ID 0
-#define OBJ_POOL_ID 1
+#define OBJ_POOL_ID 0
 
 /*******************************************************************************
  *    PRIVATE TYPES
@@ -54,8 +53,6 @@ void setUp(void)
 	LogError_Ignore();
 	KCoreKernelModeEnter_IgnoreAndReturn(1);
 	KCoreKernelModeExit_IgnoreAndReturn(0);
-	OsCritSectBegin_Expect();
-	OsCritSectEnd_Expect();
 	OsCritSectBegin_Expect();
 	OsCritSectEnd_Expect();
 	

@@ -25,6 +25,8 @@
 #define TEST_HEAP_SIZE	0x100
 #define TEST_USER_HEAP_SIZE 0x50
 
+#define OBJ_POOL_ID 0
+
 /*******************************************************************************
  *    PRIVATE TYPES
  ******************************************************************************/
@@ -114,8 +116,6 @@ void test_KMemInit_no_user_heap(void)
 	KCoreKernelModeExit_IgnoreAndReturn(0);
 	OsCritSectBegin_Expect();
 	OsCritSectEnd_Expect();
-	OsCritSectBegin_Expect();
-	OsCritSectEnd_Expect();
 	
 	res = KMemInit(TestHeap, TEST_HEAP_SIZE, TEST_USER_HEAP_SIZE, TestPoolTable);
 	
@@ -123,8 +123,7 @@ void test_KMemInit_no_user_heap(void)
 	TEST_ASSERT_EQUAL(TestHeap[0], 0);
 	TEST_ASSERT_EQUAL(TestHeap[TEST_HEAP_SIZE - 1], 0);
 	
-	TEST_ASSERT_EQUAL(TestPoolTable[0].pool_size, KERNEL_POOL_SIZE_BYTES);
-	TEST_ASSERT_EQUAL(TestPoolTable[1].pool_size, TEST_HEAP_SIZE - TEST_USER_HEAP_SIZE - KERNEL_POOL_SIZE_BYTES);
+	TEST_ASSERT_EQUAL(TestPoolTable[OBJ_POOL_ID].pool_size, TEST_HEAP_SIZE - TEST_USER_HEAP_SIZE);
 	for(int i = 2; i < MEM_NUM_POOLS; i++) {
 		TEST_ASSERT_EQUAL(TestPoolTable[i].pool_size, 0);
 	}

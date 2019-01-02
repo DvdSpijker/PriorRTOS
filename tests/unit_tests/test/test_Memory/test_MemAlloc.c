@@ -22,15 +22,14 @@
 /*******************************************************************************
  *    DEFINITIONS
  ******************************************************************************/
-#define TEST_HEAP_SIZE	0x100
-#define TEST_USER_HEAP_SIZE 0x80
-#define TEST_POOL_SIZE MEM_BLOCK_SIZE * 5
+#define TEST_HEAP_SIZE	MEM_BLOCK_SIZE * 15
+#define TEST_USER_HEAP_SIZE MEM_BLOCK_SIZE * 12
+#define TEST_POOL_SIZE MEM_BLOCK_SIZE * 12
 
-#define TEST_ALLOC_SIZE_SINGLE_BLOCK MEM_BLOCK_SIZE - 1
-#define TEST_ALLOC_SIZE_MULTI_BLOCK MEM_BLOCK_SIZE + 1
+#define TEST_ALLOC_SIZE_SINGLE_BLOCK MEM_BLOCK_SIZE - MEM_ALLOC_SIZE_SIZE_BYTES
+#define TEST_ALLOC_SIZE_MULTI_BLOCK TEST_ALLOC_SIZE_SINGLE_BLOCK + MEM_BLOCK_SIZE
 
-#define KERNEL_POOL_ID 0
-#define OBJ_POOL_ID 1
+#define OBJ_POOL_ID 0
 
 /*******************************************************************************
  *    PRIVATE TYPES
@@ -58,8 +57,6 @@ void setUp(void)
 	LogError_Ignore();
 	KCoreKernelModeEnter_IgnoreAndReturn(1);
 	KCoreKernelModeExit_IgnoreAndReturn(0);
-	OsCritSectBegin_Expect();
-	OsCritSectEnd_Expect();
 	OsCritSectBegin_Expect();
 	OsCritSectEnd_Expect();
 	
@@ -121,18 +118,6 @@ void test_MemAlloc_no_space(void)
 	TEST_ASSERT_EQUAL(NULL, addr);
 }
 
-void test_MemAlloc_kernel_pool_no_kernel_mode(void)
-{
-	void *addr = NULL;
-	
-	LogError_Ignore();
-	KCoreFlagGet_ExpectAndReturn(CORE_FLAG_KERNEL_MODE, 0);
-
-	addr = MemAlloc(KERNEL_POOL_ID, TEST_ALLOC_SIZE_SINGLE_BLOCK);
-	
-	TEST_ASSERT_EQUAL(NULL, addr);
-}
-
 void test_MemAlloc_obj_pool_no_kernel_mode(void)
 {
 	void *addr = NULL;
@@ -159,7 +144,7 @@ void test_MemAlloc_single_block_single_alloc(void)
 	alloc_size = *((U32_t *)&TestHeap[TestPoolTable[TestPool].start_index]);
 	
 	TEST_ASSERT_EQUAL(&TestHeap[TestPoolTable[TestPool].start_index + MEM_ALLOC_DATA_OFFSET], addr);
-	TEST_ASSERT_EQUAL(2 * MEM_BLOCK_SIZE, alloc_size);
+	TEST_ASSERT_EQUAL(TEST_ALLOC_SIZE_SINGLE_BLOCK + MEM_ALLOC_SIZE_SIZE_BYTES, alloc_size);
 	TEST_ASSERT_EQUAL(1, TestPoolTable[TestPool].N);
 	TEST_ASSERT_EQUAL(TEST_POOL_SIZE - alloc_size, TestPoolTable[TestPool].mem_left);
 }
@@ -181,7 +166,7 @@ void test_MemAlloc_single_block_double_alloc(void)
 	alloc_size = *((U32_t *)&TestHeap[TestPoolTable[TestPool].start_index]);
 	
 	TEST_ASSERT_EQUAL(&TestHeap[TestPoolTable[TestPool].start_index + MEM_ALLOC_DATA_OFFSET], addr);
-	TEST_ASSERT_EQUAL(2 * MEM_BLOCK_SIZE, alloc_size);
+	TEST_ASSERT_EQUAL(TEST_ALLOC_SIZE_SINGLE_BLOCK + MEM_ALLOC_SIZE_SIZE_BYTES, alloc_size);
 	TEST_ASSERT_EQUAL(1, TestPoolTable[TestPool].N);
 	TEST_ASSERT_EQUAL(TEST_POOL_SIZE - alloc_size, TestPoolTable[TestPool].mem_left);
 	mem_index = TestPoolTable[TestPool].start_index + alloc_size;
@@ -195,11 +180,69 @@ void test_MemAlloc_single_block_double_alloc(void)
 	alloc_size = *((U32_t *)&TestHeap[mem_index]);
 	
 	TEST_ASSERT_EQUAL(&TestHeap[mem_index + MEM_ALLOC_DATA_OFFSET], addr);
-	TEST_ASSERT_EQUAL(2 * MEM_BLOCK_SIZE, alloc_size);
+	TEST_ASSERT_EQUAL(MEM_BLOCK_SIZE, alloc_size);
 	TEST_ASSERT_EQUAL(2, TestPoolTable[TestPool].N);
 	TEST_ASSERT_EQUAL(mem_left - alloc_size, TestPoolTable[TestPool].mem_left);
 }
 
+void test_MemAlloc_single_block_max_alloc(void)
+{
+	void *addr = NULL;
+	U32_t alloc_size = 0;
+	U32_t mem_index = TestPoolTable[TestPool].start_index;
+	U32_t mem_left = TestPoolTable[TestPool].mem_left;
+	int i = 0;
+	
+	LogError_Ignore();
+	
+	do {		
+		OsCritSectBegin_Ignore();
+		OsCritSectEnd_Ignore();
+		
+		addr = MemAlloc(TestPool, TEST_ALLOC_SIZE_SINGLE_BLOCK);
+		
+		if(addr == NULL) {
+			break;
+		}
+		
+		alloc_size = *((U32_t *)&TestHeap[mem_index]);
+		
+		TEST_ASSERT_EQUAL(&TestHeap[mem_index + MEM_ALLOC_DATA_OFFSET], addr);
+		TEST_ASSERT_EQUAL(TEST_ALLOC_SIZE_SINGLE_BLOCK + MEM_ALLOC_SIZE_SIZE_BYTES, alloc_size);
+		TEST_ASSERT_EQUAL(i + 1, TestPoolTable[TestPool].N);
+		TEST_ASSERT_EQUAL(mem_left - alloc_size, TestPoolTable[TestPool].mem_left);
+		
+		mem_index += alloc_size;
+		mem_left = TestPoolTable[TestPool].mem_left;
+		alloc_size = *((U32_t *)&TestHeap[mem_index]);
+		
+		i++;
+	} while(addr != NULL);
+	
+	TEST_ASSERT_EQUAL(i, TEST_POOL_SIZE / MEM_BLOCK_SIZE);
+}
 
+void test_MemAlloc_multi_block_alloc_after_free(void)
+{
+	void *addr = NULL;
+	U32_t alloc_size = 0;
+	U32_t index = TestPoolTable[TestPool].start_index + MEM_BLOCK_SIZE;
+	
+	LogError_Ignore();
+	OsCritSectBegin_Expect();
+	OsCritSectEnd_Expect();
+	
+	TestHeap[index] = MEM_BLOCK_SIZE;
+	index += MEM_BLOCK_SIZE;
+	
+	addr = MemAlloc(TestPool, TEST_ALLOC_SIZE_MULTI_BLOCK);
+	
+	alloc_size = *((U32_t *)&TestHeap[index]);
+	
+	TEST_ASSERT_EQUAL(&TestHeap[index + MEM_ALLOC_DATA_OFFSET], addr);
+	TEST_ASSERT_EQUAL(TEST_ALLOC_SIZE_MULTI_BLOCK + MEM_ALLOC_SIZE_SIZE_BYTES, alloc_size);
+	TEST_ASSERT_EQUAL(1, TestPoolTable[TestPool].N);
+	TEST_ASSERT_EQUAL(TEST_POOL_SIZE - alloc_size, TestPoolTable[TestPool].mem_left);	
+}
 
 
