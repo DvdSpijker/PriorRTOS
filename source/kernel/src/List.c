@@ -10,6 +10,7 @@
 
 //#include "Logger.h"
 #include "IdTypeDef.h"
+#include "Os.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -35,17 +36,6 @@
 #define LOCK_MODE_IS_WRITE(lock)((lock & LOCK_MASK_MODE) ? true : false)
 
 #define LOCK_MODE_IS_READ(lock)((lock & LOCK_MASK_MODE) ? false : true)
-
-
-void OsCritSectBegin(void)
-{
-	
-}
-
-void OsCritSectEnd(void)
-{
-	
-}
 
 /* Internal functions. */
 static void IListIdInit(LinkedList_t *list, IdGroup_t id_group);
@@ -195,10 +185,10 @@ OsResult_t ListMerge(LinkedList_t *list_x, LinkedList_t *list_y)
 
     result = ListDestroy(list_x);
 
-#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-    ListIntegrityVerify(list_x);
-    ListIntegrityVerify(list_y);
-#endif
+//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+//    ListIntegrityVerify(list_x);
+//    ListIntegrityVerify(list_y);
+//#endif
 
 
     return result;
@@ -344,7 +334,7 @@ OsResult_t ListNodeAddAtPosition(LinkedList_t *list, ListNode_t *node, U8_t posi
      * The list is locked in write mode because a node will be added. */
     OsResult_t result = ListLock(list, LIST_LOCK_MODE_WRITE);
     if(result == OS_RES_OK) {
-    	if(list->size == LIST_SIZE_MAX) {
+    	if(list->size >= LIST_SIZE_MAX) {
             LOG_ERROR_NEWLINE("List (%p) has reached its max capacity.", list);
             result = OS_RES_FAIL; 
             goto unlock;
@@ -388,9 +378,9 @@ unlock:
         ListUnlock(list);
     }
 
-#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-    ListIntegrityVerify(list);
-#endif
+//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+//    ListIntegrityVerify(list);
+//#endif
 
     return result;
 }
@@ -487,9 +477,9 @@ unlock:
         ListUnlock(list);
     }
 
-#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-    ListIntegrityVerify(list);
-#endif
+//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+//    ListIntegrityVerify(list);
+//#endif
     return result;
 }
 
@@ -650,9 +640,9 @@ ListNode_t *ListNodeRemove(LinkedList_t *list, ListNode_t *node)
         ListUnlock(list);
     }
 
-#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-    ListIntegrityVerify(list);
-#endif
+//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+//    ListIntegrityVerify(list);
+//#endif
 
     return y;
 }
@@ -756,9 +746,9 @@ OsResult_t ListNodeSwap(LinkedList_t *list, ListNode_t *node_x, ListNode_t *node
     }
 
 
-#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-    ListIntegrityVerify(list);
-#endif
+//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+//    ListIntegrityVerify(list);
+//#endif
 
     return OS_RES_OK;
 }

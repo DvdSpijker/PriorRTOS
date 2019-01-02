@@ -45,6 +45,7 @@ extern "C" {
 #include "OsResult.h"
 #include "StdTypes.h"
 #include "IdType.h"
+#include "PriorRTOSConfig.h"
 
 #include <stdbool.h>
 
