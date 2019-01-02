@@ -12,7 +12,7 @@
  *  D. van de Spijker
  *  -----------------
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -206,6 +206,14 @@
  * @unit: bits
  *******************************************************/
 #define PRTOS_CONFIG_MEM_WIDTH_32_BITS
+
+/*******************************************************
+ * @macro: PRTOS_CONFIG_USE_EXTERNAL_OS_HEAP
+ *
+ * @desc: The OS Heap is defined outside the kernel space
+ * and must be supplied by the user.
+ *******************************************************/
+//#define PRTOS_CONFIG_USE_EXTERNAL_OS_HEAP
 
 /*******************************************************
  * @macro: PRTOS_CONFIG_OS_HEAP_SIZE_BYTES

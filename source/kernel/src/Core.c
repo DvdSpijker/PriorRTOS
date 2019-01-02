@@ -65,9 +65,6 @@
 
 
 #define N_KERNEL_TIMERS  0	/* Number of Kernel timers. */
-#define KERNEL_HEAP_SIZE 20
-#define KERNEL_HEAP_MAGICWORD (MemBase_t)0xAB
-#define OBJECT_HEAP_SIZE (PRTOS_CONFIG_OS_HEAP_SIZE_BYTES - (PRTOS_CONFIG_USER_HEAP_SIZE_BYTES + KERNEL_HEAP_SIZE))
 
 LOG_FILE_NAME("Core.c");
 
@@ -154,9 +151,12 @@ static void ICoreWdtDisable();
 #endif
 
 /* OS Heap and memory. */
-
-U8_t OsHeap[PRTOS_CONFIG_OS_HEAP_SIZE_BYTES];
-Pmb_t OsPoolTable[MEM_NUM_POOLS];
+static Pmb_t OsPoolTable[MEM_NUM_POOLS];
+#ifndef PRTOS_CONFIG_USE_EXTERNAL_OS_HEAP
+static U8_t OsHeap[PRTOS_CONFIG_OS_HEAP_SIZE_BYTES];
+#else 
+static U8_t *OsHeap = NULL;
+#endif
 
 /* Kernel Register */
 
@@ -185,12 +185,6 @@ typedef struct Reg_t {
     volatile U32_t      hours;
     volatile U32_t      t_accu;  /* Accumulated time since last RunTime update. */
 
-    Id_t                kernel_heap;
-    Id_t                object_heap; /* Holds all objects created by kernel modules. */
-    U16_t               object_count;
-    MemBase_t*          heap_mgw0;
-
-
 #if PRTOS_CONFIG_ENABLE_CPULOAD_CALC>0
     volatile U8_t           cpu_load;
 #endif
@@ -207,6 +201,15 @@ if(KernelReg.lock < 0xFF) {     \
   KernelReg.lock--;             \
 }                               \
 else { while (1); }             \
+
+#ifdef PRTOS_CONFIG_USE_EXTERNAL_OS_HEAP
+void OsHeapSet(U8_t *os_heap)
+{
+	if(OsHeap == NULL && os_heap != NULL) {
+		OsHeap = os_heap;
+	}
+}
+#endif
 
 OsResult_t OsInit(OsResult_t *status_optional)
  {
@@ -226,9 +229,6 @@ OsResult_t OsInit(OsResult_t *status_optional)
         KernelReg.hours = 0;
         KernelReg.t_accu = 0;
         KernelReg.scheduler_lock = 0;
-        KernelReg.kernel_heap = ID_INVALID;
-        KernelReg.object_heap = ID_INVALID;
-        KernelReg.object_count = 0;
     }
     KERNEL_REG_UNLOCK();
     KCoreFlagClear(CORE_FLAG_ALL);//clear all flags
@@ -263,17 +263,19 @@ OsResult_t OsInit(OsResult_t *status_optional)
     KIdInit();
     LOG_INFO_APPEND("ok");
     
+    /* Initialize memory management */
     LOG_INFO_NEWLINE("Initializing module:Memory Management...");
     status_kernel = KMemInit(OsHeap, PRTOS_CONFIG_OS_HEAP_SIZE_BYTES, PRTOS_CONFIG_USER_HEAP_SIZE_BYTES,
-    		OsPoolTable); /* Initialize memory management */
+    		OsPoolTable); 
     if(status_kernel == OS_RES_CRIT_ERROR) {
         LOG_ERROR_NEWLINE("critical error");
         return status_kernel;
     }
     LOG_INFO_APPEND("ok");
 
+    /* Initialize task management */
     LOG_INFO_NEWLINE("Initializing module:Task...");
-    status_kernel = KTaskInit(); /* Initialize task management */
+    status_kernel = KTaskInit();
     if(status_kernel == OS_RES_CRIT_ERROR) {
         LOG_ERROR_NEWLINE("critical error");
         return status_kernel;

@@ -27,13 +27,15 @@ extern "C" {
 #error "PriorRTOS: User pools defined but no heap-space reserved; PRTOS_CONFIG_N_USER_POOLS > 0, PRTOS_CONFIG_OS_HEAP_SIZE_BYTES = 0."
 #endif
 
-#define KERNEL_POOL_SIZE_BYTES 20
-#define MEM_NUM_OS_POOLS 2
+#define MEM_NUM_OS_POOLS 1
 #define MEM_NUM_POOLS PRTOS_CONFIG_N_USER_POOLS + MEM_NUM_OS_POOLS
 
-#define MEM_ALLOC_DATA_OFFSET	sizeof(U32_t) / sizeof(U8_t)
+#define MEM_ALLOC_SIZE_OFFSET	0
+#define MEM_ALLOC_DATA_OFFSET	sizeof(U32_t)
+#define MEM_ALLOC_SIZE_SIZE_BYTES sizeof(U32_t)
 #define MEM_BLOCK_SIZE			16
 #define MEM_BYTES_TO_BLOCKS(bytes) ( (bytes % MEM_BLOCK_SIZE) ? (bytes / MEM_BLOCK_SIZE) + 1 : (bytes / MEM_BLOCK_SIZE) )
+
 
 /* Pool Management Block definition. */
 typedef struct Pmb_t {
@@ -75,7 +77,6 @@ typedef struct Pmb_t *  pPmb_t;
  ******************************************************************************/
 OsResult_t KMemInit(U8_t *heap, U32_t heap_size, U32_t user_heap_size, Pmb_t *pool_table);
 
-void *KMemAlloc(U32_t size);
 void *KMemAllocObject(U32_t obj_size, U32_t obj_data_size, void **obj_data);
 OsResult_t KMemFreeObject(void **obj, void **obj_data);
 

@@ -1,6 +1,7 @@
 #ifndef OS_H_
 #define OS_H_
 
+#include "PriorRTOSConfig.h"
 #include "OsTypes.h"
 
 #include <stdbool.h>
@@ -9,12 +10,21 @@
 extern "C" {
 #endif
 
+#ifdef PRTOS_CONFIG_USE_EXTERNAL_OS_HEAP
+/******************************************************************************
+ * @func: void OsHeapSet(U8_t *os_heap)
+ *
+ * @desc: Sets the memory used for the OS Heap. Must be called before OsInit.
+ * The memory must of size PRTOS_CONFIG_OS_HEAP_SIZE_BYTES.
+ ******************************************************************************/
+void OsHeapSet(U8_t *os_heap);
+#endif
 
 /******************************************************************************
  * @func: OsResult_t OsInit(OsResult_t *result_optional)
  *
- * @desc: Initializes the Prior RTOS kernel. This function has to be called
- * before any other Prior API function.
+ * @desc: Initializes the Prior RTOS kernel. This function must be called
+ * before any other Prior API function, with the exception of OsHeapSet.
  *
  * @argout: (OsResult_t *) result_optional; Result of optional module initialization.
  *
