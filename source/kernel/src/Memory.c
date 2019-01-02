@@ -389,7 +389,7 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
         return OS_RES_INVALID_ARGUMENT;
     }
 
-    if((cur_pool_id ==ObjectPoolId || new_pool_id == ObjectPoolId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
+    if((cur_pool_id == ObjectPoolId || new_pool_id == ObjectPoolId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
         LOG_ERROR_NEWLINE("Restricted pool ID.");
         return OS_RES_RESTRICTED;
     }
@@ -397,25 +397,27 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
     if(new_pool_id == ID_INVALID) {
         new_pool_id = cur_pool_id;
     }
+    
     OsCritSectBegin();
 
-    void* tmp_ptr = MemAlloc(new_pool_id,new_size);
+    U32_t size = MemAllocSizeGet(*ptr);
+    void *tmp_ptr = MemAlloc(new_pool_id, new_size);
 
     if(tmp_ptr == NULL) {
         OsCritSectEnd();
-        return OS_RES_INVALID_ARGUMENT;
+        return OS_RES_FAIL;
     }
-
-//for (U32_t i = 0; (i < size) && (i < new_size); i++) {
-//(MemBase_t *)tmp_ptr[i] = (MemBase_t *)(*ptr)[i];
-//}
-    /* TODO: Copy data in MemReAlloc. */
+    
+	for (U32_t i = 0; (i < size) && (i < new_size); i++) {
+		((U8_t *)tmp_ptr)[i] = ((U8_t *)(*ptr))[i];
+	}
 
     MemFree(ptr);
 
     *ptr = tmp_ptr;
 
     OsCritSectEnd();
+    
     return OS_RES_OK;
 }
 
@@ -427,39 +429,33 @@ OsResult_t MemFree(void **ptr)
         return OS_RES_INVALID_ARGUMENT;
     }
 
-    U8_t *tmp_ptr = (U8_t*)(*ptr);
+    U8_t *tmp_ptr = (U8_t *)(*ptr);
     Id_t pool_id = IPoolIdFromPointer((MemBase_t *)tmp_ptr);
 
     if(pool_id == ID_INVALID) { /* Pool not found. */
-        return OS_RES_INVALID_ID;
+        return OS_RES_ERROR;
     }
     if(pool_id == ObjectPoolId && KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0) {
-
         return OS_RES_RESTRICTED;
     }
+    
     OsCritSectBegin();
 
-    OsResult_t result = OS_RES_OK;
     pPmb_t pool = &PoolTable[pool_id];
     tmp_ptr = &tmp_ptr[-MEM_ALLOC_DATA_OFFSET]; /* Allocation size is located at pointer - ALLOC_DATA_INDEX_OFFSET */
     U32_t size = *((U32_t *)tmp_ptr);
 
-    if(result == OS_RES_OK) {
-        /* Zero memory block. */
-        for (U32_t i = 0; i < size; i++) {
-            tmp_ptr[i] = 0;
-        }
-        pool->mem_left += size;
-        pool->N--;
+	/* Zero memory block. */
+	for (U32_t i = 0; i < size; i++) {
+		tmp_ptr[i] = 0;
+	}
+	pool->mem_left += size;
+	pool->N--;
 
-        *ptr = NULL; /* Set pointer to NULL, avoids reusing it in app by accident. */
-    }
+	*ptr = NULL; /* Set pointer to NULL, avoids reusing it in app by accident. */
 
-    if(pool->mem_left > pool->pool_size) {
-        while(1);
-    }
     OsCritSectEnd();
-    return result;
+    return OS_RES_OK;
 }
 
 U32_t MemAllocSizeGet(void *ptr)
@@ -468,7 +464,7 @@ U32_t MemAllocSizeGet(void *ptr)
         return 0;
     }
 
-    MemBase_t* tmp_ptr = (MemBase_t*)(ptr);
+    MemBase_t *tmp_ptr = (MemBase_t *)ptr;
 
     /* Test if the pointer is in a pool address space.
     If the pool ID equals 0 the pointer is either not
@@ -495,12 +491,14 @@ U32_t MemAllocSizeGet(void *ptr)
 static Id_t IPoolIdFromIndex(U32_t index)
 {
     Id_t id = ID_INVALID;
+    
     for (Id_t i = 0; i < (TotalHeapPools); i++) {
         if(index >= PoolTable[i].start_index && index <= PoolTable[i].end_index && PoolTable[i].pool_size > 0) {
             id = i;
             break;
         }
     }
+    
     return id;
 }
 
@@ -509,13 +507,18 @@ static Id_t IPoolIdFromPointer(MemBase_t *ptr)
     Id_t id = ID_INVALID;
     MemBase_t *start_addr = NULL;
     MemBase_t *end_addr = NULL;
+    
     for (Id_t i = 0; i < (TotalHeapPools); i++) {
-        start_addr = ((MemBase_t *)&OsHeap[PoolTable[i].start_index]);
-        end_addr =  ((MemBase_t *)&OsHeap[PoolTable[i].end_index]);
-        if(ptr >= start_addr && ptr < end_addr) {
-            id = i;
-        }
+    	if(PoolTable[i].pool_size > 0) {
+			start_addr = ((MemBase_t *)&OsHeap[PoolTable[i].start_index]);
+			end_addr =  ((MemBase_t *)&OsHeap[PoolTable[i].end_index]);
+			if(ptr >= start_addr && ptr < end_addr) {
+				id = i;
+				break;
+			}
+    	}
     }
+    
     return id;
 }
 

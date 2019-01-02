@@ -177,17 +177,17 @@ void *MemAlloc(Id_t pool_id, U32_t size);
  *
  * @desc: Re-Allocates memory in given
  * pool with specified size. The allocation may be
- * moved to another pool by passing a different pool ID. If allocation
- * fails, MemReAlloc returns OS_RES_FAIL. In this case the memory will
- * still remain allocated in the current pool.
+ * moved to another pool by passing a different pool ID. 
+ * Any data stored at the old allocation address will be copied, if the 
+ * new allocation is smaller the data is truncated.
  *
  * @argin: (Id_t) cur_pool_id; Current pool ID of the to-reallocate memory
  * @argin: (Id_t) new_pool_id; New pool ID of the to-reallocate memory.
  * If moving the allocation across memory pools is not desired,
- * either pass the same pool ID for new_pool_id as cur_pool_id or
- * pass ID_INVALID as new_pool_id.
- * @argout: (void **) ptr; Pointer to existing allocation
+ * @argin: (void **) ptr; Pointer to memory location.
+ * either pass the same pool ID or ID_INVALID.
  * @argin: (U32_t) new_size; Size to allocate
+ * @argout: (void **) ptr; Pointer to new memory location.
  *
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if re-allocation was successful.
@@ -201,15 +201,17 @@ OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_
 /******************************************************************************
  * @func: OsResult_t MemFree (void **ptr)
  *
- * @desc: Frees the specified piece of allocated memory,returning it to
+ * @desc: Frees the specified piece of allocated memory, returning it to
  * the pool. Freed memory will be set to 0. The pointer to the freed memory
- * will implicitly be set to NULL.
+ * is set to NULL.
  *
  * @argin:  (void**) ptr; Pointer to the allocation pointer
  *
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if freeing was successful.
  * @retval:   OS_RES_INVALID_ARGUMENT; if the memory pointer equals NULL.
+ * @retval:   OS_RES_ERROR; if the pointer points to memory which is not allocated within
+ * a valid pool.
  * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the correct privileges.
  ******************************************************************************/
 OsResult_t MemFree(void **ptr);
