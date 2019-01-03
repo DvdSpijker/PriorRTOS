@@ -134,7 +134,6 @@ Id_t MemPoolCreate(U32_t pool_size)
     
     /* Check if one was found. */
     if(pool_id >= TotalHeapPools) {
-        LOG_ERROR_NEWLINE("Pool ID %04x is invalid.");
         OsCritSectEnd();
         return ID_INVALID;   	
     }
@@ -385,8 +384,12 @@ OsResult_t KMemFreeObject(void **obj, void **obj_data)
 OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_size)
 {
 
-    if(cur_pool_id > TotalHeapPools || new_pool_id > TotalHeapPools) {
-        return OS_RES_INVALID_ARGUMENT;
+	if(ptr == NULL || new_size == 0) {
+		return OS_RES_INVALID_ARGUMENT;
+	}
+	
+    if(cur_pool_id >= TotalHeapPools || new_pool_id >= TotalHeapPools) {
+        return OS_RES_INVALID_ID;
     }
 
     if((cur_pool_id == ObjectPoolId || new_pool_id == ObjectPoolId) && (KCoreFlagGet(CORE_FLAG_KERNEL_MODE) == 0)) {
