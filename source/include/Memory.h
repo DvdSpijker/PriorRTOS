@@ -179,21 +179,22 @@ void *MemAlloc(Id_t pool_id, U32_t size);
  * pool with specified size. The allocation may be
  * moved to another pool by passing a different pool ID. 
  * Any data stored at the old allocation address will be copied, if the 
- * new allocation is smaller the data is truncated.
+ * new allocation is smaller the data is truncated. If the new allocation
+ * fails the data will remain intact.
  *
  * @argin: (Id_t) cur_pool_id; Current pool ID of the to-reallocate memory
  * @argin: (Id_t) new_pool_id; New pool ID of the to-reallocate memory.
- * If moving the allocation across memory pools is not desired,
+ * If moving the allocation across memory pools is not desired, pass the same
+ * value as cur_pool_id.
  * @argin: (void **) ptr; Pointer to memory location.
- * either pass the same pool ID or ID_INVALID.
  * @argin: (U32_t) new_size; Size to allocate
  * @argout: (void **) ptr; Pointer to new memory location.
  *
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if re-allocation was successful.
  * @retval:   OS_RES_FAIL; if the requested block was too large.
- * @retval:   OS_RES_INVALID_ARGUMENT; if the pool ID is not part of
- *            the pool memory space.
+ * @retval:   OS_RES_INVALID_ARGUMENT; if ptr is NULL or new_size is 0.
+ * @retval:   OS_RES_INVALID_ID; if an invalid pool ID was passed.
  * @retval:   OS_RES_RESTRICTED; if a pool was accessed without the correct privileges.
  ******************************************************************************/
 OsResult_t MemReAlloc(Id_t cur_pool_id, Id_t new_pool_id, void **ptr, U32_t new_size);
