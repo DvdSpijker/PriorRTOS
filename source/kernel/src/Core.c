@@ -63,9 +63,6 @@
 #include <stdlib.h>
 #include <math.h>
 
-
-#define N_KERNEL_TIMERS  0	/* Number of Kernel timers. */
-
 LOG_FILE_NAME("Core.c");
 
 
@@ -176,10 +173,6 @@ typedef struct Reg_t {
     volatile U8_t       scheduler_lock;
     volatile U16_t      sreg;
     U8_t                os_running;
-
-#if N_KERNEL_TIMERS>0
-    Id_t				timer_table[N_KERNEL_TIMERS];
-#endif
 
     volatile U32_t      micros;
     volatile U32_t      hours;
@@ -737,7 +730,7 @@ void OsTick(void)
 static void ICoreTickCoop(void)
 {
     OsIsrBegin();
-    PortGlobalIntDisable();//Disable OS timer interrupt to make sure OS ticks don't nest
+    OsCritSectEnter();
     KCoreKernelModeEnter();
 
     if(!KCoreFlagGet(CORE_FLAG_TICK)) {
@@ -774,9 +767,8 @@ static void ICoreTickCoop(void)
     }
 
     KCoreKernelModeExit();
-    PortGlobalIntEnable();
+    OsCritSectEnd();
     OsIsrEnd();
-
 
     PortOsIntFlagClear();
 }
@@ -826,9 +818,6 @@ static void ICoreSchedulerInit(void)
 
 static void ICoreSchedulerCycle(void)
 {
-
-    /* TODO: Check scheduler cycle for correct behavior. */
-
     KCoreFlagSet(CORE_FLAG_SCHEDULER);
 
     ICoreEventBrokerCycle(&ExecutionQueue);
@@ -1226,28 +1215,21 @@ static U16_t ICoreCalculatePrescaler(U16_t f_os)
     float tick_t = (1/(float)f_os); //in s
     KernelReg.f_os = f_os;
 
-    volatile U16_t prescaling_fact;
-
     while (presc_cnt < 5 || tmp_ovf > 0xFFFF) {
 
         if (presc_cnt == 1) {
-            prescaling_fact = 1;
             KernelReg.prescaler = 1;
         } else if (presc_cnt == 2) {
-            prescaling_fact = 8;
             KernelReg.prescaler =8;
         } else if (presc_cnt == 3) {
-            prescaling_fact = 64;
             KernelReg.prescaler = 65;
         } else if (presc_cnt == 4) {
-            prescaling_fact = 256;
             KernelReg.prescaler = 256;
         } else if (presc_cnt == 5) {
-            prescaling_fact = 1024;
             KernelReg.prescaler = 1024;
         }
 
-        KernelReg.f_os_timer = PRTOS_CONFIG_F_OS_TIMER_HZ/prescaling_fact; //in Hz
+        KernelReg.f_os_timer = PRTOS_CONFIG_F_OS_TIMER_HZ/ KernelReg.prescaler; //in Hz
         tmp_ovf = (tick_t * KernelReg.f_os_timer);
 
         if(tmp_ovf > 0xFFFF) {
