@@ -39,6 +39,7 @@
 **********************************************************************************************************************************************/
 
 /* Prior RTOS includes. */
+#include "include/Os.h"
 #include "kernel/inc/CoreDef.h"
 #include "port/PortCore.h"
 
@@ -131,7 +132,7 @@ static void ICoreTaskEventsCompare(struct EventBrokerArgs *args);
 void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task);
 
 static void ICoreSwitchTask(void);
-static OsResult_t ICoreLoadNewTask(pTcb_t tcb);
+static OsResult_t ICoreLoadTaskFromExecutionQueue(void);
 static U16_t  ICoreCalculatePrescaler(U16_t f_os);
 
 static void ICoreRunTimeUpdate(void);
@@ -408,7 +409,8 @@ void OsStart(Id_t start_task_id)
     }
 
     ListNodeRemove(&TcbList, &TcbRunning->list_node);
-    ICoreLoadNewTask(TcbRunning);
+    ListNodeAddAtPosition(&ExecutionQueue, &TcbRunning->list_node, LIST_POSITION_HEAD);
+    ICoreLoadTaskFromExecutionQueue();
 
     KCoreKernelModeExit(); //Disable kernel mode
 
@@ -700,7 +702,7 @@ static void ICoreRunTimeUpdate(void)
     KERNEL_REG_LOCK() {
         KernelReg.micros += KernelReg.t_accu;
         KernelReg.t_accu = 0;
-        if(KernelReg.micros >= 0xD693A400) { //3600.000.000 us i.e. 1 hour.
+        if(KernelReg.micros >= USEC_PER_HOUR) {
             KernelReg.micros = 0;
             KernelReg.hours++;
         }
@@ -719,7 +721,7 @@ void OsTick(void)
 #ifdef PRTOS_CONFIG_USE_SCHEDULER_COOP
 		ICoreTickCoop();
 #else
-	ICoreTickPreem();
+		ICoreTickPreem();
 #endif
 	}
 }
@@ -730,7 +732,7 @@ void OsTick(void)
 static void ICoreTickCoop(void)
 {
     OsIsrBegin();
-    OsCritSectEnter();
+    OsCritSectBegin();
     KCoreKernelModeEnter();
 
     if(!KCoreFlagGet(CORE_FLAG_TICK)) {
@@ -993,7 +995,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
     struct ListIterator it;
 
     if(ListNodeRemove(from_list, &task->list_node) == NULL) {
-        LOG_ERROR_NEWLINE("Removing task %04x from list %p failed.", task, from_list);
+        LOG_ERROR_NEWLINE("Removing task %08x from list %p failed.", ListNodeIdGet(&task->list_node), from_list);
         while(1);
     }
 
@@ -1002,7 +1004,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
     if(ListSizeGet(to_list) == 0) {
         //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at head.", task->list_node.id);
         if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_HEAD) != OS_RES_OK) {
-            LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, to_list);
+        	LOG_ERROR_NEWLINE("Adding task %08x to list %p failed.", ListNodeIdGet(&task->list_node), to_list);
         }
     } else {
         LIST_ITERATOR_BEGIN(&it, to_list, LIST_ITERATOR_DIRECTION_FORWARD);
@@ -1017,7 +1019,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
                 if(task->priority > compare_task->priority) {
                     //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x before %04x.", task->list_node.id, it.current_node->id);
                     if(ListNodeAddAtNode(to_list, &task->list_node, it.current_node, LIST_ADD_BEFORE) != OS_RES_OK) {
-                        LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, to_list);
+                    	LOG_ERROR_NEWLINE("Adding task %08x to list %p failed.", ListNodeIdGet(&task->list_node), to_list);
                         while(1);
                     }
                     return;
@@ -1025,7 +1027,7 @@ void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_li
             } else {
                 //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at tail.", task->list_node.id);
                 if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_TAIL) != OS_RES_OK) {
-                    LOG_ERROR_NEWLINE("Adding task %04x to list %p failed.", task, to_list);
+                	LOG_ERROR_NEWLINE("Adding task %08x to list %p failed.", ListNodeIdGet(&task->list_node), to_list);
                     while(1);
                 }
                 return;
@@ -1078,28 +1080,22 @@ static void ICoreSwitchTask(void)
     }
 
     TcbRunning = NULL;
-    ICoreLoadNewTask(NULL);
+    ICoreLoadTaskFromExecutionQueue();
 }
 
-/* Loads a TCB as new running task. TCB has to be
-* disconnected from any lists.
-* If TCB = NULL, the first task in the ExecutionQueue
-* will be loaded. If no task is present in the queue,
+/* Loads a task from the ExecutionQueue (head position).
+ * If no task is present in the queue,
 * the Idle task is loaded instead. */
-static OsResult_t ICoreLoadNewTask(pTcb_t tcb)
+static OsResult_t ICoreLoadTaskFromExecutionQueue(void)
 {
     OsResult_t result = OS_RES_OK;
 
-    if(tcb == NULL) {
-        if (ListSizeGet(&ExecutionQueue) != 0) {
-            TcbRunning = (pTcb_t)ListNodeChildGet(ListNodeRemoveFromHead(&ExecutionQueue));
-        } else {
-            TcbRunning = TcbIdle;
-            ListNodeRemove(&TcbList, &TcbIdle->list_node);
-        }
-    } else {
-        TcbRunning = tcb;
-    }
+	if (ListSizeGet(&ExecutionQueue) != 0) {
+		TcbRunning = (pTcb_t)ListNodeChildGet(ListNodeRemoveFromHead(&ExecutionQueue));
+	} else {
+		TcbRunning = TcbIdle;
+		ListNodeRemove(&TcbList, &TcbIdle->list_node);
+	}
 
     KTaskStateSet(TcbRunning, TASK_STATE_RUNNING);
 

@@ -9,6 +9,7 @@ extern "C" {
 #include "include/OsTypes.h"
 
 #define CORE_OS_TIMER_TICKS_TO_US(ticks) (U32_t)(((float)ticks / PRTOS_CONFIG_F_OS_TIMER_HZ) * 1e6)
+#define USEC_PER_HOUR	0xD693A400 /* 3600.000.000 us. */
 
 typedef enum {
     CORE_FLAG_ALL        =0xFFFF,
