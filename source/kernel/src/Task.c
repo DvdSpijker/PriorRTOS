@@ -12,7 +12,7 @@
  *  -----------------
  *
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -69,17 +69,44 @@ static S8_t ITaskEventHandle(pEvent_t event);
 
 static OsResult_t ITaskResume(Id_t task_id);
 
+pTcb_t TcbIdle;/* Holds a pointer to the TCB
+                  of the OS Idle task (see KernelTaskIdle.c). */
+
 OsResult_t KTaskInit(void)
 {
-    ListInit(&TcbList, ID_GROUP_TASK);
-    ListInit(&TcbWaitList, ID_GROUP_TASK);
+	OsResult_t res = OS_RES_ERROR;
+	
+    res = ListInit(&TcbList, ID_GROUP_TASK);
+    
+    if(res == OS_RES_OK) {
+    	ListInit(&TcbWaitList, ID_GROUP_TASK);
+    }
 
-    //LOG_INFO_NEWLINE("TcbList: %p", &TcbList);
-    //LOG_INFO_NEWLINE("TcbWaitList: %p", &TcbWaitList);
+    TcbIdle = NULL;
+    
+    if(res == OS_RES_OK) {
+        /* Idle task is not created using KernelTask create since it is not an OS category task, it should be on the
+        * lowest possible priority. However, the Idle task is essential and cannot be deleted. */
+        KTidIdle = TaskCreate(KernelTaskIdle, TASK_CAT_LOW, 1, TASK_PARAMETER_ESSENTIAL, 0, NULL, 0);
+        if(KTidIdle == ID_INVALID) { //Create Idle task, check if successful
+            res = OS_RES_CRIT_ERROR;
+            LOG_ERROR_NEWLINE("Invalid ID returned while creating KernelTaskIdle");
+        } else {
+            TcbIdle = KTcbFromId(KTidIdle); //Assign pointer to Idle TCB to TCB_idle
+            if(TcbIdle == NULL) {
+                res = OS_RES_CRIT_ERROR;
+                LOG_ERROR_NEWLINE("KernelTaskIdle could not be found in the task list.");
+            }
+            LOG_INFO_NEWLINE("KernelTaskIdle created");
+            
+            /* Set generic task name if enabled. */
+#if PRTOS_CONFIG_ENABLE_TASKNAMES==1
+            TaskGenericNameSet(KernelTaskIdle,"KernelTaskIdle");
+ #endif
+        }   	
+    }
 
-    TcbRunning = TcbIdle = NULL;
-
-    return OS_RES_OK;
+    return res;
 }
 
 
@@ -523,6 +550,10 @@ static OsResult_t ITaskResume(Id_t task_id)
 
 /********************************/
 
+pTcb_t KTcbIdleGet(void)
+{
+	return TcbIdle;
+}
 
 void KTaskStateSet(pTcb_t tcb_pointer, TaskState_t new_state)
 {
@@ -574,11 +605,6 @@ LinkedList_t* KTcbLocationGet(pTcb_t tcb)
         return list;
     }
 
-    list = &ExecutionQueue;
-    if(ListSearch(list, tcb->list_node.id) != NULL) {
-        return list;
-    }
-
     return NULL;
 }
 
@@ -594,11 +620,6 @@ pTcb_t KTcbFromId(Id_t task_id)
         return (pTcb_t)ListNodeChildGet(node);
     }
     return NULL;
-}
-
-pTcb_t KTaskRunningGet(void)
-{
-    return TcbRunning;
 }
 
 OsResult_t KTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to_list)

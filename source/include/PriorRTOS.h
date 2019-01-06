@@ -51,7 +51,6 @@ extern "C" {
 #include "Memory.h"
 #include "Task.h"
 #include "Logger.h"
-#include "kernel/inc/KernelTask.h"
 
 /* Utility API includes */
 #ifdef PRTOS_CONFIG_USE_CONVERT_LIB_IN_APP
