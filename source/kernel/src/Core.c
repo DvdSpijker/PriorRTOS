@@ -114,25 +114,7 @@ static void ICoreTickPreem(void);
 #endif
 static void ICoreTickInvoke(U32_t tc);
 
-static void ICoreSchedulerInit(void);
-static void ICoreSchedulerCycle(void);
-
-struct EventBrokerArgs {
-    LinkedList_t *activated_task_list;
-    LinkedList_t *task_list;
-    pTcb_t task;
-    pEvent_t compare_event;
-    bool last_event;
-    U32_t delta_us;
-};
-
-static void ICoreEventBrokerCycle(LinkedList_t *activated_task_list);
-static void ICoreTaskListCompare(struct EventBrokerArgs *args);
-static void ICoreTaskEventsCompare(struct EventBrokerArgs *args);
-void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task);
-
 static void ICoreSwitchTask(void);
-static OsResult_t ICoreLoadTaskFromExecutionQueue(void);
 static U16_t  ICoreCalculatePrescaler(U16_t f_os);
 
 static void ICoreRunTimeUpdate(void);
@@ -167,6 +149,9 @@ typedef struct Reg_t {
     U16_t               f_os;
     U16_t               ovf;
     U32_t               tick_period_us;
+    
+	/* Holds a pointer to the TCB of the currently running task. */
+    pTcb_t				TcbRunning;
 
     volatile U8_t       isr_nest_counter;
     volatile U8_t       crit_sect_nest_counter;
@@ -346,32 +331,6 @@ OsResult_t OsInit(OsResult_t *status_optional)
     LOG_INFO_APPEND("ok");
 #endif
 
-    LOG_INFO_NEWLINE("Creating Kernel tasks and services...");
-
-    /*Create system tasks*/
-
-    /* Idle task is not created using KernelTask create since it is not an OS category task, it should be on the
-    * lowest possible priority. However, the Idle task is essential and cannot be deleted. */
-    KTidIdle = TaskCreate(KernelTaskIdle, TASK_CAT_LOW, 1, TASK_PARAMETER_ESSENTIAL, 0, NULL, 0);
-    if(KTidIdle == ID_INVALID) { //Create Idle task, check if successful
-        status_kernel = OS_RES_CRIT_ERROR;
-        LOG_ERROR_NEWLINE("Invalid ID returned while creating KernelTaskIdle");
-        return status_kernel;
-    } else {
-        TcbIdle = KTcbFromId(KTidIdle); //Assign pointer to Idle TCB to TCB_idle
-        if(TcbIdle == NULL) {
-            status_kernel = OS_RES_CRIT_ERROR;
-            LOG_ERROR_NEWLINE("KernelTaskIdle could not be found in the task list.");
-            return status_kernel;
-        }
-        LOG_INFO_NEWLINE("KernelTaskIdle created");
-    }
-
-    //Set generic task names if enables
-#if PRTOS_CONFIG_ENABLE_TASKNAMES==1
-    TaskGenericNameSet(KernelTaskIdle,"KernelTaskIdle");
-#endif
-
     KCoreKernelModeExit(); //Clear kernel mode flag
     OsCritSectEnd();
 
@@ -398,18 +357,18 @@ void OsStart(Id_t start_task_id)
 
     LOG_INFO_NEWLINE("Preparing first task for execution...");
     if (start_task_id != ID_INVALID) { //if Prior should not start with Idle task
-        TcbRunning = KTcbFromId(start_task_id); //Search for TCB
-        if (TcbRunning == NULL) {
+        KernelReg.TcbRunning = KTcbFromId(start_task_id); //Search for TCB
+        if (KernelReg.TcbRunning == NULL) {
             LOG_ERROR_NEWLINE("Specified task not found! Starting with Idle instead.");
-            TcbRunning = TcbIdle; //No valid TCB found
+            KernelReg.TcbRunning = TcbIdle; //No valid TCB found
         }
 
     } else {
-        TcbRunning = TcbIdle; //Prior should start with Idle task
+        KernelReg.TcbRunning = TcbIdle; //Prior should start with Idle task
     }
 
-    ListNodeRemove(&TcbList, &TcbRunning->list_node);
-    ListNodeAddAtPosition(&ExecutionQueue, &TcbRunning->list_node, LIST_POSITION_HEAD);
+    ListNodeRemove(&TcbList, &KernelReg.TcbRunning->list_node);
+    ListNodeAddAtPosition(&ExecutionQueue, &KernelReg.TcbRunning->list_node, LIST_POSITION_HEAD);
     ICoreLoadTaskFromExecutionQueue();
 
     KCoreKernelModeExit(); //Disable kernel mode
@@ -438,16 +397,16 @@ void OsStart(Id_t start_task_id)
 #if PRTOS_CONFIG_ENABLE_WATCHDOG==1
         ICoreWdtKick();
 #endif
-        if(TcbRunning->handler != NULL) {
+        if(KernelReg.TcbRunning->handler != NULL) {
 
 #ifdef PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
-            EventEmit(TcbRunning->list_node.id, TASK_EVENT_EXECUTE, EVENT_FLAG_NONE);
+            EventEmit(KernelReg.TcbRunning->list_node.id, TASK_EVENT_EXECUTE, EVENT_FLAG_NONE);
 #endif
 
-            (TcbRunning->handler)(TcbRunning->p_arg, TcbRunning->v_arg);
+            (KernelReg.TcbRunning->handler)(KernelReg.TcbRunning->p_arg, KernelReg.TcbRunning->v_arg);
 
 #ifdef PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
-            EventEmit(TcbRunning->list_node.id, TASK_EVENT_EXIT, EVENT_FLAG_NONE);
+            EventEmit(KernelReg.TcbRunning->list_node.id, TASK_EVENT_EXIT, EVENT_FLAG_NONE);
 #endif
 
         } else {
@@ -570,9 +529,9 @@ bool OsTaskExists(Id_t task_id)
 Id_t OsCurrentTaskGet(void)
 {
     Id_t id = ID_INVALID;
-    if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
-        id = ListNodeIdGet(&TcbRunning->list_node);
-        ListNodeUnlock(&TcbRunning->list_node);
+    if(ListNodeLock(&KernelReg.TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
+        id = ListNodeIdGet(&KernelReg.TcbRunning->list_node);
+        ListNodeUnlock(&KernelReg.TcbRunning->list_node);
     }
     return id;
 }
@@ -717,7 +676,7 @@ static void ICoreRunTimeUpdate(void)
 
 void OsTick(void)
 {
-	if(TcbRunning != NULL) {
+	if(KernelReg.TcbRunning != NULL) {
 #ifdef PRTOS_CONFIG_USE_SCHEDULER_COOP
 		ICoreTickCoop();
 #else
@@ -753,6 +712,7 @@ static void ICoreTickCoop(void)
         * The task executing at the beginning of any user interrupt is then identical to
         * the one executing at the end. */
         if(KCoreFlagGet(CORE_FLAG_DISPATCH) && (KernelReg.isr_nest_counter == 1)) {
+            KTaskRunTimeReset(KernelReg.TcbRunning); /* Reset the tasks run time. */
             ICoreSwitchTask();
             KCoreFlagClear(CORE_FLAG_DISPATCH);
         }
@@ -800,248 +760,7 @@ static void ICoreTickInvoke(U32_t tc)
 /********************************/
 
 
-/*********  Scheduler functions *********/
 
-static void ICoreSchedulerInit(void)
-{
-    ListInit(&ExecutionQueue, ID_GROUP_TASK);
-    //LOG_INFO_NEWLINE("ExecutionQueue: %p", &ExecutionQueue);
-    /* Add a mock event to the EventList.
-    * This ensures that this list will never
-    * be empty. An empty list has to be avoided
-    * to keep the EventHandle cycle running, since
-    * it also needs to update listened event
-    * lifetimes. */
-    if(EventEmit(ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_RES_OK) {
-        LOG_ERROR_NEWLINE("Failed to publish the mock event!");
-        while(1); /* Trap. Wdt will overflow if enabled. */
-    }
-}
-
-static void ICoreSchedulerCycle(void)
-{
-    KCoreFlagSet(CORE_FLAG_SCHEDULER);
-
-    ICoreEventBrokerCycle(&ExecutionQueue);
-
-    KCoreFlagClear(CORE_FLAG_SCHEDULER);
-}
-
-/* Compares all tasks with all occurred events. All lifetimes are updated, expired events
-* will be deleted.
-* All activated tasks will be placed in the activated task list. */
-static void ICoreEventBrokerCycle(LinkedList_t *activated_task_list)
-{
-    if(EventListSizeGet(&EventList) == 0) {
-        LOG_ERROR_NEWLINE("EventList is empty. A Mock event should always be present.");
-        while(1); /* Trap. Wdt will overflow if enabled. */
-    }
-
-    struct ListIterator it;
-    pEvent_t occurred_event = NULL;
-    /* Loop through occurred event list and compare all activated tasks and
-    * all waiting tasks with every occurred event. */
-    bool last_event = false;
-    struct EventBrokerArgs args;
-    args.activated_task_list = activated_task_list;
-
-    static U32_t micros = 0;
-    U32_t delta_us = OsRunTimeMicrosDelta(micros);
-    micros = OsRunTimeMicrosGet();
-    args.delta_us = delta_us;
-
-    LIST_ITERATOR_BEGIN(&it, &EventList, LIST_ITERATOR_DIRECTION_FORWARD);
-    {
-        if(it.current_node != NULL) {
-
-            occurred_event = (pEvent_t)ListNodeChildGet(it.current_node);
-
-            // LOG_DEBUG_APPEND("\nComparing event %04x with:", it.current_node->id);
-            if(it.next_node == NULL) {
-                last_event = true;
-            }
-
-            /* Handle addressed events (not necessarily listened). */
-            if(EventFlagGet(occurred_event, EVENT_FLAG_ADDRESSED)) {
-                /* For addressed events, the source_id field describes the DESTINATION ID instead of the SOURCE ID. */
-                pTcb_t tcb = KTcbFromId(occurred_event->source_id);
-                if(tcb != NULL) {
-                    LinkedList_t *list = KTcbLocationGet(tcb);
-                    if(list != NULL && list != &ExecutionQueue) {
-                        KTaskStateSet(tcb, TASK_STATE_ACTIVE);
-                        ICoreTaskAddDescendingPriority(list, activated_task_list, tcb);
-                    }
-                }
-                if(!last_event) {
-                    goto event_cleanup;
-                }
-            }
-
-            args.compare_event = occurred_event;
-            args.last_event = last_event;
-
-            args.task_list = &TcbWaitList;
-            ICoreTaskListCompare(&args);
-
-            args.task_list = activated_task_list;
-            ICoreTaskListCompare(&args);
-
-event_cleanup:
-            /* Increment the occurred event's lifetime and if it has time left. If this is
-            * not the case the event is destroyed. EventDestroy automatically removes the
-            * event from its list before deleting it. */
-            if(!EventIsMock(occurred_event)) {
-                if( (EventLifeTimeIncrement(occurred_event, delta_us) == -1) ) {
-                    //LOG_DEBUG_NEWLINE("Destroying occurred event %p.", occurred_event);
-                    EventDestroy(NULL, occurred_event);
-                }
-            }
-        } else {
-            LOG_ERROR_NEWLINE("EventList size (%u) is not consistent with the number of reachable nodes", EventListSizeGet(&EventList));
-            break;
-        }
-    }
-    LIST_ITERATOR_END(&it);
-
-    return;
-}
-
-
-
-/* Compares all tasks and their listened events in the Task List with the compare event. All activated tasks
-* will be moved to the activated task list. */
-static void ICoreTaskListCompare(struct EventBrokerArgs *args)
-{
-
-    pTcb_t task = NULL;
-    struct ListIterator it;
-
-    /* Loop through the Task List and compare the occurred event with all listened events for
-    * every task. */
-    LIST_ITERATOR_BEGIN(&it, args->task_list, LIST_ITERATOR_DIRECTION_FORWARD);
-    {
-        if(it.current_node != NULL) {
-            task = (pTcb_t)ListNodeChildGet(it.current_node);
-            //LOG_DEBUG_APPEND("\n\tEvent list of task %04x", it.current_node->id);
-            args->task = task;
-            ICoreTaskEventsCompare(args);
-        } else {
-            break;
-        }
-    }
-    LIST_ITERATOR_END(&it);
-
-}
-
-/* Compares the Task Event List with the compare event, if the compared event appears in the list the
-* task is moved to the activated task list. */
-static void ICoreTaskEventsCompare(struct EventBrokerArgs *args)
-{
-    LinkedList_t *activated_task_list = args->activated_task_list;
-    LinkedList_t *task_list = args->task_list;
-    pTcb_t task = args->task;
-    pEvent_t compare_event = args->compare_event;
-    bool last_event = args->last_event;
-    LinkedList_t *task_event_list = &task->event_list;
-
-    pEvent_t task_event = NULL;
-    struct ListIterator it;
-
-    /* Loop through Task Event List and compare. */
-    LIST_ITERATOR_BEGIN(&it, task_event_list, LIST_ITERATOR_DIRECTION_FORWARD) {
-        if(it.current_node != NULL) {
-            task_event = (pEvent_t)ListNodeChildGet(it.current_node);
-            //LOG_DEBUG_APPEND("\n\t\tComparing task event %04x.", it.current_node->id);
-            /* If the occurred event matches the listened event,
-            * set occurred flag and make task active. Then increment
-            * its occurrence counter and reset its lifetime. */
-            if (EventIsEqual(compare_event, task_event)) { /* Handle listened events. */
-                EventFlagSet(task_event, EVENT_FLAG_OCCURRED);
-                EventFlagClear(task_event, EVENT_FLAG_TIMED_OUT); /* Clear timed-out flag in case it was set during a previous cycle. */
-                EventLifeTimeReset(task_event);
-                EventOccurrenceCountIncrement(task_event);
-            } else if(last_event) { /* If the listened event does not match the occurred event. */
-                /* Check if the event has a specified time-out, if this is true
-                * increment its lifetime. If the event is timed-out, set timed-out flag. */
-                if((!EventFlagGet(task_event, EVENT_FLAG_NO_TIMEOUT)) && (!EventFlagGet(task_event, EVENT_FLAG_TIMED_OUT))) {
-                    /// LOG_DEBUG_NEWLINE("Updating lifetime of event %04x of task %04x", task_event->list_node.id, task->list_node.id);
-                    if(EventLifeTimeIncrement(task_event, args->delta_us) == -1) {
-                        EventFlagSet(task_event, EVENT_FLAG_TIMED_OUT);
-                        //LOG_DEBUG_NEWLINE("Event (%04x) of task %04x timed out", task_event->list_node.id, task->list_node.id);
-                    }
-                }
-            }
-
-            if( EventFlagGet(task_event, EVENT_FLAG_OCCURRED) || EventFlagGet(task_event, EVENT_FLAG_TIMED_OUT) ) {
-                KTaskStateSet(task, TASK_STATE_ACTIVE);
-            }
-        } else {
-            break;
-        }
-    }
-    LIST_ITERATOR_END(&it);
-
-    if((task_list != activated_task_list) && (task->state == TASK_STATE_ACTIVE)) {
-        ICoreTaskAddDescendingPriority(task_list, activated_task_list, task);
-    }
-}
-
-
-void ICoreTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task)
-{
-    /* TODO: Insert at ExecutionQueueSeparator tail if task category is real-time. */
-
-    pTcb_t compare_task = NULL;
-    struct ListIterator it;
-
-    if(ListNodeRemove(from_list, &task->list_node) == NULL) {
-        LOG_ERROR_NEWLINE("Removing task %08x from list %p failed.", ListNodeIdGet(&task->list_node), from_list);
-        while(1);
-    }
-
-    /* Add task to list head if the list is empty.
-    * Else loop through list and compare priorities. */
-    if(ListSizeGet(to_list) == 0) {
-        //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at head.", task->list_node.id);
-        if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_HEAD) != OS_RES_OK) {
-        	LOG_ERROR_NEWLINE("Adding task %08x to list %p failed.", ListNodeIdGet(&task->list_node), to_list);
-        }
-    } else {
-        LIST_ITERATOR_BEGIN(&it, to_list, LIST_ITERATOR_DIRECTION_FORWARD);
-        {
-            /* If the current node exists, compare priorities,
-            * else add task to the tail. */
-            if(it.current_node != NULL) {
-                compare_task = (pTcb_t)ListNodeChildGet(it.current_node);
-                //LOG_DEBUG_APPEND("\n\t\t\tComparing priorities of tasks %04x and %04x.", task->list_node.id, it.current_node->id);
-                /* Compare priorities, only add and return if task priority is higher.
-                * If the priority is not higher, compare again on next iteration at next node. */
-                if(task->priority > compare_task->priority) {
-                    //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x before %04x.", task->list_node.id, it.current_node->id);
-                    if(ListNodeAddAtNode(to_list, &task->list_node, it.current_node, LIST_ADD_BEFORE) != OS_RES_OK) {
-                    	LOG_ERROR_NEWLINE("Adding task %08x to list %p failed.", ListNodeIdGet(&task->list_node), to_list);
-                        while(1);
-                    }
-                    return;
-                }
-            } else {
-                //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at tail.", task->list_node.id);
-                if(ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_TAIL) != OS_RES_OK) {
-                	LOG_ERROR_NEWLINE("Adding task %08x to list %p failed.", ListNodeIdGet(&task->list_node), to_list);
-                    while(1);
-                }
-                return;
-            }
-        }
-        LIST_ITERATOR_END(&it);
-
-        /* This will only be reached if the task had no higher priority than any of
-        * the other tasks in the list. Therefore it is safe to add this task to the tail. */
-        //LOG_DEBUG_APPEND("\n\t\t\tAdding task %04x at tail.", task->list_node.id);
-        ListNodeAddAtPosition(to_list, &task->list_node, LIST_POSITION_TAIL);
-    }
-
-}
 
 static void ICoreSwitchTask(void)
 {
@@ -1053,53 +772,34 @@ static void ICoreSwitchTask(void)
     TtUpdate();
 #endif
 
-    //EventListPrint(&TcbRunning->event_list);
+    //EventListPrint(&KernelReg.TcbRunning->event_list);
 
-    KTaskRunTimeReset(TcbRunning); /* Reset the tasks run time. */
-    if (ListSizeGet(&TcbRunning->event_list) != 0) { /* If task is waiting for an event. */
+
+    if (ListSizeGet(&KernelReg.TcbRunning->event_list) != 0) { /* If task is waiting for an event. */
         /* Set task state to dormant and insert into TcbWaitList. */
-        KTaskStateSet(TcbRunning,TASK_STATE_WAITING);
-        ListNodeAddSorted(&TcbWaitList, &TcbRunning->list_node);
-    } else if(!KTaskFlagGet(TcbRunning, TASK_FLAG_DELETE)) {  /* If task is not waiting for an event and will not be deleted. */
+        KTaskStateSet(KernelReg.TcbRunning,TASK_STATE_WAITING);
+        ListNodeAddSorted(&TcbWaitList, &KernelReg.TcbRunning->list_node);
+    } else if(!KTaskFlagGet(KernelReg.TcbRunning, TASK_FLAG_DELETE)) {  /* If task is not waiting for an event and will not be deleted. */
         /* Set task state to idle and insert into TcbList. */
-        KTaskStateSet(TcbRunning,TASK_STATE_IDLE);
-        ListNodeAddSorted(&TcbList, &TcbRunning->list_node);
+        KTaskStateSet(KernelReg.TcbRunning,TASK_STATE_IDLE);
+        ListNodeAddSorted(&TcbList, &KernelReg.TcbRunning->list_node);
     } else {  /* If task has to be deleted. */
-        if(TcbRunning->category != TASK_CAT_OS || TcbRunning != TcbIdle) {
-            if(KTcbDestroy(TcbRunning, NULL) != OS_RES_OK) {
+        if(KernelReg.TcbRunning->category != TASK_CAT_OS || KernelReg.TcbRunning != TcbIdle) {
+            if(KTcbDestroy(KernelReg.TcbRunning, NULL) != OS_RES_OK) {
                 /* TODO: Throw exception. */
             }
         } else {
             /* Idle or other OS task cannot be deleted.
             * Move back to TcbList. */
             /* TODO: Throw exception for violation. */
-            KTaskStateSet(TcbRunning,TASK_STATE_IDLE);
-            KTaskFlagClear(TcbRunning, TASK_FLAG_DELETE);
-            ListNodeAddSorted(&TcbList, &TcbRunning->list_node);
+            KTaskStateSet(KernelReg.TcbRunning,TASK_STATE_IDLE);
+            KTaskFlagClear(KernelReg.TcbRunning, TASK_FLAG_DELETE);
+            ListNodeAddSorted(&TcbList, &KernelReg.TcbRunning->list_node);
         }
     }
 
-    TcbRunning = NULL;
-    ICoreLoadTaskFromExecutionQueue();
-}
-
-/* Loads a task from the ExecutionQueue (head position).
- * If no task is present in the queue,
-* the Idle task is loaded instead. */
-static OsResult_t ICoreLoadTaskFromExecutionQueue(void)
-{
-    OsResult_t result = OS_RES_OK;
-
-	if (ListSizeGet(&ExecutionQueue) != 0) {
-		TcbRunning = (pTcb_t)ListNodeChildGet(ListNodeRemoveFromHead(&ExecutionQueue));
-	} else {
-		TcbRunning = TcbIdle;
-		ListNodeRemove(&TcbList, &TcbIdle->list_node);
-	}
-
-    KTaskStateSet(TcbRunning, TASK_STATE_RUNNING);
-
-    return result;
+    KernelReg.TcbRunning = KSchedulerTaskGet();
+	KTaskStateSet(KernelReg.TcbRunning, TASK_STATE_RUNNING);
 }
 
 /******************************************/

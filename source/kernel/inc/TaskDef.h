@@ -96,19 +96,11 @@ LinkedList_t TcbList; /* Holds all tasks with states
 
 LinkedList_t TcbWaitList; /* Holds all dormant tasks i.e. waiting for an event. */
 
-LinkedList_t ExecutionQueue; /* Holds all the scheduled and currently running tasks. */
-
-pTcb_t TcbRunning;/* Holds a pointer to the TCB
-                     of the currently running task. */
-
-pTcb_t TcbIdle;/* Holds a pointer to the TCB
-                  of the OS Idle task (see KernelTaskIdle.c). */
-
 /* Kernel Task API */
 
 OsResult_t   KTaskInit(void);
 
-pTcb_t KTaskRunningGet(void);
+pTcb_t KTcbIdleGet(void);
 OsResult_t KTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to_list);
 void KTcbSwap(pTcb_t x, pTcb_t y, LinkedList_t* list);
 OsResult_t KTcbDestroy(pTcb_t TCB, LinkedList_t* list);
