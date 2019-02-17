@@ -9,7 +9,7 @@
  *  D. van de Spijker
  *  -----------------
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -107,7 +107,7 @@ typedef void (*TimerOverflowCallback_t)(Id_t timer_id, void *context);
  * - If TIMER_PARAMETER_PERIODIC = 0: Decrement the number of iterations left.
  * - If iterations left = 0: Delete the timer.
  *
- * @argin: (U32_t) interval_us; Timer interval in microseconds(us), 0xFFFFFFFF is illegal.
+ * @argin: (U32_t) interval_ms; Timer interval in milliseconds(ms), 0xFFFFFFFF is illegal.
  * @argin: (U8_t) parameter; Timer parameter.
  * @argin: (TimerOverflowCallback_t) overflow_callback; Called when the timer overflows.
  * @argin: (void *) context; Opaque context pointer, argument of the overflow_callback.
@@ -117,7 +117,7 @@ typedef void (*TimerOverflowCallback_t)(Id_t timer_id, void *context);
  * @retval:   ID_INVALID; if creation failed.
  * @retval:   Other; if the timer was created.
  ******************************************************************************/
-Id_t TimerCreate(U32_t interval_us, U8_t parameter, TimerOverflowCallback_t overflow_callback, void *context);
+Id_t TimerCreate(U32_t interval_ms, U8_t parameter, TimerOverflowCallback_t overflow_callback, void *context);
 
 
 /******************************************************************************
@@ -256,15 +256,15 @@ U32_t TimerTicksGet(Id_t timer_id);
 
 /* TODO: Implement OsResult_t in TimerIntervalSet. */
 /******************************************************************************
- * @func: void TimerIntervalSet(Id_t timer_id, U32_t new_interval_us)
+ * @func: void TimerIntervalSet(Id_t timer_id, U32_t new_interval_ms)
  *
  * @desc: Sets a new interval for the timer. The timer is NOT implicitly
  * reset.
  *
  * @argin: (Id_t) timer_id; Timer ID.
- * @argin: (U32_t) new_interval_us; New Timer interval in microseconds(us).
+ * @argin: (U32_t) new_interval_ms; New Timer interval in milliseconds(ms).
  ******************************************************************************/
-void TimerIntervalSet(Id_t timer_id, U32_t new_interval_us);
+void TimerIntervalSet(Id_t timer_id, U32_t new_interval_ms);
 
 
 /******************************************************************************
