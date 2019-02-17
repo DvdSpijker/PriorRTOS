@@ -12,7 +12,7 @@
  *  -----------------
  *
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -144,7 +144,7 @@ void KTimerUpdateAll(U32_t t_us)
 
 
 
-Id_t TimerCreate(U32_t interval, U8_t parameter, TimerOverflowCallback_t overflow_callback, void *context)
+Id_t TimerCreate(U32_t interval_ms, U8_t parameter, TimerOverflowCallback_t overflow_callback, void *context)
 {
     if(interval == 0) {
         return ID_INVALID;
@@ -158,7 +158,7 @@ Id_t TimerCreate(U32_t interval, U8_t parameter, TimerOverflowCallback_t overflo
 
     Id_t new_timer_id = ListNodeIdGet(&new_timer->list_node);
 
-    new_timer->T_us = interval;
+    new_timer->T_us = interval_ms * 1000;
     new_timer->parameter = parameter;
     new_timer->ovf_callback = overflow_callback;
     new_timer->context = context;
@@ -291,11 +291,11 @@ U32_t TimerTicksGet(Id_t timer_id)
     return ticks;
 }
 
-void TimerIntervalSet(Id_t timer_id, U32_t new_interval_us)
+void TimerIntervalSet(Id_t timer_id, U32_t new_interval_ms)
 {
     LIST_NODE_ACCESS_WRITE_BEGIN(&TimerList, timer_id) {
         pTimer_t tmp_timer = (pTimer_t)ListNodeChildGet(node);
-        tmp_timer->T_us = new_interval_us;
+        tmp_timer->T_us = new_interval_ms * 1000;
     }
     LIST_NODE_ACCESS_END();
 }
