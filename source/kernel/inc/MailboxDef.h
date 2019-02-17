@@ -14,16 +14,17 @@ extern "C" {
 #endif
 
 #include "kernel/inc/List.h"
+#include "include/IdType.h"
 
 #define MAILBOX_CONFIG_MAX_OWNERS 2
 
 typedef struct Mailbox_t {
     ListNode_t   list_node;
 
-    Id_t            owner_ids[MAILBOX_CONFIG_MAX_OWNERS];
-    U8_t            n_owners;
+    IdList_t		owners;
     U8_t            size;
-    MailboxBase_t  *buffer;
+    U8_t			width;
+    U8_t			*buffer;
     U8_t            *pend_counters;
 } Mailbox_t;
 
