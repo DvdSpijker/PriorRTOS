@@ -12,7 +12,7 @@
  *  -----------------
  *
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -48,9 +48,10 @@
 
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h> /* For memcpy. */
 
 static bool ITaskIsOwner(pMailbox_t mailbox, pTcb_t tcb);
-static OsResult_t IMailboxWrite(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout, bool force);
+static OsResult_t IMailboxWrite(Id_t mailbox_id, U8_t address, void *data, U32_t timeout, bool force);
 
 LinkedList_t MailboxList;
 
@@ -61,27 +62,34 @@ OsResult_t KMailboxInit(void)
     return OS_RES_OK;
 }
 
-Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners)
+Id_t MailboxCreate(U8_t mailbox_size, U8_t mailbox_width, IdList_t *owners)
 {
+	if(mailbox_size == 0 || mailbox_width == 0 || owners == NULL) {
+		return ID_INVALID;
+	}
 
-    //Check input boundaries
-    if(n_owners > MAILBOX_CONFIG_MAX_OWNERS) {
+    void *buffer = NULL;
+
+    /* Allocate memory for mailbox struct and buffer to store data.
+     * The buffer size is equal to the mailbox size * width. */
+    pMailbox_t new_mailbox = (pMailbox_t)KMemAllocObject(sizeof(Mailbox_t),
+    		mailbox_size * mailbox_width, &buffer);
+    if(new_mailbox == NULL) {
         return ID_INVALID;
     }
 
-    void *buffer = NULL;
-    pMailbox_t new_mailbox = (pMailbox_t)KMemAllocObject(sizeof(Mailbox_t), mailbox_size, &buffer); //Allocate memory for mailbox struct
-    if(new_mailbox == NULL) {
-        return ID_INVALID;    //Allocation error
-    }
+    new_mailbox->buffer = (U8_t *)buffer; /* Copy the buffer pointer. */
 
-    new_mailbox->buffer = (MailboxBase_t *)buffer;
-    new_mailbox->pend_counters = (U8_t*)KMemAllocObject(sizeof(U8_t) * mailbox_size, 0, NULL); //Allocate memory for mailbox data
+    /* Allocate memory for pend counters */
+    new_mailbox->pend_counters = (U8_t*)KMemAllocObject(sizeof(U8_t) * mailbox_size, 0, NULL);
     if(new_mailbox->pend_counters == NULL) {
+    	/* Free the mailbox struct in case of failed allocation. */
         KMemFreeObject((void **)&new_mailbox, &buffer);
         return ID_INVALID;
     }
 
+    /* When all allocations were successful, initialize the list node and add the
+     * new mailbox to the mailbox list. If this fails, free all allocated data. */
     ListNodeInit(&new_mailbox->list_node, (void*)new_mailbox);
     if(ListNodeAddSorted(&MailboxList, &new_mailbox->list_node) != OS_RES_OK) {
         KMemFreeObject((void **)&new_mailbox->pend_counters, NULL);
@@ -90,10 +98,8 @@ Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners)
     }
 
     new_mailbox->size = mailbox_size;
-    new_mailbox->n_owners = n_owners;
-    for (U8_t i = 0; i < n_owners; i++) {
-        new_mailbox->owner_ids[i] = owner_ids[i];
-    }
+    new_mailbox->width = mailbox_width;
+    IdListCopy(&new_mailbox->owners, owners); /* Copy the list of owners. */
 
     return ListNodeIdGet(&new_mailbox->list_node);
 }
@@ -111,18 +117,18 @@ OsResult_t MailboxDelete(Id_t *mailbox_id)
     return OS_RES_ERROR;
 }
 
-OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout)
+OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, void *data, U32_t timeout)
 {
 	return IMailboxWrite(mailbox_id, address, data, timeout, false);
 
 }
 
-OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout)
+OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, void *data, U32_t timeout)
 {
 	return IMailboxWrite(mailbox_id, address, data, timeout, true);
 }
 
-OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t timeout)
+OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, void *data, U32_t timeout)
 {
 
     pTcb_t task = TcbRunning;
@@ -176,7 +182,8 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, MailboxBase_t *data, U32_t
                 /* If the pend counter != 0 the address can be accessed.
                  * After pending a pend event is emitted. */
                 if(result == OS_RES_OK) {
-                    *data = mailbox->buffer[address];
+                	address = address * mailbox->width; /* Calculate the offset in the buffer using the mailbox width. */
+                	memcpy(data, &mailbox->buffer[address], mailbox->width);
                     mailbox->pend_counters[address]--;
 #ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
                     EventEmit(mailbox_id, MAILBOX_EVENT_PEND(address), EVENT_FLAG_NONE);
@@ -223,7 +230,7 @@ static bool ITaskIsOwner(pMailbox_t mailbox, pTcb_t tcb)
     return is_owner;
 }
 
-static OsResult_t IMailboxWrite(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout, bool force)
+static OsResult_t IMailboxWrite(Id_t mailbox_id, U8_t address, void *data, U32_t timeout, bool force)
 {
 	OsResult_t result = OS_RES_LOCKED;
 	 pMailbox_t mailbox = NULL;
@@ -272,8 +279,9 @@ static OsResult_t IMailboxWrite(Id_t mailbox_id, U8_t address, MailboxBase_t dat
 	            /* If the pend counter is 0 the address can be accessed.
 	             * After posting a post event is emitted. */
 	            if(result == OS_RES_OK) {
-	                mailbox->buffer[address] = data;
-	                mailbox->pend_counters[address] = mailbox->n_owners;
+	            	address = address * mailbox->width; /* Calculate the offset in the buffer using the mailbox width. */
+	            	memcpy(&mailbox->buffer[address], data, mailbox->width);
+	                mailbox->pend_counters[address] = IdListCount(&mailbox->owners);
 	#ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
 	                EventEmit(mailbox_id, MAILBOX_EVENT_POST(address), EVENT_FLAG_NONE);
 	                EventEmit(mailbox_id, MAILBOX_EVENT_POST_ANY, EVENT_FLAG_NONE);

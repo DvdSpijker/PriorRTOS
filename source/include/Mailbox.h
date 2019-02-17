@@ -9,7 +9,7 @@
  *  D. van de Spijker
  *  -----------------
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -56,29 +56,25 @@ extern "C" {
 #define MAILBOX_EVENT_POST_ANY       (EVENT_TYPE_ACCESS | 0x00003000)
 #endif
 
-/* Mailbox width definition */
-typedef U16_t MailboxBase_t; //Allowed to be modified by user
-
 /******************************************************************************
- * @func: Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[],
- * U8_t n_owners)
+ * @func: Id_t MailboxCreate(U8_t mailbox_size, U8_t mailbox_width,
+ * IdList_t owners)
  *
- * @desc: Creates a mailbox of the specified size with given
- * owners. Only the owners are allowed pend from the created mailbox.
+ * @desc: Creates a mailbox of the specified size of the specified width.
+ * Only the owners are allowed pend from the created mailbox.
  * The pend counter of each address is set to the number of owners upon
  * posting.
- * Note the width of each mailbox address is defined by MailboxBase_t (U8_t
- * by default).
  *
  * @argin: (U8_t) mailbox_size; Number of addresses reserved for this mailbox.
- * @argin: (Id_t) owner_ids; Array of owner task IDs.
- * @argin: (U8_t) n_owners; Number of owners in the owners list.
+ * @argin: (U8_t) mailbox_width; Mailbox width in bytes.
+ * @argin: (IdList_t *) owners; List of owners.
+
  *
  * @rettype:  (Id_t); Mailbox ID
  * @retval:   ID_INVALID; if the creation failed.
  * @retval:   Other; valid ID if the mailbox was created.
  ******************************************************************************/
-Id_t MailboxCreate(U8_t mailbox_size, Id_t owner_ids[], U8_t n_owners);
+Id_t MailboxCreate(U8_t mailbox_size, U8_t mailbox_width, IdList_t *owners);
 
 
 /******************************************************************************
@@ -105,7 +101,7 @@ OsResult_t MailboxDelete(Id_t *mailbox_id);
  *
  * @argin: (Id_t) mailbox_id; ID of the mailbox to post in.
  * @argin: (U8_t) address; Address where data will be posted.
- * @argin: (MailboxBase_t) data; Data to be posted.
+ * @argin: (void *) data; Data to be posted.
  * @argin: (U32_t) timeout; Timeout in milliseconds.
  *
  * @rettype:  (OsResult_t); sys call result
@@ -115,7 +111,7 @@ OsResult_t MailboxDelete(Id_t *mailbox_id);
  * by another task.
  * @retval:   OS_RES_INVALID_ARGUMENT; if the address is not part of the mailbox address range.
  ******************************************************************************/
-OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout);
+OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, void *data, U32_t timeout);
 
 
 /******************************************************************************
@@ -127,14 +123,14 @@ OsResult_t MailboxPost(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t 
  *
  * @argin: (Id_t) mailbox_id; ID of the mailbox to post in.
  * @argin: (U8_t) address; Address where data will be posted.
- * @argin: (MailboxBase_t) data; Data to be posted.
+ * @argin: (void *) data; Data to be posted.
  * @argin: (U32_t) timeout; Timeout in milliseconds.
  * @rettype:  (OsResult_t); sys call result
  * @retval:   OS_RES_OK; if the mailbox was updated.
  * @retval:   OS_RES_ERROR; if the mailbox could not be found.
  * @retval:   OS_RES_INVALID_ARGUMENT; if the address is not part of the mailbox address range.
  ******************************************************************************/
-OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_t timeout);
+OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, void *data, U32_t timeout);
 
 /******************************************************************************
  * @func: OsResult_t MailboxPend(Id_t mailbox_id, U8_t base_address,
@@ -146,7 +142,7 @@ OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_
  *
  * @argin: (Id_t) mailbox_id; ID of the mailbox to pend from.
  * @argin: (U8_t) base_address; Starting address where data will be pended.
- * @argin: (MailboxBase_t *) data; Pointer to the array where the data will
+ * @argin: (void *) data; Pointer to the array where the data will
  * be copied to.
  *
  * @rettype:  (OsResult_t); sys call result
@@ -156,7 +152,7 @@ OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, MailboxBase_t data, U32_
  * @retval:   OS_RES_RESTRICTED; if the pending task is not an owner.
  * @retval:   OS_RES_INVALID_ARGUMENT; if the address is not part of the mailbox address range.
  ******************************************************************************/
-OsResult_t MailboxPend(Id_t mailbox_id, U8_t address,  MailboxBase_t *data, U32_t timeout);
+OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, void *data, U32_t timeout);
 
 
 /******************************************************************************
