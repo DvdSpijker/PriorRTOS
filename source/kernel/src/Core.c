@@ -1,5 +1,5 @@
 /**********************************************************************************************************************************************
-*  File: Prior_core.c
+*  File: Core.c
 *
 *  Description: Prior Core contains OS tick and scheduler
 *  functions.
@@ -45,6 +45,7 @@
 
 #include "include/PriorRTOS.h"
 
+#include "kernel/inc/Scheduler.h"
 #include "include/Logger.h"
 #include "kernel/inc/LoggerDef.h"
 #include "include/Convert.h"
@@ -66,6 +67,7 @@
 
 LOG_FILE_NAME("Core.c");
 
+#define NUM_TCB_LISTS 2
 
 #if PRTOS_CONFIG_ENABLE_SOFTWARE_TIMERS==1
 #include "kernel/inc/TimerDef.h"
@@ -151,7 +153,11 @@ typedef struct Reg_t {
     U32_t               tick_period_us;
     
 	/* Holds a pointer to the TCB of the currently running task. */
-    pTcb_t				TcbRunning;
+    pTcb_t				tcb_running;
+    pTcb_t				tcb_idle;
+    LinkedList_t		*tcb_wait_list;
+    LinkedList_t		*tcb_list;
+    LinkedList_t		*event_list;
 
     volatile U8_t       isr_nest_counter;
     volatile U8_t       crit_sect_nest_counter;
@@ -171,6 +177,8 @@ typedef struct Reg_t {
 } Reg_t;
 
 static Reg_t KernelReg;
+
+static LinkedList_t *TcbLists[NUM_TCB_LISTS] = {NULL};
 
 #define KERNEL_REG_LOCK()       \
 if(KernelReg.lock < 0xFF) {     \
@@ -259,6 +267,12 @@ OsResult_t OsInit(OsResult_t *status_optional)
         LOG_ERROR_NEWLINE("critical error");
         return status_kernel;
     }
+    KernelReg.tcb_list = KTcbListRefGet();
+    KernelReg.tcb_wait_list = KTcbWaitListRefGet();
+    KernelReg.tcb_running = NULL;
+    TcbLists[0] = KernelReg.tcb_wait_list;
+    TcbLists[1] = KernelReg.tcb_list;
+
     LOG_INFO_APPEND("ok");
 
     LOG_INFO_NEWLINE("Initializing module:Event...");
@@ -267,12 +281,13 @@ OsResult_t OsInit(OsResult_t *status_optional)
         LOG_ERROR_NEWLINE("Failed to initialize module: Event!");
         return status_kernel;
     }
+    KernelReg.event_list = EventListRefGet();
     LOG_INFO_APPEND("ok");
 
 
     /*Core initiations*/
     LOG_INFO_NEWLINE("Initializing Scheduler...");
-    ICoreSchedulerInit(); /* Initialize Prior Scheduler */
+    KSchedulerInit(KernelReg.event_list); /* Initialize Scheduler */
     LOG_INFO_APPEND("ok");
 
 
@@ -357,19 +372,18 @@ void OsStart(Id_t start_task_id)
 
     LOG_INFO_NEWLINE("Preparing first task for execution...");
     if (start_task_id != ID_INVALID) { //if Prior should not start with Idle task
-        KernelReg.TcbRunning = KTcbFromId(start_task_id); //Search for TCB
-        if (KernelReg.TcbRunning == NULL) {
+        KernelReg.tcb_running = KTcbFromId(start_task_id); //Search for TCB
+        if (KernelReg.tcb_running == NULL) {
             LOG_ERROR_NEWLINE("Specified task not found! Starting with Idle instead.");
-            KernelReg.TcbRunning = TcbIdle; //No valid TCB found
+            KernelReg.tcb_running = KernelReg.tcb_idle; //No valid TCB found
         }
 
     } else {
-        KernelReg.TcbRunning = TcbIdle; //Prior should start with Idle task
+        KernelReg.tcb_running = KernelReg.tcb_idle; //Prior should start with Idle task
     }
 
-    ListNodeRemove(&TcbList, &KernelReg.TcbRunning->list_node);
-    ListNodeAddAtPosition(&ExecutionQueue, &KernelReg.TcbRunning->list_node, LIST_POSITION_HEAD);
-    ICoreLoadTaskFromExecutionQueue();
+	KTaskStateSet(KernelReg.tcb_running, TASK_STATE_RUNNING);
+	KTcbRunningRefSet(KernelReg.tcb_running);
 
     KCoreKernelModeExit(); //Disable kernel mode
 
@@ -397,16 +411,16 @@ void OsStart(Id_t start_task_id)
 #if PRTOS_CONFIG_ENABLE_WATCHDOG==1
         ICoreWdtKick();
 #endif
-        if(KernelReg.TcbRunning->handler != NULL) {
+        if(KernelReg.tcb_running->handler != NULL) {
 
 #ifdef PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
-            EventEmit(KernelReg.TcbRunning->list_node.id, TASK_EVENT_EXECUTE, EVENT_FLAG_NONE);
+            EventEmit(KernelReg.tcb_running->list_node.id, TASK_EVENT_EXECUTE, EVENT_FLAG_NONE);
 #endif
 
-            (KernelReg.TcbRunning->handler)(KernelReg.TcbRunning->p_arg, KernelReg.TcbRunning->v_arg);
+            (KernelReg.tcb_running->handler)(KernelReg.tcb_running->p_arg, KernelReg.tcb_running->v_arg);
 
 #ifdef PRTOS_CONFIG_USE_EVENT_TASK_EXECUTE_EXIT
-            EventEmit(KernelReg.TcbRunning->list_node.id, TASK_EVENT_EXIT, EVENT_FLAG_NONE);
+            EventEmit(KernelReg.tcb_running->list_node.id, TASK_EVENT_EXIT, EVENT_FLAG_NONE);
 #endif
 
         } else {
@@ -498,18 +512,18 @@ U32_t OsRuntimeHoursGet(void)
 
 U32_t OsTasksTotalGet(void)
 {
-    return (ListSizeGet(&TcbList) + ListSizeGet(&TcbWaitList) + ListSizeGet(&ExecutionQueue) + 1);
+    return (ListSizeGet(KernelReg.tcb_list) + ListSizeGet(KernelReg.tcb_wait_list) + KSchedulerQueueSizeGet() + 1);
 }
 
 
 U32_t OsTasksActiveGet(void)
 {
-    return (ListSizeGet(&TcbWaitList) + ListSizeGet(&ExecutionQueue) + 1);
+    return (ListSizeGet(KernelReg.tcb_wait_list) + KSchedulerQueueSizeGet() + 1);
 }
 
 U32_t OsEventsTotalGet(void)
 {
-    return (EventListSizeGet(&EventList));
+    return (EventListSizeGet(KernelReg.event_list));
 }
 
 
@@ -529,9 +543,9 @@ bool OsTaskExists(Id_t task_id)
 Id_t OsCurrentTaskGet(void)
 {
     Id_t id = ID_INVALID;
-    if(ListNodeLock(&KernelReg.TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
-        id = ListNodeIdGet(&KernelReg.TcbRunning->list_node);
-        ListNodeUnlock(&KernelReg.TcbRunning->list_node);
+    if(ListNodeLock(&KernelReg.tcb_running->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
+        id = ListNodeIdGet(&KernelReg.tcb_running->list_node);
+        ListNodeUnlock(&KernelReg.tcb_running->list_node);
     }
     return id;
 }
@@ -676,7 +690,7 @@ static void ICoreRunTimeUpdate(void)
 
 void OsTick(void)
 {
-	if(KernelReg.TcbRunning != NULL) {
+	if(KernelReg.tcb_running != NULL) {
 #ifdef PRTOS_CONFIG_USE_SCHEDULER_COOP
 		ICoreTickCoop();
 #else
@@ -712,17 +726,17 @@ static void ICoreTickCoop(void)
         * The task executing at the beginning of any user interrupt is then identical to
         * the one executing at the end. */
         if(KCoreFlagGet(CORE_FLAG_DISPATCH) && (KernelReg.isr_nest_counter == 1)) {
-            KTaskRunTimeReset(KernelReg.TcbRunning); /* Reset the tasks run time. */
+            KTaskRunTimeReset(KernelReg.tcb_running); /* Reset the tasks run time. */
             ICoreSwitchTask();
             KCoreFlagClear(CORE_FLAG_DISPATCH);
         }
 
         /* Scheduler will only run if all required lists and the scheduler itself are unlocked. */
-        if(!KernelReg.scheduler_lock && !ListIsLocked(&TcbWaitList) && !ListIsLocked(&TcbList) && !ListIsLocked(&EventList)) {
-            ICoreSchedulerCycle();
+        if(!KernelReg.scheduler_lock && !ListIsLocked(KernelReg.tcb_wait_list) && !ListIsLocked(KernelReg.tcb_list) && !ListIsLocked(KernelReg.event_list)) {
+        	KSchedulerCycle(TcbLists, NUM_TCB_LISTS);
         }
 
-        if(ListSizeGet(&ExecutionQueue) > 0) {
+        if(KSchedulerQueueSizeGet()) {
             KCoreFlagClear(CORE_FLAG_IDLE);
         }
         KCoreFlagClear(CORE_FLAG_TICK);
@@ -772,34 +786,32 @@ static void ICoreSwitchTask(void)
     TtUpdate();
 #endif
 
-    //EventListPrint(&KernelReg.TcbRunning->event_list);
-
-
-    if (ListSizeGet(&KernelReg.TcbRunning->event_list) != 0) { /* If task is waiting for an event. */
-        /* Set task state to dormant and insert into TcbWaitList. */
-        KTaskStateSet(KernelReg.TcbRunning,TASK_STATE_WAITING);
-        ListNodeAddSorted(&TcbWaitList, &KernelReg.TcbRunning->list_node);
-    } else if(!KTaskFlagGet(KernelReg.TcbRunning, TASK_FLAG_DELETE)) {  /* If task is not waiting for an event and will not be deleted. */
-        /* Set task state to idle and insert into TcbList. */
-        KTaskStateSet(KernelReg.TcbRunning,TASK_STATE_IDLE);
-        ListNodeAddSorted(&TcbList, &KernelReg.TcbRunning->list_node);
+    if (ListSizeGet(&KernelReg.tcb_running->event_list) != 0) { /* If task is waiting for an event. */
+        /* Set task state to dormant and insert into tcb_wait_list. */
+        KTaskStateSet(KernelReg.tcb_running,TASK_STATE_WAITING);
+        ListNodeAddSorted(KernelReg.tcb_wait_list, &KernelReg.tcb_running->list_node);
+    } else if(!KTaskFlagGet(KernelReg.tcb_running, TASK_FLAG_DELETE)) {  /* If task is not waiting for an event and will not be deleted. */
+        /* Set task state to idle and insert into tcb_list. */
+        KTaskStateSet(KernelReg.tcb_running,TASK_STATE_IDLE);
+        ListNodeAddSorted(KernelReg.tcb_list, &KernelReg.tcb_running->list_node);
     } else {  /* If task has to be deleted. */
-        if(KernelReg.TcbRunning->category != TASK_CAT_OS || KernelReg.TcbRunning != TcbIdle) {
-            if(KTcbDestroy(KernelReg.TcbRunning, NULL) != OS_RES_OK) {
+        if(KernelReg.tcb_running->category != TASK_CAT_OS || KernelReg.tcb_running != KernelReg.tcb_idle) {
+            if(KTcbDestroy(KernelReg.tcb_running, NULL) != OS_RES_OK) {
                 /* TODO: Throw exception. */
             }
         } else {
             /* Idle or other OS task cannot be deleted.
-            * Move back to TcbList. */
+            * Move back to tcb_list. */
             /* TODO: Throw exception for violation. */
-            KTaskStateSet(KernelReg.TcbRunning,TASK_STATE_IDLE);
-            KTaskFlagClear(KernelReg.TcbRunning, TASK_FLAG_DELETE);
-            ListNodeAddSorted(&TcbList, &KernelReg.TcbRunning->list_node);
+            KTaskStateSet(KernelReg.tcb_running,TASK_STATE_IDLE);
+            KTaskFlagClear(KernelReg.tcb_running, TASK_FLAG_DELETE);
+            ListNodeAddSorted(KernelReg.tcb_list, &KernelReg.tcb_running->list_node);
         }
     }
 
-    KernelReg.TcbRunning = KSchedulerTaskGet();
-	KTaskStateSet(KernelReg.TcbRunning, TASK_STATE_RUNNING);
+    KernelReg.tcb_running = KSchedulerQueueTaskPop();
+	KTaskStateSet(KernelReg.tcb_running, TASK_STATE_RUNNING);
+	KTcbRunningRefSet(KernelReg.tcb_running);
 }
 
 /******************************************/
@@ -876,6 +888,20 @@ U8_t KCoreKernelModeExit(void)
     }
 
     return KernelReg.kernel_mode_nest_counter;
+}
+
+Id_t KCoreTaskRunningGet(void)
+{
+	Id_t id = ID_INVALID;
+
+	KERNEL_REG_LOCK() {
+	    if(ListNodeLock(&KernelReg.tcb_running->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
+	        id = ListNodeIdGet(&KernelReg.tcb_running->list_node);
+	        ListNodeUnlock(&KernelReg.tcb_running->list_node);
+	    }
+	} KERNEL_REG_UNLOCK();
+
+	return id;
 }
 
 /*********************************************/

@@ -86,7 +86,7 @@ OsResult_t SemaphoreAcquire(Id_t sem_id, U32_t timeout)
             if(sem->type == SEMAPHORE_TYPE_MUTEX_BINARY) {
                 if(sem->aq_cnt == 0) {
                     sem->aq_cnt++;
-                    *(sem->owner_task_ids) = TcbRunning->list_node.id;
+                    *(sem->owner_task_ids) = KCoreTaskRunningGet();
                     result = OS_RES_OK;
                 } else {
 #ifdef PRTOS_CONFIG_USE_SEM_EVENT_ACQUIRE_RELEASE

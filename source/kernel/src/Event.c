@@ -17,7 +17,9 @@
 
 LOG_FILE_NAME("Event.c");
 
-U32_t EmittedEventLifetimeUs;
+static U32_t EmittedEventLifetimeUs;
+
+static LinkedList_t EventList;
 
 extern U32_t OsTickPeriodGet(void);
 
@@ -39,6 +41,11 @@ OsResult_t EventInit(void)
     EmittedEventLifetimeUs = OsTickPeriodGet() * PRTOS_CONFIG_EVENT_LIFE_TIME_TICKS;
 
     return OS_RES_OK;
+}
+
+LinkedList_t *EventListRefGet(void)
+{
+	return &EventList;
 }
 
 pEvent_t EventCreate(Id_t source_id, U32_t event_code, U32_t life_time_us)

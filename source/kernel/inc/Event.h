@@ -9,7 +9,7 @@
  *  D. van de Spijker
  *  -----------------
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -78,10 +78,9 @@ typedef struct Event_t {
 
 typedef struct Event_t * pEvent_t;
 
-LinkedList_t EventList;
-
 /* Event API. */
 OsResult_t  EventInit(void);
+LinkedList_t *EventListRefGet(void);
 OsResult_t  EventDestroy(LinkedList_t *list, pEvent_t event);
 OsResult_t  EventListDestroy(LinkedList_t *list);
 ListSize_t  EventListSizeGet(LinkedList_t *event_list);

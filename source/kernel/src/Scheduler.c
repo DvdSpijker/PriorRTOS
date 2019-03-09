@@ -1,10 +1,12 @@
 
 #include "Scheduler.h"
 
-#include "TaskDef.h"
+#include "kernel/inc/Event.h"
+#include "include/Logger.h"
+
+#include <stdlib.h>
 
 struct EventBrokerArgs {
-    LinkedList_t *activated_task_list;
     LinkedList_t *task_list;
     pTcb_t task;
     pEvent_t compare_event;
@@ -12,16 +14,18 @@ struct EventBrokerArgs {
     U32_t delta_us;
 };
 
-static void ISchedulerEventBrokerCycle(LinkedList_t *activated_task_list);
+static void ISchedulerEventBrokerCycle(LinkedList_t **tcb_lists, U8_t num_lists);
 static void ISchedulerTaskListCompare(struct EventBrokerArgs *args);
 static void ISchedulerTaskEventsCompare(struct EventBrokerArgs *args);
 void ISchedulerTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task);
 
 static LinkedList_t ExecutionQueue; /* Holds all the scheduled tasks. */
 
+static LinkedList_t *EventList;
+
 /*********  Scheduler functions *********/
 
-void KSchedulerInit(void)
+void KSchedulerInit(LinkedList_t *event_list)
 {
     ListInit(&ExecutionQueue, ID_GROUP_TASK);
     //LOG_INFO_NEWLINE("ExecutionQueue: %p", &ExecutionQueue);
@@ -35,21 +39,19 @@ void KSchedulerInit(void)
         LOG_ERROR_NEWLINE("Failed to publish the mock event!");
         while(1); /* Trap. Wdt will overflow if enabled. */
     }
+
+    EventList = event_list;
 }
 
-void KSchedulerCycle(void)
+void KSchedulerCycle(LinkedList_t **tcb_lists, U8_t num_lists)
 {
-    KCoreFlagSet(CORE_FLAG_SCHEDULER);
-
-    IEventBrokerCycle(&ExecutionQueue);
-
-    KCoreFlagClear(CORE_FLAG_SCHEDULER);
+    ISchedulerEventBrokerCycle(tcb_lists, num_lists);
 }
 
 /* Loads a task from the ExecutionQueue (head position).
  * If no task is present in the queue,
 * the Idle task is loaded instead. */
-pTcb_t KSchedulerTaskGet(void)
+pTcb_t KSchedulerQueueTaskPop(void)
 {
 	pTcb_t tcb = NULL;
 
@@ -60,12 +62,17 @@ pTcb_t KSchedulerTaskGet(void)
     return tcb;
 }
 
+U32_t KSchedulerQueueSizeGet(void)
+{
+	return ListSizeGet(&ExecutionQueue);
+}
+
 /* Compares all tasks with all occurred events. All lifetimes are updated, expired events
 * will be deleted.
 * All activated tasks will be placed in the activated task list. */
-static void ISchedulerEventBrokerCycle(LinkedList_t *activated_task_list)
+static void ISchedulerEventBrokerCycle(LinkedList_t **tcb_lists, U8_t num_lists)
 {
-    if(EventListSizeGet(&EventList) == 0) {
+    if(EventListSizeGet(EventList) == 0) {
         LOG_ERROR_NEWLINE("EventList is empty. A Mock event should always be present.");
         while(1); /* Trap. Wdt will overflow if enabled. */
     }
@@ -76,14 +83,13 @@ static void ISchedulerEventBrokerCycle(LinkedList_t *activated_task_list)
     * all waiting tasks with every occurred event. */
     bool last_event = false;
     struct EventBrokerArgs args;
-    args.activated_task_list = activated_task_list;
 
     static U32_t micros = 0;
     U32_t delta_us = OsRunTimeMicrosDelta(micros);
     micros = OsRunTimeMicrosGet();
     args.delta_us = delta_us;
 
-    LIST_ITERATOR_BEGIN(&it, &EventList, LIST_ITERATOR_DIRECTION_FORWARD);
+    LIST_ITERATOR_BEGIN(&it, EventList, LIST_ITERATOR_DIRECTION_FORWARD);
     {
         if(it.current_node != NULL) {
 
@@ -102,7 +108,7 @@ static void ISchedulerEventBrokerCycle(LinkedList_t *activated_task_list)
                     LinkedList_t *list = KTcbLocationGet(tcb);
                     if(list != NULL && list != &ExecutionQueue) {
                         KTaskStateSet(tcb, TASK_STATE_ACTIVE);
-                        ICoreTaskAddDescendingPriority(list, activated_task_list, tcb);
+                        ISchedulerTaskAddDescendingPriority(list, &ExecutionQueue, tcb);
                     }
                 }
                 if(!last_event) {
@@ -113,11 +119,13 @@ static void ISchedulerEventBrokerCycle(LinkedList_t *activated_task_list)
             args.compare_event = occurred_event;
             args.last_event = last_event;
 
-            args.task_list = &TcbWaitList;
-            ICoreTaskListCompare(&args);
+            for(U8_t i = 0; i < num_lists; i++) {
+            	  args.task_list = tcb_lists[i];
+            	  ISchedulerTaskListCompare(&args);
+            }
 
-            args.task_list = activated_task_list;
-            ICoreTaskListCompare(&args);
+      	  args.task_list = &ExecutionQueue;
+      	  ISchedulerTaskListCompare(&args);
 
 event_cleanup:
             /* Increment the occurred event's lifetime and check if it has time left. If this is
@@ -130,7 +138,7 @@ event_cleanup:
                 }
             }
         } else {
-            LOG_ERROR_NEWLINE("EventList size (%u) is not consistent with the number of reachable nodes", EventListSizeGet(&EventList));
+            LOG_ERROR_NEWLINE("EventList size (%u) is not consistent with the number of reachable nodes", EventListSizeGet(EventList));
             break;
         }
     }
@@ -157,7 +165,7 @@ static void ISchedulerTaskListCompare(struct EventBrokerArgs *args)
             task = (pTcb_t)ListNodeChildGet(it.current_node);
             //LOG_DEBUG_APPEND("\n\tEvent list of task %04x", it.current_node->id);
             args->task = task;
-            ICoreTaskEventsCompare(args);
+            ISchedulerTaskEventsCompare(args);
         } else {
             break;
         }
@@ -170,7 +178,6 @@ static void ISchedulerTaskListCompare(struct EventBrokerArgs *args)
 * task is moved to the activated task list. */
 static void ISchedulerTaskEventsCompare(struct EventBrokerArgs *args)
 {
-    LinkedList_t *activated_task_list = args->activated_task_list;
     LinkedList_t *task_list = args->task_list;
     pTcb_t task = args->task;
     pEvent_t compare_event = args->compare_event;
@@ -214,8 +221,8 @@ static void ISchedulerTaskEventsCompare(struct EventBrokerArgs *args)
     }
     LIST_ITERATOR_END(&it);
 
-    if((task_list != activated_task_list) && (task->state == TASK_STATE_ACTIVE)) {
-        ICoreTaskAddDescendingPriority(task_list, activated_task_list, task);
+    if((task_list != &ExecutionQueue) && (task->state == TASK_STATE_ACTIVE)) {
+        ISchedulerTaskAddDescendingPriority(task_list, &ExecutionQueue, task);
     }
 }
 

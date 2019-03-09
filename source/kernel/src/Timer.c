@@ -146,7 +146,7 @@ void KTimerUpdateAll(U32_t t_us)
 
 Id_t TimerCreate(U32_t interval_ms, U8_t parameter, TimerOverflowCallback_t overflow_callback, void *context)
 {
-    if(interval == 0) {
+    if(interval_ms == 0) {
         return ID_INVALID;
     }
 
