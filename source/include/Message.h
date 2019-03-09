@@ -33,13 +33,10 @@ typedef enum {
 	MSG_DATA_TYPE_U8 = 0,
 	MSG_DATA_TYPE_U16,
 	MSG_DATA_TYPE_U32,
-	MSG_DATA_TYPE_U64,
 	MSG_DATA_TYPE_S8,
 	MSG_DATA_TYPE_S16,
 	MSG_DATA_TYPE_S32,
-	MSG_DATA_TYPE_S64,
 	MSG_DATA_TYPE_FLOAT,
-	MSG_DATA_TYPE_DOUBLE,
 
 	/* Pointer message. */
 	MSG_DATA_TYPE_ARRAY,
@@ -56,7 +53,7 @@ typedef struct {
 	MessageDataType_t type; /* Message type. */
 	union {
 		PointerMessage_t pointer; /* Pointer message. */
-		U64_t value; /* Value message. */
+		U32_t value; /* Value message. */
 	}msg_data;
 }Message_t;
 
