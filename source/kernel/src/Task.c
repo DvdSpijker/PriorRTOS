@@ -40,6 +40,7 @@
 /*********OS Task management*********/
 #include "include/Task.h"
 #include "kernel/inc/TaskDef.h"
+#include "kernel/inc/ktask/KernelTaskIdle.h"
 
 #include "include/Convert.h"
 #include "kernel/inc/Event.h"
@@ -52,6 +53,17 @@
 #include <string.h> /* For memset. */
 
 LOG_FILE_NAME("Task.c");
+
+
+static LinkedList_t TcbList; /* Holds all tasks with states
+                      other than dormant, scheduled or running. */
+
+static LinkedList_t TcbWaitList; /* Holds all dormant tasks i.e. waiting for an event. */
+
+static volatile pTcb_t TcbRunning;
+static pTcb_t TcbIdle;	/* Holds a pointer to the TCB
+                  	  	 * of the OS Idle task (see KernelTaskIdle.c). */
+
 
 
 #define TASK_EVENT_SLEEP (EVENT_TYPE_STATE_CHANGE | 0x00002000)
@@ -69,8 +81,6 @@ static S8_t ITaskEventHandle(pEvent_t event);
 
 static OsResult_t ITaskResume(Id_t task_id);
 
-pTcb_t TcbIdle;/* Holds a pointer to the TCB
-                  of the OS Idle task (see KernelTaskIdle.c). */
 
 OsResult_t KTaskInit(void)
 {
@@ -109,7 +119,6 @@ OsResult_t KTaskInit(void)
     return res;
 }
 
-
 Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
                 U32_t stack_size, const void *p_arg, U32_t v_arg)
 {
@@ -142,7 +151,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
 
     ListInit(&new_tcb->event_list, 0);
     new_tcb->handler = handler;
-    new_tcb->priority = KCalculatePriority(category, priority);
+    new_tcb->priority = KTaskCalculatePriority(category, priority);
     new_tcb->category = category;
     new_tcb->p_arg = p_arg;
     new_tcb->v_arg = v_arg;
@@ -240,12 +249,7 @@ void TaskNameSet(Id_t task_id, const char* name)
 
 Id_t TaskIdGet(void)
 {
-    Id_t id = ID_INVALID;
-    if(ListNodeLock(&TcbRunning->list_node, LIST_LOCK_MODE_READ) == OS_RES_OK) {
-        id = ListNodeIdGet(&TcbRunning->list_node);
-        ListNodeUnlock(&TcbRunning->list_node);
-    }
-    return id;
+	return KCoreTaskRunningGet();
 }
 
 
@@ -428,7 +432,7 @@ OsResult_t TaskPrioritySet(Id_t task_id, Prio_t new_priority)
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
             /* The priority stored in the TCB is a combined priority of the minor and category.
              * The original minor priority can be derived. */
-            tcb->priority = KCalculatePriority(tcb->category, new_priority);
+            tcb->priority = KTaskCalculatePriority(tcb->category, new_priority);
             result = OS_RES_OK;
             ListNodeUnlock(&tcb->list_node);
         }
@@ -550,6 +554,16 @@ static OsResult_t ITaskResume(Id_t task_id)
 
 /********************************/
 
+LinkedList_t *KTcbWaitListRefGet(void)
+{
+	return &TcbWaitList;
+}
+
+LinkedList_t *KTcbListRefGet(void)
+{
+	return &TcbList;
+}
+
 pTcb_t KTcbIdleGet(void)
 {
 	return TcbIdle;
@@ -577,7 +591,7 @@ U8_t KTaskFlagGet(pTcb_t tcb, TaskFlags_t flag)
 }
 
 
-Prio_t KCalculateInvPriority(Prio_t P, TaskCat_t Mj)
+Prio_t KTaskCalculateInvPriority(Prio_t P, TaskCat_t Mj)
 {
     if(Mj > 0) {
         return P/(Mj*5) + 1;
@@ -586,7 +600,7 @@ Prio_t KCalculateInvPriority(Prio_t P, TaskCat_t Mj)
     }
 }
 
-Prio_t KCalculatePriority(TaskCat_t Mj,Prio_t Mi)
+Prio_t KTaskCalculatePriority(TaskCat_t Mj,Prio_t Mi)
 {
     return (Mj * 5 + Mi - 1);
 }
@@ -658,6 +672,10 @@ OsResult_t KTcbDestroy(pTcb_t tcb, LinkedList_t *list)
     return result;
 }
 
+void KTcbRunningRefSet(pTcb_t tcb)
+{
+	TcbRunning = tcb;
+}
 
 static OsResult_t ITaskEventRegister(pTcb_t tcb, Id_t object_id, U32_t event, U8_t flags, U32_t timeout_ms, Id_t *event_id)
 {

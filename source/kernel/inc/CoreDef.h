@@ -32,6 +32,8 @@ U16_t KCoreFlagGet(CoreFlags_t flag);
 U8_t KCoreKernelModeEnter(void);
 U8_t KCoreKernelModeExit(void);
 
+Id_t KCoreTaskRunningGet(void);
+
 #ifdef __cplusplus
 }
 #endif

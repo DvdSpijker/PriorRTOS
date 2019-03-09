@@ -17,7 +17,7 @@ extern "C" {
 #include "include/Task.h"
 #include "kernel/inc/Event.h"
 
-#define IDLETASK_PRIO   0x0A //Idle Task priority
+#define IDLE_TASK_PRIO   0x0A //Idle Task priority
 
 #define TASK_EVENT_ACTIVATE       (EVENT_TYPE_STATE_CHANGE | 0x00004000)
 
@@ -91,15 +91,11 @@ typedef struct Tcb_t {
 
 typedef struct Tcb_t * pTcb_t;
 
-LinkedList_t TcbList; /* Holds all tasks with states
-                      other than dormant, scheduled or running. */
-
-LinkedList_t TcbWaitList; /* Holds all dormant tasks i.e. waiting for an event. */
-
 /* Kernel Task API */
 
 OsResult_t   KTaskInit(void);
-
+LinkedList_t *KTcbWaitListRefGet(void);
+LinkedList_t *KTcbListRefGet(void);
 pTcb_t KTcbIdleGet(void);
 OsResult_t KTcbMove(pTcb_t to_move, LinkedList_t *from_list, LinkedList_t* to_list);
 void KTcbSwap(pTcb_t x, pTcb_t y, LinkedList_t* list);
@@ -107,13 +103,14 @@ OsResult_t KTcbDestroy(pTcb_t TCB, LinkedList_t* list);
 LinkedList_t* KTcbLocationGet(pTcb_t tcb);
 void KTaskStateSet(pTcb_t tcb_pointer, TaskState_t new_state);
 pTcb_t KTcbFromId(Id_t task_id);
+void KTcbRunningRefSet(pTcb_t tcb);
 
 void KTaskFlagSet(pTcb_t tcb, TaskFlags_t flag);
 void KTaskFlagClear(pTcb_t tcb ,TaskFlags_t flag);
 U8_t KTaskFlagGet(pTcb_t tcb, TaskFlags_t flag);
 
-Prio_t KCalculateInvPriority(Prio_t P, TaskCat_t Mj);
-Prio_t KCalculatePriority(TaskCat_t Mj,Prio_t Mi);
+Prio_t KTaskCalculateInvPriority(Prio_t P, TaskCat_t Mj);
+Prio_t KTaskCalculatePriority(TaskCat_t Mj,Prio_t Mi);
 
 void KTaskRunTimeUpdate(void);
 void KTaskRunTimeReset(pTcb_t tcb);

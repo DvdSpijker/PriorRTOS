@@ -50,7 +50,7 @@
 #include <stdbool.h>
 #include <string.h> /* For memcpy. */
 
-static bool ITaskIsOwner(pMailbox_t mailbox, pTcb_t tcb);
+static bool ITaskIsOwner(pMailbox_t mailbox, Id_t task);
 static OsResult_t IMailboxWrite(Id_t mailbox_id, U8_t address, void *data, U32_t timeout, bool force);
 
 LinkedList_t MailboxList;
@@ -131,7 +131,6 @@ OsResult_t MailboxUpdate(Id_t mailbox_id, U8_t address, void *data, U32_t timeou
 OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, void *data, U32_t timeout)
 {
 
-    pTcb_t task = TcbRunning;
     OsResult_t result = OS_RES_LOCKED;
 
 #ifdef PRTOS_CONFIG_USE_MAILBOX_EVENT_POST_PEND
@@ -152,7 +151,7 @@ OsResult_t MailboxPend(Id_t mailbox_id, U8_t address, void *data, U32_t timeout)
         pMailbox_t mailbox = ListNodeChildGet(node);
 
         /* Validate ownership of this mailbox. */
-        if(ITaskIsOwner(mailbox, task) == false) {
+        if(ITaskIsOwner(mailbox, KCoreTaskRunningGet()) == false) {
             result = OS_RES_RESTRICTED;
         }
 
@@ -217,11 +216,11 @@ pMailbox_t KMailboxFromId(Id_t mailbox_id)
     }
 }
 
-static bool ITaskIsOwner(pMailbox_t mailbox, pTcb_t tcb)
+static bool ITaskIsOwner(pMailbox_t mailbox, Id_t task)
 {
     bool is_owner = false;
-    for (U8_t i = 0; i < mailbox->n_owners; i++) {
-        if(mailbox->owner_ids[i] == tcb->list_node.id) {
+    for (U8_t i = 0; i < mailbox->owners.n; i++) {
+        if(mailbox->owners.ids[i] == task) {
             is_owner = true;
             break;
         }
