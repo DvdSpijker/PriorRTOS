@@ -9,7 +9,7 @@
  *  D. van de Spijker
  *  -----------------
  *
- *  Copyright© 2017    D. van de Spijker
+ *  Copyrightï¿½ 2017    D. van de Spijker
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software AND associated documentation files (the "Software"), to deal
@@ -41,7 +41,7 @@
 extern "C" {
 #endif
 
-#include "include/PriorRTOSConfig.h"
+#include "PriorRTOSConfig.h"
 #include "include/OsTypes.h"
 #include "include/EventDef.h"
 

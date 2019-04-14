@@ -10,7 +10,7 @@
 #define SYSTEM_CALL_H_
 
 #include "include/OsTypes.h"
-#include "include/PriorRTOSConfig.h"
+#include "PriorRTOSConfig.h"
 
 #include "kernel/inc/Event.h"
 #include "kernel/inc/TaskDef.h"

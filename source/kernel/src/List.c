@@ -6,11 +6,11 @@
  */
 
 
-#include "List.h"
+#include "kernel/inc/List.h"
 
 //#include "Logger.h"
-#include "IdTypeDef.h"
-#include "Os.h"
+#include "kernel/inc/IdTypeDef.h"
+#include "include/Os.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -185,10 +185,10 @@ OsResult_t ListMerge(LinkedList_t *list_x, LinkedList_t *list_y)
 
     result = ListDestroy(list_x);
 
-//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-//    ListIntegrityVerify(list_x);
-//    ListIntegrityVerify(list_y);
-//#endif
+#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+    ListIntegrityVerify(list_x);
+    ListIntegrityVerify(list_y);
+#endif
 
 
     return result;
@@ -378,9 +378,9 @@ unlock:
         ListUnlock(list);
     }
 
-//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-//    ListIntegrityVerify(list);
-//#endif
+#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+    ListIntegrityVerify(list);
+#endif
 
     return result;
 }
@@ -477,9 +477,9 @@ unlock:
         ListUnlock(list);
     }
 
-//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-//    ListIntegrityVerify(list);
-//#endif
+#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+    ListIntegrityVerify(list);
+#endif
     return result;
 }
 
@@ -492,7 +492,6 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
         return OS_RES_FAIL;
     }
     OsResult_t result;
-
 #ifndef PRTOS_CONFIG_USE_SORTED_LISTS
     result = ListNodeAddAtPosition(list, node, LIST_POSITION_TAIL);
 #else
@@ -502,8 +501,8 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
         return OS_RES_OK;
     }
 
-    result = ListLock(list, LIST_LOCK_MODE_WRITE);
-    if(result == OS_RES_OK) {
+//    result = ListLock(list, LIST_LOCK_MODE_WRITE);
+//    if(result == OS_RES_OK) {
         result = OS_RES_LOCKED;
         struct ListIterator it;
         bool stop_loop = false;
@@ -514,14 +513,14 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
             if(node->id == ID_INVALID) {
                 LOG_ERROR_NEWLINE("No free ID found for node (%p) in list (%p).", node, list);
                 result = OS_RES_INVALID_ID;
-                goto unlock;
+                goto exit;
             }
         }
 
         /* Iterate through list. */
         //LIST_ITERATOR_BEGIN(&it, list, LIST_ITERATOR_DIRECTION_FORWARD) {
         if(ListIteratorInit(&it, list, LIST_ITERATOR_DIRECTION_FORWARD) == OS_RES_OK) { 
-        do {      
+        do {
             if(it.current_node != NULL) {
                 if(node->id > it.current_node->id) {
                     if(it.next_node != NULL) {
@@ -557,7 +556,7 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
             LIST_ITERATOR_BREAK_ON_CONDITION(stop_loop);
             if(ListIteratorNext(&it) == NULL)  
                 break;                          
-            } while (!ListIteratorEnd(&it));   
+            } while (!ListIteratorEnd(&it));
             }                                           
         //} LIST_ITERATOR_END(&it);
         if(result == OS_RES_OK) {
@@ -576,10 +575,11 @@ OsResult_t ListNodeAddSorted(LinkedList_t *list, ListNode_t *node)
             }
             list->sorted = true;
         }
-unlock:
-        ListUnlock(list);
-    }
+//unlock:
+//        ListUnlock(list);
+    //}
 #endif
+exit:
 
     return result;
 }
@@ -640,9 +640,9 @@ ListNode_t *ListNodeRemove(LinkedList_t *list, ListNode_t *node)
         ListUnlock(list);
     }
 
-//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-//    ListIntegrityVerify(list);
-//#endif
+#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+    ListIntegrityVerify(list);
+#endif
 
     return y;
 }
@@ -746,9 +746,9 @@ OsResult_t ListNodeSwap(LinkedList_t *list, ListNode_t *node_x, ListNode_t *node
     }
 
 
-//#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
-//    ListIntegrityVerify(list);
-//#endif
+#if PRTOS_CONFIG_ENABLE_LIST_INTEGRITY_VERIFICATION==1
+    ListIntegrityVerify(list);
+#endif
 
     return OS_RES_OK;
 }
@@ -913,6 +913,7 @@ unlock:
 
 ret:
     if(result < LIST_INTEGRITY_RESULT_LIST_INTACT) {
+    	printf("error in list.");
         LOG_ERROR_APPEND( "\tError in list %p : %d", list, result);
     }
     return result;

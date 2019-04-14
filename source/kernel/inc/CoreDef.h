@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "include/PriorRTOSConfig.h"
+#include "PriorRTOSConfig.h"
 #include "include/OsTypes.h"
 
 #define CORE_OS_TIMER_TICKS_TO_US(ticks) (U32_t)(((float)ticks / PRTOS_CONFIG_F_OS_TIMER_HZ) * 1e6)

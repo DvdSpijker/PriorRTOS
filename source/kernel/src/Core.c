@@ -269,6 +269,7 @@ OsResult_t OsInit(OsResult_t *status_optional)
     }
     KernelReg.tcb_list = KTcbListRefGet();
     KernelReg.tcb_wait_list = KTcbWaitListRefGet();
+    KernelReg.tcb_idle = KTcbIdleGet();
     KernelReg.tcb_running = NULL;
     TcbLists[0] = KernelReg.tcb_wait_list;
     TcbLists[1] = KernelReg.tcb_list;
@@ -382,6 +383,7 @@ void OsStart(Id_t start_task_id)
         KernelReg.tcb_running = KernelReg.tcb_idle; //Prior should start with Idle task
     }
 
+    ListNodeRemove(KernelReg.tcb_list, &KernelReg.tcb_running->list_node);
 	KTaskStateSet(KernelReg.tcb_running, TASK_STATE_RUNNING);
 	KTcbRunningRefSet(KernelReg.tcb_running);
 
@@ -810,6 +812,10 @@ static void ICoreSwitchTask(void)
     }
 
     KernelReg.tcb_running = KSchedulerQueueTaskPop();
+    if(KernelReg.tcb_running == NULL) {
+    	ListNodeRemove(KernelReg.tcb_list, &KernelReg.tcb_idle->list_node);
+    	KernelReg.tcb_running =  KernelReg.tcb_idle;
+    }
 	KTaskStateSet(KernelReg.tcb_running, TASK_STATE_RUNNING);
 	KTcbRunningRefSet(KernelReg.tcb_running);
 }

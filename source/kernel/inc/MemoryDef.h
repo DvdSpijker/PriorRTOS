@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-#include "include/PriorRTOSConfig.h"
+#include "PriorRTOSConfig.h"
 
 #if PRTOS_CONFIG_OS_HEAP_SIZE_BYTES==0
 #error "PriorRTOS: No heap-space reserved; PRTOS_CONFIG_OS_HEAP_SIZE_BYTES = 0."

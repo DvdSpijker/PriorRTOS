@@ -1,8 +1,9 @@
 
-#include "Scheduler.h"
+#include "kernel/inc/Scheduler.h"
 
 #include "kernel/inc/Event.h"
 #include "include/Logger.h"
+#include "kernel/inc/List.h"
 
 #include <stdlib.h>
 
@@ -72,7 +73,7 @@ U32_t KSchedulerQueueSizeGet(void)
 * All activated tasks will be placed in the activated task list. */
 static void ISchedulerEventBrokerCycle(LinkedList_t **tcb_lists, U8_t num_lists)
 {
-    if(EventListSizeGet(EventList) == 0) {
+    if(EventList->size == 0) {
         LOG_ERROR_NEWLINE("EventList is empty. A Mock event should always be present.");
         while(1); /* Trap. Wdt will overflow if enabled. */
     }
