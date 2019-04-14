@@ -168,7 +168,7 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
 
     if(result != OS_RES_OK) {
         LOG_ERROR_NEWLINE("A task could not be added to the list.");
-        ListNodeDeinit(&TcbList, &new_tcb->list_node);
+        ListNodeDeinit(NULL, &new_tcb->list_node);
         KMemFreeObject((void **)&new_tcb, NULL);
         return ID_INVALID;
     }

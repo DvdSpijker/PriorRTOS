@@ -6,7 +6,7 @@
  */
 #include "kernel/inc/Event.h"
 
-#include "include/PriorRTOSConfig.h"
+#include "PriorRTOSConfig.h"
 #include "include/Logger.h"
 #include "include/OsTypes.h"
 #include "kernel/inc/LoggerDef.h"
