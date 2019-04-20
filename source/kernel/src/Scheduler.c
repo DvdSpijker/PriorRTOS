@@ -15,7 +15,7 @@ struct EventBrokerArgs {
     U32_t delta_us;
 };
 
-static void ISchedulerEventBrokerCycle(LinkedList_t **tcb_lists, U8_t num_lists);
+static OsResult_t ISchedulerEventBrokerCycle(LinkedList_t *tcb_lists[], U8_t num_lists);
 static void ISchedulerTaskListCompare(struct EventBrokerArgs *args);
 static void ISchedulerTaskEventsCompare(struct EventBrokerArgs *args);
 void ISchedulerTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task);
@@ -26,9 +26,15 @@ static LinkedList_t *EventList;
 
 /*********  Scheduler functions *********/
 
-void KSchedulerInit(LinkedList_t *event_list)
+OsResult_t KSchedulerInit(LinkedList_t *event_list)
 {
-    ListInit(&ExecutionQueue, ID_GROUP_TASK);
+	if(event_list == NULL) {
+		return OS_RES_INVALID_ARGUMENT;
+	}
+
+	OsResult_t result = OS_RES_ERROR;
+
+	result = ListInit(&ExecutionQueue, ID_GROUP_TASK);
     //LOG_INFO_NEWLINE("ExecutionQueue: %p", &ExecutionQueue);
     /* Add a mock event to the EventList.
     * This ensures that this list will never
@@ -36,17 +42,24 @@ void KSchedulerInit(LinkedList_t *event_list)
     * to keep the EventHandle cycle running, since
     * it also needs to update registered event
     * lifetimes. */
-    if(EventEmit(ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_RES_OK) {
-        LOG_ERROR_NEWLINE("Failed to publish the mock event!");
-        while(1); /* Trap. Wdt will overflow if enabled. */
-    }
+	if(result == OS_RES_OK) {
+		if(EventEmit(ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_RES_OK) {
+			LOG_ERROR_NEWLINE("Failed to publish the mock event!");
+			while(1); /* Trap. Wdt will overflow if enabled. */
+		}
+		EventList = event_list;
+	}
 
-    EventList = event_list;
+    return result;
 }
 
-void KSchedulerCycle(LinkedList_t **tcb_lists, U8_t num_lists)
+OsResult_t KSchedulerCycle(LinkedList_t *tcb_lists[], U8_t num_lists)
 {
-    ISchedulerEventBrokerCycle(tcb_lists, num_lists);
+	if(tcb_lists == NULL || num_lists == 0) {
+		return OS_RES_INVALID_ARGUMENT;
+	}
+
+    return ISchedulerEventBrokerCycle(tcb_lists, num_lists);
 }
 
 /* Loads a task from the ExecutionQueue (head position).
@@ -71,13 +84,14 @@ U32_t KSchedulerQueueSizeGet(void)
 /* Compares all tasks with all occurred events. All lifetimes are updated, expired events
 * will be deleted.
 * All activated tasks will be placed in the activated task list. */
-static void ISchedulerEventBrokerCycle(LinkedList_t **tcb_lists, U8_t num_lists)
+static OsResult_t ISchedulerEventBrokerCycle(LinkedList_t *tcb_lists[], U8_t num_lists)
 {
     if(EventList->size == 0) {
-        LOG_ERROR_NEWLINE("EventList is empty. A Mock event should always be present.");
-        while(1); /* Trap. Wdt will overflow if enabled. */
+        LOG_ERROR_NEWLINE("EventList is empty. A Mock event must always be present.");
+     	return OS_RES_CRIT_ERROR;
     }
 
+    OsResult_t result = OS_RES_OK;
     struct ListIterator it;
     pEvent_t occurred_event = NULL;
     /* Loop through occurred event list and compare all activated tasks and
@@ -140,12 +154,13 @@ event_cleanup:
             }
         } else {
             LOG_ERROR_NEWLINE("EventList size (%u) is not consistent with the number of reachable nodes", EventListSizeGet(EventList));
+            result = OS_RES_CRIT_ERROR;
             break;
         }
     }
     LIST_ITERATOR_END(&it);
 
-    return;
+    return result;
 }
 
 
@@ -230,8 +245,6 @@ static void ISchedulerTaskEventsCompare(struct EventBrokerArgs *args)
 
 void ISchedulerTaskAddDescendingPriority(LinkedList_t *from_list, LinkedList_t *to_list, pTcb_t task)
 {
-    /* TODO: Insert at ExecutionQueueSeparator tail if task category is real-time. */
-
     pTcb_t compare_task = NULL;
     struct ListIterator it;
 

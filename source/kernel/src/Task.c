@@ -156,9 +156,8 @@ Id_t TaskCreate(Task_t handler, TaskCat_t category, Prio_t priority, U8_t param,
     new_tcb->p_arg = p_arg;
     new_tcb->v_arg = v_arg;
     new_tcb->state = TASK_STATE_IDLE;
-    new_tcb->active_time_us = 0;
     new_tcb->run_time_us = 0;
-    new_tcb->deadline_time_us = PRTOS_CONFIG_REAL_TIME_TASK_DEADLINE_DEFAULT_MS;
+    new_tcb->deadline_time_us = PRTOS_CONFIG_REAL_TIME_TASK_DEADLINE_DEFAULT_MS * 1000;
 #if PRTOS_CONFIG_ENABLE_TASKNAMES==1
     memset(new_tcb->name, 0, PRTOS_CONFIG_TASK_NAME_LENGTH_CHARS);
 #endif
@@ -264,7 +263,7 @@ OsResult_t TaskRealTimeDeadlineSet(Id_t rt_task_id, U32_t t_ms)
         if(ListNodeLock(&tcb->list_node, LIST_LOCK_MODE_WRITE) == OS_RES_OK) {
             result = OS_RES_INVALID_ID;
             if(tcb->category == TASK_CAT_REALTIME) {
-                tcb->deadline_time_us = t_ms;
+                tcb->deadline_time_us = t_ms * 1000;
                 result = OS_RES_OK;
             }
             ListNodeUnlock(&tcb->list_node);
