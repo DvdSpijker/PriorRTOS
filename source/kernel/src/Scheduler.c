@@ -1,8 +1,9 @@
 
 #include "kernel/inc/Scheduler.h"
 
-#include "kernel/inc/Event.h"
 #include "include/Logger.h"
+#include "include/Os.h"
+#include "kernel/inc/Event.h"
 #include "kernel/inc/List.h"
 
 #include <stdlib.h>
@@ -43,9 +44,9 @@ OsResult_t KSchedulerInit(LinkedList_t *event_list)
     * it also needs to update registered event
     * lifetimes. */
 	if(result == OS_RES_OK) {
-		if(EventEmit(ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE) != OS_RES_OK) {
+		result = EventEmit(ID_INVALID, MOCK_EVENT, EVENT_FLAG_NONE);
+		if(result != OS_RES_OK) {
 			LOG_ERROR_NEWLINE("Failed to publish the mock event!");
-			while(1); /* Trap. Wdt will overflow if enabled. */
 		}
 		EventList = event_list;
 	}
