@@ -86,6 +86,7 @@ OsResult_t MessageSend(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms)
 	OsResult_t result = OS_RES_INVALID_ARGUMENT;
 	pMessageQueue_t queue = NULL;
 	pMessageNode_t msg_node = NULL;
+	void *data_cpy = NULL;
 
 #ifdef PRTOS_CONFIG_USE_MESSAGE_EVENT_RECEIVE
 	/* Handle the Receive event. */
@@ -130,11 +131,29 @@ OsResult_t MessageSend(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms)
 							ListNodeDeinit(&queue->list, &msg_node->node);
 							KMemFreeObject((void **)&msg_node, NULL);
 						} else {
+							/* Check if the message contains pointer data and
+							 * check if this data must be copied. */
+							if(message->type >= MSG_DATE_TYPE_POINTER && message->msg_data.pointer.copy) {
+								/* Allocate the amount of space needed to store the data. */
+								data_cpy = KMemAllocObject(message->msg_data.pointer.size, 0, NULL);
+								/* Copy the data and re-assign the pointer to the allocated piece of memory. */
+								if(data_cpy != NULL) {
+									memcpy(data_cpy, message->msg_data.pointer.p, message->msg_data.pointer.size);
+									message->msg_data.pointer.p = data_cpy;
+								} else {
+									ListNodeDeinit(&queue->list, &msg_node->node);
+									KMemFreeObject((void **)&msg_node, NULL);
+									result = OS_RES_MEMORY_ERROR;
+								}
+							}
+
 							/* Emit the Send event. */
 #ifdef PRTOS_CONFIG_USE_MESSAGE_EVENT_SEND
 							EventEmit(msg_queue_id, MESSAGE_EVENT_SEND, EVENT_FLAG_NONE);
 #endif
 						}
+					} else {
+						result = OS_RES_MEMORY_ERROR;
 					}
 				}
 #ifdef PRTOS_CONFIG_USE_MESSAGE_EVENT_RECEIVE
@@ -224,5 +243,18 @@ OsResult_t MessageReceive(Id_t msg_queue_id, Message_t *message, U32_t timeout_m
 	}
 
 	return result;
+}
+
+OsResult_t MessageDelete(Message_t *message)
+{
+	if(message == NULL) {
+		return OS_RES_INVALID_ARGUMENT;
+	}
+
+	if(message->msg_data.pointer.copy == true) {
+		return KMemFreeObject(&message->msg_data.pointer.p, NULL);
+	} else {
+		return OS_RES_INVALID_ARGUMENT;
+	}
 }
 

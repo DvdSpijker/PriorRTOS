@@ -39,8 +39,10 @@ typedef enum {
 	MSG_DATA_TYPE_FLOAT,
 
 	/* Pointer message. */
+	MSG_DATE_TYPE_POINTER,
 	MSG_DATA_TYPE_ARRAY,
 	MSG_DATA_TYPE_STRING,
+	MSG_DATA_TYPE_OBJECT,
 }MessageDataType_t;
 
 typedef struct {
@@ -55,6 +57,7 @@ typedef struct {
 		PointerMessage_t pointer; /* Pointer message. */
 		U32_t value; /* Value message. */
 	}msg_data;
+	Id_t sender_task_id;
 }Message_t;
 
 /******************************************************************************
@@ -142,5 +145,6 @@ OsResult_t MessageMulticast(IdList_t *msg_queue_ids, Message_t *message, U32_t t
  ******************************************************************************/
 OsResult_t MessageReceive(Id_t msg_queue_id, Message_t *message, U32_t timeout_ms);
 
+OsResult_t MessageDelete(Message_t *message);
 
 #endif /* MESSAGE_H_ */
