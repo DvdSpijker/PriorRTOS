@@ -45,7 +45,6 @@ OsResult_t KLogInit(void)
     stdout = &mystdout;
 #endif
 
-    LOG_INFO_APPEND("\nLOGGING FORMATS\n");
     LOG_INFO_APPEND("[h:s:ms] [tag] [<additional>] : message");
     return OS_RES_OK;
 }
