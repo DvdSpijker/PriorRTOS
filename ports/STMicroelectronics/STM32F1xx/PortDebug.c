@@ -31,15 +31,16 @@ typedef void (*UartCallbackRx_t)(uint8_t byte);
 U32_t PortDebugUartWriteString(char *str)
 {
 	U32_t str_len = (U32_t)strnlen((const char *)str, UART_MAX_STRING_LENGTH + 1);
+	U32_t i = 0;
 
-	for(U32_t i = 0; i < str_len; i++)
+	for(; i < str_len; i++)
 	{
-		if(PortDebugUartWriteChar(str[i]) == -1) {
+		if(PortDebugUartWriteChar(str[i]) == 0) {
 			break;
 		}
 	}
 
-	return str_len;
+	return i;
 }
 
 U8_t PortDebugUartWriteChar(char c)
