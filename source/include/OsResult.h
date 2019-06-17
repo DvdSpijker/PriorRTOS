@@ -3,6 +3,8 @@
 
 typedef enum {
     
+	OS_RES_MEMORY_ERROR		= -7,
+
     /* The system call has caused a critical error. The reason is
      * further specified in the API description of
      * the caller. */
